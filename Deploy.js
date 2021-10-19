@@ -8,10 +8,8 @@ const writeFileSync = require('fs').writeFileSync;
 const execSync = require('child_process').execSync;
 
 const mcdev             = 'node ./node_modules/mcdev/lib/index.js';
-//const mcdev             = 'node ./node_modules/mcdev/lib/cli.js';
-const debug             = true;
+const debug             = false;//true;
 const configFilePath    = '/tmp/.mcdevrc.json'
-//const deployFolder      = '/tmp/deploy';
 const deltaPackageLog   = '/tmp/docs/deltaPackage/delta_package.md';
 
 const mcdevVersion      = process.env.mcdev_version;
@@ -20,8 +18,10 @@ const clientId          = process.env.clientId;
 const clientSecret      = process.env.clientSecret;
 const tenant            = process.env.tenant;
 
-const fromCommit        = 'promotion/' + process.env.promotion;   //The source branch of a PR, typically something like 'feature/...'
-const toBranch          = process.env.toBranch;     //The target branch of a PR, like master. This commit will be lastly checked out
+const fromCommit        = 'promotion/' + process.env.promotion;   
+    //The source branch of a PR, typically something like 'feature/...'
+const toBranch          = process.env.toBranch;     
+    //The target branch of a PR, like master. This commit will be lastly checked out
 
 const authJson = `{
     "credentials": {

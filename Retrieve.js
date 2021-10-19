@@ -1,20 +1,33 @@
 #!/usr/bin/env node
 
+/*
+# 0 - Debug 
+echo "envId: $envId"
+
+# 1 - Generate JSON File
+echo '[{"n":"test","key":"56346005-c5d2-25c0-1b4e-d71034de4794","t":"automation","cd":"2020-08-11T06:42:42.543","cb":"Arun Choudhary (ASGR)","ld":"2020-08-31T09:37:51.19","lb":"Catalyst Test Arun app user"},{"n":"Test Automation","key":"Test_Automation","t":"automation","cd":"2020-08-21T10:33:01.45","cb":"Arun Choudhary (ASGR)","ld":"2020-08-21T11:41:24.02","lb":"Arun Choudhary (ASGR)"},{"n":"Identities_Segmentation_DEV","key":"Identities_Segmentation_DEV","t":"automation","cd":"2020-05-07T00:30:37.45","cb":"Jörn Berkefeld (ASGR)","ld":"2020-08-31T09:37:51.03","lb":"Catalyst Test Arun app user"},{"n":"New Journey - 28 August 2020 11.07 - 2020-08-28T033952.188","key":"d5f56946-e3e3-4573-b457-7509cbd3dba3","t":"automation","cd":"2020-08-28T03:39:52.367","cb":"Arun Choudhary (ASGR)","ld":"2020-08-28T03:39:52.477","lb":"Arun Choudhary (ASGR)"},{"n":"","key":"Identities_Segmentation","t":"automation","cd":"2019-10-25T05:40:12.497","cb":"Jörn Berkefeld (ASGR)","ld":"2019-10-25T06:47:14.07","lb":"Jörn Berkefeld (ASGR)"},{"n":"Test","key":"66B48AB8-D7AE-417D-A9EC-2FD9FAF71F8D","t":"dataExtension","cd":"2020-08-11T06:17:30.18","ld":"2020-08-11T06:17:30.18"},{"n":"testForDeploy","key":"9F5C9344-5C4A-4090-90ED-8676A37FC47D","t":"dataExtension","cd":"2020-08-11T09:08:16.683","ld":"2020-08-11T09:08:16.683"},{"n":"Test sendable data extension","key":"Test_sendable_dataExtension","t":"dataExtension","cd":"2020-08-21T08:19:33.12","ld":"2020-08-21T08:19:33.12"},{"n":"TriggeredSendDataExtension Test","key":"TriggeredSendDataExtension_Test","t":"dataExtension","cd":"2020-08-21T08:24:09.17","ld":"2020-08-21T08:24:09.17"},{"n":"Identities","key":"Identities","t":"dataExtension","cd":"2019-10-25T04:58:32.273","ld":"2019-10-25T04:58:32.273"},{"n":"Identities_DE","key":"Identities_DE","t":"dataExtension","cd":"2019-10-25T04:59:47.09","ld":"2020-06-19T05:07:53.2"},{"n":"Identities_DEV","key":"Identities_DEV","t":"dataExtension","cd":"2019-10-25T05:00:45.793","ld":"2020-08-05T08:24:55.9"},{"n":"training_2020-05-05","key":"training_2020-05-05","t":"dataExtension","cd":"2020-05-06T00:16:00.737","ld":"2020-05-06T00:16:00.737"},{"n":"Identities_CH","key":"Identities_CH","t":"dataExtension","cd":"2020-05-07T00:26:43.947","ld":"2020-05-07T00:26:43.947"},{"n":"Identities_Shared_Demo_DE_copied","key":"Identities_Shared_Demo_DE_copied","t":"dataExtension","cd":"2020-05-27T10:13:32.377","ld":"2020-05-27T15:20:06.413"},{"n":"Account_Salesforce_Source","key":"Account_Salesforce_Source","t":"dataExtension","cd":"2020-05-27T15:20:05.163","ld":"2020-08-16T10:10:50.7"},{"n":"CSCLSROZ-272","key":"CSCLSROZ-272","t":"dataExtension","cd":"2020-11-25T13:08:07.02","ld":"2020-11-25T13:20:48.657"},{"n":"Test Target DE","key":"Test Target DE","t":"dataExtension","cd":"2021-08-09T09:18:47.417","ld":"2021-08-10T03:40:08.65"},{"n":"CopadoTest","key":"CopadoTest","t":"dataExtension","cd":"2021-08-24T05:04:06.65","ld":"2021-08-25T08:54:38.227"},{"n":"test-joern-filter-de","key":"test-joern-filter-de","t":"dataExtension","cd":"2020-12-25T13:51:22.813","ld":"2020-12-25T13:51:22.813"}]' > mcmetadata.json
+
+*/
+
 const readFileSync = require('fs').readFileSync;
-//const readdirSync = require('fs').readdirSync;
+const readdirSync = require('fs').readdirSync;
 const existsSync = require('fs').existsSync;
 const writeFileSync = require('fs').writeFileSync;
+const statSync = require('fs').statSync;
+const rmSync = require('fs').rmSync;
+const basename = require('path').basename;
+const dirname = require('path').dirname;
+const join = require('path').join;
 
 const execSync = require('child_process').execSync;
 
 const mcdev             = 'node ./node_modules/mcdev/lib/index.js';
 const debug             = false;//true;
 const configFilePath    = '/tmp/.mcdevrc.json'
+const metadataFilePath  = '/tmp/mcmetadata.json';
 
 const mainBranch        = process.env.main_branch;
-const featureBranch     = process.env.feature_branch;
-const metadata          = process.env.metadata;
-const commitMessage     = process.env.commit_message;
+const envId             = process.env.envId;
 const mcdevVersion      = process.env.mcdev_version;
 const credentialName    = process.env.credentialName;
 const clientId          = process.env.clientId;
@@ -134,18 +147,13 @@ function execCommandReturnStatus(preMsg, command, postMsg) {
 }
 
 /**
- * Checks out the source repository and create 
- * the feature branch based on the main branch.
+ * Checks out the source repository.
  * @param {*} mainBranch 
- * @param {*} featureBranch 
  */
-function checkoutSrc(mainBranch, featureBranch) {
+function checkoutSrc(mainBranch) {
     execCommand("Cloning and checking out the main branch " + mainBranch, 
                 "cd /tmp && copado-git-get \""  + mainBranch + "\"", 
                 "Completed cloning/checking out main branch");
-    execCommand("Creating resp. checking out the feature branch " + featureBranch, 
-                "cd /tmp && copado-git-get --create \""  + featureBranch + "\"", 
-                "Completed creating/checking out feature branch");
 }
 
 /**
@@ -250,12 +258,20 @@ function getSourceBU() {
 }
 
 /**
- * Retrieve components.
- * As long as we are not able to retrieve only selected components,
- * we retrieve all and add only the selected components to Git.
+ * Retrieve components into a clean retrieve folder.
+ * The retrieve folder is deleted before retrieving to make
+ * sure we have only components that really exist in the BU.
+ * @param {*} retrieveFolder 
  * @param {*} bu 
  */
-function retrieveComponents(sourceBU) {
+function retrieveComponents(retrieveFolder, sourceBU) {
+    const retrievePath = join('/tmp', retrieveFolder, sourceBU);
+    let retrievePathFixed = retrievePath;
+    if ( retrievePath.endsWith('/') || retrievePath.endsWith('\\') ) {
+        retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+    }
+    logInfo("Delete retrieve folder " + retrievePathFixed);
+    rmSync(retrievePathFixed, { recursive: true, force: true });
     execCommand("Retrieve components from " + sourceBU, 
                 "cd /tmp && " + mcdev + " retrieve " + sourceBU + " --skipInteraction",
                 "Completed retrieving components");
@@ -263,82 +279,118 @@ function retrieveComponents(sourceBU) {
 
 /**
  * After components have been retrieved,
- * adds them to the Git history.
+ * find all retrieved components and build a json containing as much
+ * metadata as possible.
  * @param {*} retrieveFolder 
  * @param {*} sourceBU 
+ * @param {*} metadataFilePath
  */
-function addSelectedComponents(retrieveFolder, sourceBU) {
-    //Iterate all metadata components selected by user to commit
-    const metadataJson = JSON.parse(metadata);
-    const retrieveFolderSeparator = retrieveFolder.endsWith('/') ? '' : '/';
-
-    metadataJson.forEach(function(component) {
-        const name = component['n'];
-        const type = component['t'];
-        const actions = component['a'];
-        logDebug("For component with name " + name + " and type " + type + ", run actions " + actions);
-
-        let key = null;
-        if ( component['j'] ) {
-            const componentJson = JSON.parse(component['j']);
-            if ( componentJson['key'] ) {
-                key = componentJson['key'];
-            }
-        }
-        if ( ! key ) {
-            throw("Could not find key for component with name " + name + " and type " + type);
-        }
-        logDebug("For component with name " + name + ", key is " + key);
-
-        if ( actions.includes('add') ) {
-            //The file name seems to use always the key.
-            //TODO: check if the path is correctly created, also because the type is directly used twice.
-            const componentPath = `${retrieveFolder}${retrieveFolderSeparator}${sourceBU}/${type}/${key}.${type}-meta.json`;
-            logDebug("For component with name " + name + ", retrieve path is " + componentPath);
-
-            if ( existsSync(`/tmp/${componentPath}`) ) {
-                //Add this component to the Git index.
-                execCommand("Add " + componentPath, 
-                            "cd /tmp && git add \"" + componentPath + "\"",
-                            "Completed adding component");
-            }
-            else {
-                logWarn("For component with name " + name + ", could not find retrieved component file " + componentPath); 
-            }
-        }
-    });    
+function createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
+    const retrievePath = join('/tmp', retrieveFolder, sourceBU);
+    let retrievePathFixed = retrievePath;
+    if ( retrievePath.endsWith('/') || retrievePath.endsWith('\\') ) {
+        retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+    }
+    const metadataJson = [];
+    buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+    const metadataString = JSON.stringify(metadataJson);
+    //logDebug('Metadata JSON is: ' + metadataString);
+    writeFileSync(metadataFilePath, metadataString);    
 }
 
 /**
- * Commits and pushes after adding selected components
- * @param {*} featureBranch 
+ * After components have been retrieved,
+ * find all retrieved components and build a json containing as much
+ * metadata as possible.
+ * @param {*} retrieveFolder 
+ * @param {*} sourceBU 
+ * @param {*} metadataJson
  */
-function commitAndPush(featureBranch) {
-    //If the following command returns some output, 
-    //git commit must be executed. Otherwise there
-    //are no differences between the components retrieved
-    //from the org and selected by the user
-    //and what is already in Git, so commit and push
-    //can be skipped.
-    const stdout = execSync("cd /tmp && git diff --staged --name-only");
-    logDebug("Git diff ended with the result: >" + stdout + "<"); 
-    if ( stdout && (0 < stdout.length)) {
-        execCommand("Commit", 
-                    "cd /tmp && git commit -m \"" + commitMessage + "\"",
-                    "Completed committing");
-        const ec = execCommandReturnStatus("Push branch " + featureBranch, 
-                                        "cd /tmp && git push origin \"" + featureBranch + "\" --atomic",
-                                        "Completed pushing branch");
-        if ( 0 != ec ) {                                       
-            throw("Could not push changes to feature branch " + featureBranch + ". Exit code is " + ec + ". Please check logs for further details.");
+function buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
+    //Handle files within the current directory
+    const filesAndFolders = readdirSync(retrieveFolder).map(entry => join(retrieveFolder, entry));
+    filesAndFolders.forEach(function(filePath) {
+        if ( statSync(filePath).isFile() ) {
+            const dirName = dirname(filePath);
+            const componentType = basename(dirName);
+
+            let componentJson;
+            switch (componentType) {
+                case "automation":
+                    logDebug('Handle component ' + filePath +' with type ' + componentType);
+                    componentJson = buildAutomationMetadataJson(filePath, sourceBU);
+                    break;
+                case "dataExtension":
+                    logDebug('Handle component ' + filePath +' with type ' + componentType);
+                    componentJson = buildDataExtensionMetadataJson(filePath, sourceBU);
+                    break;
+                default:
+                    throw new Error('Component ' + filePath+ ' with type ' + componentType +' is not supported');
+            }
+
+            //logDebug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
+            metadataJson.push(componentJson);
         }
-    }
-    else {
-        logInfo("Nothing to commit as all selected components have the same content as already exists in Git."); 
-        execCommand("Nothing to Commit.", 
-                    "copado -p \"Nothing to commit \" -r \"Nothing to Commit as all selected components have the same content as already exists in Git.\"",
-                    "Completed committing");        
-    }
+    });
+
+    //Get folders within the current directory
+    filesAndFolders.forEach(function(folderPath) {
+        if ( statSync(folderPath).isDirectory() ) {
+            buildMetadataJson(folderPath, sourceBU, metadataJson);
+        }
+    });
+}
+
+/**
+ * Build the metadata JSON for a automation component
+ * @param {*} filePath 
+ * @param {*} sourceBU 
+ */
+function buildAutomationMetadataJson(filePath, sourceBU) {
+    //Load the file
+    const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+
+    const metadata = {};
+    metadata['n'] = parsed['name'];
+    metadata['k'] = parsed['key'];
+    metadata['t'] = 'automation';
+    //metadata['cd'] = parsed[''];
+    //metadata['cb'] = parsed[''];
+    //metadata['ld'] = parsed[''];
+    //metadata['lb'] = parsed[''];
+
+    return metadata;
+}
+
+/**
+ * Build the metadata JSON for a data extension component
+ * @param {*} filePath 
+ * @param {*} sourceBU 
+ */
+function buildDataExtensionMetadataJson(filePath, sourceBU) {
+    //Load the file
+    const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+
+    const metadata = {};
+    metadata['n'] = parsed['Name'];
+    metadata['k'] = parsed['CustomerKey'];
+    metadata['t'] = 'dataExtension';
+    metadata['cd'] = parsed['CreatedDate'];
+    //metadata['cb'] = parsed[''];
+    //metadata['ld'] = parsed[''];
+    //metadata['lb'] = parsed[''];
+
+    return metadata;
+}
+
+/**
+ * Finally, attach the resulting metadata JSON.
+ * @param {*} metadataFilePath
+ */
+function attachJson(metadataFilePath) {
+    execCommand("Attach JSON " + metadataFilePath, 
+                "cd /tmp && copado --uploadfile \"" + metadataFilePath + "\" --parentid \"" + envId + "\"",
+                "Completed attaching JSON");
 }
 
 logDebug("")
@@ -350,13 +402,14 @@ logDebug(`credentialName    = ${credentialName}`);
 //logDebug(`clientId          = ${clientId}`);
 //logDebug(`clientSecret      = ${clientSecret}`);
 //logDebug(`tenant            = ${tenant}`);
-logDebug(`branch            = ${featureBranch}`);
+logDebug(`branch            = ${mainBranch}`);
+logDebug(`envId             = ${envId}`);
 
 logInfo("")
 logInfo("Clone repository")
 logInfo("================")
 logInfo("")
-checkoutSrc(mainBranch, featureBranch);
+checkoutSrc(mainBranch);
 
 logInfo("")
 logInfo("Preparing")
@@ -386,16 +439,16 @@ logInfo("")
 logInfo("Retrieve components")
 logInfo("===================")
 logInfo("")
-retrieveComponents(sourceBU);
+retrieveComponents(retrieveFolder, sourceBU);
 
 logInfo("")
-logInfo("Add selected components to Git history")
-logInfo("======================================")
+logInfo("Build metadata JSON")
+logInfo("===================")
 logInfo("")
-addSelectedComponents(retrieveFolder, sourceBU);
+createMetadataFile(retrieveFolder, sourceBU, metadataFilePath);
 
 logInfo("")
-logInfo("Commit and push")
-logInfo("===============")
+logInfo("Attach JSON")
+logInfo("===========")
 logInfo("")
-commitAndPush(featureBranch);
+attachJson(metadataFilePath);
