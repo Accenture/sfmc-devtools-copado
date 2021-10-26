@@ -351,7 +351,7 @@ function buildAutomationMetadataJson(filePath, sourceBU) {
     const parsed = JSON.parse(readFileSync(filePath, "utf8"));
 
     const metadata = {};
-    metadata['n'] = parsed['name'];
+    metadata['n'] = (parsed['name']) ? parsed['name'] : parsed['key'];
     metadata['k'] = parsed['key'];
     metadata['t'] = 'automation';
     //metadata['cd'] = parsed[''];
@@ -372,7 +372,7 @@ function buildDataExtensionMetadataJson(filePath, sourceBU) {
     const parsed = JSON.parse(readFileSync(filePath, "utf8"));
 
     const metadata = {};
-    metadata['n'] = parsed['Name'];
+    metadata['n'] = (parsed['Name']) ? parsed['Name'] : parsed['CustomerKey'];
     metadata['k'] = parsed['CustomerKey'];
     metadata['t'] = 'dataExtension';
     metadata['cd'] = parsed['CreatedDate'];
