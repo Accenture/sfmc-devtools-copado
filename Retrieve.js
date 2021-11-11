@@ -1,14 +1,5 @@
 #!/usr/bin/env node
 
-/*
-# 0 - Debug 
-echo "envId: $envId"
-
-# 1 - Generate JSON File
-echo '[{"n":"test","key":"56346005-c5d2-25c0-1b4e-d71034de4794","t":"automation","cd":"2020-08-11T06:42:42.543","cb":"Arun Choudhary (ASGR)","ld":"2020-08-31T09:37:51.19","lb":"Catalyst Test Arun app user"},{"n":"Test Automation","key":"Test_Automation","t":"automation","cd":"2020-08-21T10:33:01.45","cb":"Arun Choudhary (ASGR)","ld":"2020-08-21T11:41:24.02","lb":"Arun Choudhary (ASGR)"},{"n":"Identities_Segmentation_DEV","key":"Identities_Segmentation_DEV","t":"automation","cd":"2020-05-07T00:30:37.45","cb":"Jörn Berkefeld (ASGR)","ld":"2020-08-31T09:37:51.03","lb":"Catalyst Test Arun app user"},{"n":"New Journey - 28 August 2020 11.07 - 2020-08-28T033952.188","key":"d5f56946-e3e3-4573-b457-7509cbd3dba3","t":"automation","cd":"2020-08-28T03:39:52.367","cb":"Arun Choudhary (ASGR)","ld":"2020-08-28T03:39:52.477","lb":"Arun Choudhary (ASGR)"},{"n":"","key":"Identities_Segmentation","t":"automation","cd":"2019-10-25T05:40:12.497","cb":"Jörn Berkefeld (ASGR)","ld":"2019-10-25T06:47:14.07","lb":"Jörn Berkefeld (ASGR)"},{"n":"Test","key":"66B48AB8-D7AE-417D-A9EC-2FD9FAF71F8D","t":"dataExtension","cd":"2020-08-11T06:17:30.18","ld":"2020-08-11T06:17:30.18"},{"n":"testForDeploy","key":"9F5C9344-5C4A-4090-90ED-8676A37FC47D","t":"dataExtension","cd":"2020-08-11T09:08:16.683","ld":"2020-08-11T09:08:16.683"},{"n":"Test sendable data extension","key":"Test_sendable_dataExtension","t":"dataExtension","cd":"2020-08-21T08:19:33.12","ld":"2020-08-21T08:19:33.12"},{"n":"TriggeredSendDataExtension Test","key":"TriggeredSendDataExtension_Test","t":"dataExtension","cd":"2020-08-21T08:24:09.17","ld":"2020-08-21T08:24:09.17"},{"n":"Identities","key":"Identities","t":"dataExtension","cd":"2019-10-25T04:58:32.273","ld":"2019-10-25T04:58:32.273"},{"n":"Identities_DE","key":"Identities_DE","t":"dataExtension","cd":"2019-10-25T04:59:47.09","ld":"2020-06-19T05:07:53.2"},{"n":"Identities_DEV","key":"Identities_DEV","t":"dataExtension","cd":"2019-10-25T05:00:45.793","ld":"2020-08-05T08:24:55.9"},{"n":"training_2020-05-05","key":"training_2020-05-05","t":"dataExtension","cd":"2020-05-06T00:16:00.737","ld":"2020-05-06T00:16:00.737"},{"n":"Identities_CH","key":"Identities_CH","t":"dataExtension","cd":"2020-05-07T00:26:43.947","ld":"2020-05-07T00:26:43.947"},{"n":"Identities_Shared_Demo_DE_copied","key":"Identities_Shared_Demo_DE_copied","t":"dataExtension","cd":"2020-05-27T10:13:32.377","ld":"2020-05-27T15:20:06.413"},{"n":"Account_Salesforce_Source","key":"Account_Salesforce_Source","t":"dataExtension","cd":"2020-05-27T15:20:05.163","ld":"2020-08-16T10:10:50.7"},{"n":"CSCLSROZ-272","key":"CSCLSROZ-272","t":"dataExtension","cd":"2020-11-25T13:08:07.02","ld":"2020-11-25T13:20:48.657"},{"n":"Test Target DE","key":"Test Target DE","t":"dataExtension","cd":"2021-08-09T09:18:47.417","ld":"2021-08-10T03:40:08.65"},{"n":"CopadoTest","key":"CopadoTest","t":"dataExtension","cd":"2021-08-24T05:04:06.65","ld":"2021-08-25T08:54:38.227"},{"n":"test-joern-filter-de","key":"test-joern-filter-de","t":"dataExtension","cd":"2020-12-25T13:51:22.813","ld":"2020-12-25T13:51:22.813"}]' > mcmetadata.json
-
-*/
-
 const readFileSync = require('fs').readFileSync;
 const readdirSync = require('fs').readdirSync;
 const existsSync = require('fs').existsSync;
@@ -299,6 +290,7 @@ function createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
 }
 
 /**
+ * Should go into a library!
  * After components have been retrieved,
  * find all retrieved components and build a json containing as much
  * metadata as possible.
@@ -342,7 +334,9 @@ function buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
 }
 
 /**
+ * Should go into a library!
  * Build the metadata JSON for a automation component
+ * Should go into a library!
  * @param {*} filePath 
  * @param {*} sourceBU 
  */
@@ -363,7 +357,9 @@ function buildAutomationMetadataJson(filePath, sourceBU) {
 }
 
 /**
+ * Should go into a library!
  * Build the metadata JSON for a data extension component
+ * Should go into a library!
  * @param {*} filePath 
  * @param {*} sourceBU 
  */

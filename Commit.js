@@ -1,9 +1,11 @@
 #!/usr/bin/env node
 
 const readFileSync = require('fs').readFileSync;
-//const readdirSync = require('fs').readdirSync;
+const readdirSync = require('fs').readdirSync;
 const existsSync = require('fs').existsSync;
 const writeFileSync = require('fs').writeFileSync;
+const statSync = require('fs').statSync;
+const dirname = require('path').dirname;
 
 const execSync = require('child_process').execSync;
 
@@ -262,14 +264,104 @@ function retrieveComponents(sourceBU) {
 }
 
 /**
+ * Should go into a library!
  * After components have been retrieved,
- * adds them to the Git history.
+ * find all retrieved components and build a json containing as much
+ * metadata as possible.
  * @param {*} retrieveFolder 
  * @param {*} sourceBU 
+ * @param {*} metadataJson
  */
-function addSelectedComponents(retrieveFolder, sourceBU) {
+function buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
+    //Handle files within the current directory
+    const filesAndFolders = readdirSync(retrieveFolder).map(entry => join(retrieveFolder, entry));
+    filesAndFolders.forEach(function(filePath) {
+        if ( statSync(filePath).isFile() ) {
+            const dirName = dirname(filePath);
+            const componentType = basename(dirName);
+
+            let componentJson;
+            switch (componentType) {
+                case "automation":
+                    logDebug('Handle component ' + filePath +' with type ' + componentType);
+                    componentJson = buildAutomationMetadataJson(filePath, sourceBU);
+                    break;
+                case "dataExtension":
+                    logDebug('Handle component ' + filePath +' with type ' + componentType);
+                    componentJson = buildDataExtensionMetadataJson(filePath, sourceBU);
+                    break;
+                default:
+                    throw new Error('Component ' + filePath+ ' with type ' + componentType +' is not supported');
+            }
+
+            //logDebug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
+            metadataJson.push(componentJson);
+        }
+    });
+
+    //Get folders within the current directory
+    filesAndFolders.forEach(function(folderPath) {
+        if ( statSync(folderPath).isDirectory() ) {
+            buildMetadataJson(folderPath, sourceBU, metadataJson);
+        }
+    });
+}
+
+/**
+ * Should go into a library!
+ * Build the metadata JSON for a automation component
+ * Should go into a library!
+ * @param {*} filePath 
+ * @param {*} sourceBU 
+ */
+function buildAutomationMetadataJson(filePath, sourceBU) {
+    //Load the file
+    const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+
+    const metadata = {};
+    metadata['n'] = (parsed['name']) ? parsed['name'] : parsed['key'];
+    metadata['k'] = parsed['key'];
+    metadata['t'] = 'automation';
+    //metadata['cd'] = parsed[''];
+    //metadata['cb'] = parsed[''];
+    //metadata['ld'] = parsed[''];
+    //metadata['lb'] = parsed[''];
+
+    return metadata;
+}
+
+/**
+ * Should go into a library!
+ * Build the metadata JSON for a data extension component
+ * Should go into a library!
+ * @param {*} filePath 
+ * @param {*} sourceBU 
+ */
+function buildDataExtensionMetadataJson(filePath, sourceBU) {
+    //Load the file
+    const parsed = JSON.parse(readFileSync(filePath, "utf8"));
+
+    const metadata = {};
+    metadata['n'] = (parsed['Name']) ? parsed['Name'] : parsed['CustomerKey'];
+    metadata['k'] = parsed['CustomerKey'];
+    metadata['t'] = 'dataExtension';
+    metadata['cd'] = parsed['CreatedDate'];
+    //metadata['cb'] = parsed[''];
+    //metadata['ld'] = parsed[''];
+    //metadata['lb'] = parsed[''];
+
+    return metadata;
+}
+
+/**
+ * After components have been retrieved,
+ * adds selected components to the Git history.
+ * @param {*} retrieveFolder 
+ * @param {*} sourceBU 
+ * @param {*} metadataJson
+ */
+function addSelectedComponents(retrieveFolder, sourceBU, metadataJson) {
     //Iterate all metadata components selected by user to commit
-    const metadataJson = JSON.parse(metadata);
     const retrieveFolderSeparator = retrieveFolder.endsWith('/') ? '' : '/';
 
     metadataJson.forEach(function(component) {
@@ -388,11 +480,28 @@ logInfo("===================")
 logInfo("")
 retrieveComponents(sourceBU);
 
+let metadataJson;
+if ( ! metadata ) {
+    logInfo("")
+    logInfo("Add all components to the metadata JSON")
+    logInfo("=======================================")
+    logInfo("")
+    metadataJson = [];
+    buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+}
+else {
+    logInfo("")
+    logInfo("Add selected components to metadata JSON")
+    logInfo("========================================")
+    logInfo("")
+    metadataJson = JSON.parse(metadata);
+}
+
 logInfo("")
-logInfo("Add selected components to Git history")
-logInfo("======================================")
+logInfo("Add components in metadata JSON to Git history")
+logInfo("==============================================")
 logInfo("")
-addSelectedComponents(retrieveFolder, sourceBU);
+addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
 
 logInfo("")
 logInfo("Commit and push")
