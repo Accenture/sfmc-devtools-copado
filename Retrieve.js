@@ -13,7 +13,7 @@ const join = require('path').join;
 const execSync = require('child_process').execSync;
 
 const mcdev             = 'node ./node_modules/mcdev/lib/index.js';
-const debug             = false;//true;
+const debug             = true;
 const configFilePath    = '/tmp/.mcdevrc.json'
 const metadataFilePath  = '/tmp/mcmetadata.json';
 
@@ -336,7 +336,6 @@ function buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
 /**
  * Should go into a library!
  * Build the metadata JSON for a automation component
- * Should go into a library!
  * @param {*} filePath 
  * @param {*} sourceBU 
  */
@@ -359,7 +358,6 @@ function buildAutomationMetadataJson(filePath, sourceBU) {
 /**
  * Should go into a library!
  * Build the metadata JSON for a data extension component
- * Should go into a library!
  * @param {*} filePath 
  * @param {*} sourceBU 
  */
@@ -393,13 +391,14 @@ logDebug("")
 logDebug("Parameters")
 logDebug("==========")
 logDebug("")
+logDebug(`mainBranch        = ${mainBranch}`);
+logDebug(`envId             = ${envId}`);
+logDebug("")
 logDebug(`mcdevVersion      = ${mcdevVersion}`);
 logDebug(`credentialName    = ${credentialName}`);
 //logDebug(`clientId          = ${clientId}`);
 //logDebug(`clientSecret      = ${clientSecret}`);
 //logDebug(`tenant            = ${tenant}`);
-logDebug(`branch            = ${mainBranch}`);
-logDebug(`envId             = ${envId}`);
 
 logInfo("")
 logInfo("Clone repository")

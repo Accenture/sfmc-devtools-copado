@@ -12,16 +12,15 @@ const debug             = false;//true;
 const configFilePath    = '/tmp/.mcdevrc.json'
 const deltaPackageLog   = '/tmp/docs/deltaPackage/delta_package.md';
 
+const fromCommit        = 'promotion/' + process.env.promotion;   
+    //The source branch of a PR, typically something like 'feature/...'
+const toBranch          = process.env.toBranch;     
+    //The target branch of a PR, like master. This commit will be lastly checked out
 const mcdevVersion      = process.env.mcdev_version;
 const credentialName    = process.env.credentialName;
 const clientId          = process.env.clientId;
 const clientSecret      = process.env.clientSecret;
 const tenant            = process.env.tenant;
-
-const fromCommit        = 'promotion/' + process.env.promotion;   
-    //The source branch of a PR, typically something like 'feature/...'
-const toBranch          = process.env.toBranch;     
-    //The target branch of a PR, like master. This commit will be lastly checked out
 
 const authJson = `{
     "credentials": {
@@ -339,13 +338,14 @@ logDebug("")
 logDebug("Parameters")
 logDebug("==========")
 logDebug("")
+logDebug(`fromCommit        = ${fromCommit}`);
+logDebug(`toBranch          = ${toBranch}`);
+logDebug("")
 logDebug(`mcdevVersion      = ${mcdevVersion}`);
 logDebug(`credentialName    = ${credentialName}`);
 //logDebug(`clientId          = ${clientId}`);
 //logDebug(`clientSecret      = ${clientSecret}`);
 //logDebug(`tenant            = ${tenant}`);
-logDebug(`fromCommit        = ${fromCommit}`);
-logDebug(`toBranch          = ${toBranch}`);
 
 logInfo("")
 logInfo("Clone repository")
