@@ -15,7 +15,8 @@ const configFilePath    = '/tmp/.mcdevrc.json'
 
 const mainBranch        = process.env.main_branch;
 const featureBranch     = process.env.feature_branch;
-const metadata          = process.env.metadata;
+const metadataFile      = process.env.metadata_file;
+const metadataFileName  = 'Copado Commit changes.json';
 const commitMessage     = process.env.commit_message;
 const mcdevVersion      = process.env.mcdev_version;
 const credentialName    = process.env.credentialName;
@@ -428,7 +429,7 @@ function commitAndPush(featureBranch) {
     else {
         logInfo("Nothing to commit as all selected components have the same content as already exists in Git."); 
         execCommand("Nothing to Commit.", 
-                    "copado -p \"Nothing to commit \" -r \"Nothing to Commit as all selected components have the same content as already exists in Git.\"",
+                    "copado -p \"Nothing to commit\" -r \"Nothing to Commit as all selected components have the same content as already exists in Git.\"",
                     "Completed committing");        
     }
 }
@@ -437,12 +438,16 @@ logDebug("")
 logDebug("Parameters")
 logDebug("==========")
 logDebug("")
-logDebug(`mcdevVersion      = ${mcdevVersion}`);
-logDebug(`credentialName    = ${credentialName}`);
-//logDebug(`clientId          = ${clientId}`);
-//logDebug(`clientSecret      = ${clientSecret}`);
-//logDebug(`tenant            = ${tenant}`);
-logDebug(`branch            = ${featureBranch}`);
+logDebug(`mainBranch               = ${mainBranch}`);
+logDebug(`featurebranch            = ${featureBranch}`);
+logDebug(`metadataFile             = ${metadataFile}`);
+logDebug(`commitMessage            = ${commitMessage}`);
+logDebug("")
+logDebug(`mcdevVersion             = ${mcdevVersion}`);
+logDebug(`credentialName           = ${credentialName}`);
+//logDebug(`clientId                 = ${clientId}`);
+//logDebug(`clientSecret             = ${clientSecret}`);
+//logDebug(`tenant                   = ${tenant}`);
 
 logInfo("")
 logInfo("Clone repository")
@@ -481,19 +486,25 @@ logInfo("")
 retrieveComponents(sourceBU);
 
 let metadataJson;
-if ( ! metadata ) {
+if ( ! metadataFile ) {
     logInfo("")
     logInfo("Add all components to the metadata JSON")
     logInfo("=======================================")
     logInfo("")
     metadataJson = [];
-    buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+    buildMetadataJson(retrieveFolder, sourceBU, metadataJson);
 }
 else {
     logInfo("")
-    logInfo("Add selected components to metadata JSON")
-    logInfo("========================================")
+    logInfo(`Add selected components defined in ${metadataFile} to metadata JSON`)
+    logInfo("====================================================================")
     logInfo("")
+    
+    execCommand(`Download ${metadataFile}.`, 
+                `copado --downloadfiles \"${metadataFile}\"`,
+                "Completed download");        
+
+    const metadata = readFileSync(metadataFileName, "utf8");
     metadataJson = JSON.parse(metadata);
 }
 
