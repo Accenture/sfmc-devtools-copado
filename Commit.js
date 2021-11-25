@@ -6,11 +6,13 @@ const existsSync = require('fs').existsSync;
 const writeFileSync = require('fs').writeFileSync;
 const statSync = require('fs').statSync;
 const dirname = require('path').dirname;
+const join = require('path').join;
+const basename = require('path').basename;
 
 const execSync = require('child_process').execSync;
 
 const mcdev             = 'node ./node_modules/mcdev/lib/index.js';
-const debug             = false;//true;
+const debug             = true;
 const configFilePath    = '/tmp/.mcdevrc.json'
 
 const mainBranch        = process.env.main_branch;
@@ -137,18 +139,21 @@ function execCommandReturnStatus(preMsg, command, postMsg) {
 }
 
 /**
- * Checks out the source repository and create 
+ * Checks out the source repository and 
+ * if a feature branch is available creates 
  * the feature branch based on the main branch.
  * @param {*} mainBranch 
- * @param {*} featureBranch 
+ * @param {*} featureBranch can be null/undefined
  */
 function checkoutSrc(mainBranch, featureBranch) {
     execCommand("Cloning and checking out the main branch " + mainBranch, 
                 "cd /tmp && copado-git-get \""  + mainBranch + "\"", 
                 "Completed cloning/checking out main branch");
-    execCommand("Creating resp. checking out the feature branch " + featureBranch, 
-                "cd /tmp && copado-git-get --create \""  + featureBranch + "\"", 
-                "Completed creating/checking out feature branch");
+    if ( featureBranch ) {
+        execCommand("Creating resp. checking out the feature branch " + featureBranch, 
+                    "cd /tmp && copado-git-get --create \""  + featureBranch + "\"", 
+                    "Completed creating/checking out feature branch");
+    }
 }
 
 /**
@@ -323,6 +328,7 @@ function buildAutomationMetadataJson(filePath, sourceBU) {
     metadata['n'] = (parsed['name']) ? parsed['name'] : parsed['key'];
     metadata['k'] = parsed['key'];
     metadata['t'] = 'automation';
+    metadata['a'] = 'add';
     //metadata['cd'] = parsed[''];
     //metadata['cb'] = parsed[''];
     //metadata['ld'] = parsed[''];
@@ -346,6 +352,7 @@ function buildDataExtensionMetadataJson(filePath, sourceBU) {
     metadata['n'] = (parsed['Name']) ? parsed['Name'] : parsed['CustomerKey'];
     metadata['k'] = parsed['CustomerKey'];
     metadata['t'] = 'dataExtension';
+    metadata['a'] = 'add';
     metadata['cd'] = parsed['CreatedDate'];
     //metadata['cb'] = parsed[''];
     //metadata['ld'] = parsed[''];
@@ -372,6 +379,12 @@ function addSelectedComponents(retrieveFolder, sourceBU, metadataJson) {
         logDebug("For component with name " + name + " and type " + type + ", run actions " + actions);
 
         let key = null;
+        //Add all components
+        if ( component['k'] ) {
+            key = component['k'];
+        }
+        else
+        //Add selected components
         if ( component['j'] ) {
             const componentJson = JSON.parse(component['j']);
             if ( componentJson['key'] ) {
@@ -404,26 +417,28 @@ function addSelectedComponents(retrieveFolder, sourceBU, metadataJson) {
 
 /**
  * Commits and pushes after adding selected components
- * @param {*} featureBranch 
+ * @param {*} mainBranch 
+ * @param {*} featureBranch can be null/undefined
  */
-function commitAndPush(featureBranch) {
+function commitAndPush(mainBranch, featureBranch) {
     //If the following command returns some output, 
     //git commit must be executed. Otherwise there
     //are no differences between the components retrieved
     //from the org and selected by the user
     //and what is already in Git, so commit and push
     //can be skipped.
+    const branch = featureBranch ? featureBranch : mainBranch;
     const stdout = execSync("cd /tmp && git diff --staged --name-only");
     logDebug("Git diff ended with the result: >" + stdout + "<"); 
     if ( stdout && (0 < stdout.length)) {
         execCommand("Commit", 
                     "cd /tmp && git commit -m \"" + commitMessage + "\"",
                     "Completed committing");
-        const ec = execCommandReturnStatus("Push branch " + featureBranch, 
-                                        "cd /tmp && git push origin \"" + featureBranch + "\" --atomic",
-                                        "Completed pushing branch");
+        const ec = execCommandReturnStatus("Push branch " + branch, 
+                                           "cd /tmp && git push origin \"" + branch + "\" --atomic",
+                                           "Completed pushing branch");
         if ( 0 != ec ) {                                       
-            throw("Could not push changes to feature branch " + featureBranch + ". Exit code is " + ec + ". Please check logs for further details.");
+            throw("Could not push changes to feature branch " + branch + ". Exit code is " + ec + ". Please check logs for further details.");
         }
     }
     else {
@@ -491,8 +506,13 @@ if ( ! metadataFile ) {
     logInfo("Add all components to the metadata JSON")
     logInfo("=======================================")
     logInfo("")
+    const retrievePath = join('/tmp', retrieveFolder, sourceBU);
+    let retrievePathFixed = retrievePath;
+    if ( retrievePath.endsWith('/') || retrievePath.endsWith('\\') ) {
+        retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+    }
     metadataJson = [];
-    buildMetadataJson(retrieveFolder, sourceBU, metadataJson);
+    buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
 }
 else {
     logInfo("")
@@ -518,4 +538,4 @@ logInfo("")
 logInfo("Commit and push")
 logInfo("===============")
 logInfo("")
-commitAndPush(featureBranch);
+commitAndPush(mainBranch, featureBranch);
