@@ -9,6 +9,7 @@
  * @see RunCopadoFunctionFromLWS.cls Apex Class
  * 
  * {@link https://[Org].lightning.force.com/lightning/n/copado__User_Story_Commit?copado__recordId=[Id] Commit Changes (copado__User_Story_Commit) Tab }
+ * Click the "Commit Changes" Button on the User Story Record Page to reach this page
  * 
  */
 
@@ -22,20 +23,53 @@ import ExecuteRetrieveFromCopado from '@salesforce/apex/RunCopadoFunctionFromLWC
 import getMetadataFromEnvironment from '@salesforce/apex/RunCopadoFunctionFromLWC.getMetadataFromEnvironment';
 
 // Apex functions to retrieve Recorddata from LWC
-import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
-import USERSTORY_ID_FIELD from '@salesforce/schema/copado__User_Story__c.Id';
-import USERSTORY_NAME_FIELD from '@salesforce/schema/copado__User_Story__c.Name';
-import ENVIRONMENT_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Environment__c';
-import CREDENTIAL_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Org_Credential__c';
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from '@salesforce/messageChannel/copado__CommitPageCommunication__c';
 import { MessageContext, subscribe as subscribeMessageService, publish as publishMessageService } from 'lightning/messageService';
 
 
+import { CurrentPageReference } from 'lightning/navigation';
+import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
+
+import USERSTORY_ID_FIELD from '@salesforce/schema/copado__User_Story__c.Id';
+import USERSTORY_NAME_FIELD from '@salesforce/schema/copado__User_Story__c.Name';
+import ENVIRONMENT_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Environment__c';
+import CREDENTIAL_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Org_Credential__c';
+
 export default class MarketingCloudCopadoDataTable extends LightningElement {
-    // Holds current Record ID
+
+    // This will hold current Record ID
+    currentPageReference;
+
+    // This will hold current Record ID
+    userStoryId;
+
+    // This function retrieves the current Record ID from CurrentPageReference
+    @wire(CurrentPageReference)
+    getStateParameters(currentPageReference) {
+        try {
+            if (currentPageReference) {
+                const userStoryId = currentPageReference.state.copado__recordId;
+                console.log(userStoryId);
+                this.userStoryId = userStoryId;
+            }
+        } catch(err) {
+            console.error(`${err.name}: ${err.message}: `, err);
+            this.showToastEvent(
+                `${err.name}: An Error occured while reading the Record ID from CurrentPageReference inside LWC`,
+                `${err.message}`,
+                'error',
+                'sticky'
+            );
+            console.error("There might be a problem with CurrentPageReference: ", currentPageReference)
+        }   
+    }
+
+/*
+     // Holds current Record ID
     @api recordId;
+    
 
     // Use the Record ID to fetch the fields
     @wire(getRecord, { recordId: '$recordId', fields: [USERSTORY_NAME_FIELD, ENVIRONMENT_FIELD, USERSTORY_ID_FIELD, CREDENTIAL_FIELD] })
@@ -57,6 +91,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     get copadoOrgCredential() {
         return getFieldValue(this.userStory.data, CREDENTIAL_FIELD);
     }
+    */
+
+    
 
     @wire(MessageContext)
     _context;
@@ -98,10 +135,12 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     empSubscription = {};
     channelName = '/event/copado__MC_Result__e';
 
+    // ?
     _subscribeToMessageService() {
         subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => this._handleCommitPageCommunicationMessage(message));
     }
 
+    // ?
     async _handleCommitPageCommunicationMessage(message) {
         console.log('Async _handleCommitPageCommunicationMessage starts now');
         try {
@@ -118,17 +157,44 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                     break;
                 default:
             }
-        } catch (error) {
-            const errorMessage = reduceErrors(error);
-            showToastError(this, { message: errorMessage });
+        } catch (err) {
+            console.error(`${err.name}: ${err.message}: `, err);
+            this.showToastEvent(
+                `${err.name}: An Error occured while handling the Commit Page Communication Message:`,
+                `${err.message}`,
+                'error',
+                'sticky'
+            );
         } finally {
             this.loadingState(false);
         }
     }
 
+    // ?
     _handleRequestMessage() {
         console.log('_handleRequestMessage runs now');
-        const selectedChanges = JSON.stringify(this.template.querySelector('lightning-datatable').getSelectedRows());
+        //console.log("This is the recordId: ", this.recordId);
+        //console.log("This is the currentPageReference: ", currentPageReference);
+
+        const selectedRows = this.template.querySelector('lightning-datatable').getSelectedRows();
+        const selectedChanges = [];
+        for (let i = 0; i < selectedRows.length; i++) {
+            selectedChanges.push(
+                {
+                    "m": "",
+                    "a": "add",
+                    "c": "sfmc",
+                    "n": selectedRows[i].n,
+                    "t": selectedRows[i].t,
+                    "cd": selectedRows[i].cd,
+                    "cb": selectedRows[i].cb,
+                    "ld": selectedRows[i].ld,
+                    "lb": selectedRows[i].lb,
+                    "j": "{\"key\":\"" + selectedRows[i].key + "\"}"
+                }
+            ) 
+        }
+        
         console.log('_handleRequestMessage started', selectedChanges);
         const payload = {
             type: 'changes',
@@ -137,6 +203,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         publishMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, payload);
     }
 
+    // ?
     async _handleChangesMessage(message) {
         console.log('_handleChangesMessage runs now');
         const metadatas = message.value;
@@ -144,12 +211,25 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         await this._addMetadataRowsToTable(metadataRows);
     }
 
-    // Runs Initially
+    // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
+    // Get Metadata from environment, Deactivate the Loading State
     connectedCallback() {
+        try {
+            this._subscribeToMessageService();
+        } catch(err) {
+            console.error(`${err.name}: ${err.message}: `, err);
+            this.showToastEvent(
+                `${err.name}: An Error occured while subscribing to the message service:`,
+                `${err.message}`,
+                'error',
+                'sticky'
+            );
+        }
+
         try {      
             this.registerEmpErrorListener(); 
         } catch(err) {
-            console.error(`${err.name}: ${err.message}: `, err); // @TODO: Check
+            console.error(`${err.name}: ${err.message}: `, err);
             this.showToastEvent(
                 `${err.name}: An Error occured while registering the emp-API Error Listener:`,
                 `${err.message}`,
@@ -178,22 +258,36 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             this.loadingState(false);
         })
     }
-    
+
+    // Function to get the newest Commitable Metadata, and save it in the environment
     retrieve() { 
+        console.log('retrieve starts now');
+        
+        console.log("Activate Loading State");
         // Activate Loading State
         this.loadingState(true);
+        console.log("Loading State set");
+        
+        //recordId = ((new URL(window.location.href)).searchParams.get("copado__recordId"));
+        const userStoryId = this.userStoryId;
+        console.log("userStoryId: ", userStoryId);
 
         // Set a reference to this, so that it can be called inside the messageCallback
         const self = this;
-
+        console.log(self);
+        /*
         const userStoryName = this.userStoryName;               // Will be passed into the Copado Function Script
         const envId = this.envId;                               // Will be passed into the Copado Function Script
+        */
 
+        console.log("Passing the following parameter into the Retrieve function:");
+        console.log("userStoryId: ", userStoryId);
+        
         ExecuteRetrieveFromCopado({
-            envId, 
-            userStoryName
+            userStoryId
          })
         .then((resultId) => {
+            console.log("This is the result ID: ", resultId)
             // The response tells whether the function has finished and was successful or not
             const messageCallback = function(response) {
                 if (response.data.payload.copado__IsFinished__c === true) {
@@ -218,6 +312,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                             const parsedData = JSON.parse(result);
                             self.data = parsedData;
                             self.visibleData = parsedData;
+                             self.loadingState(false);
                         })
                         .catch((err) => {
                             console.error('Error fetching the Metadata from File after the Retrievement: ', err);
@@ -227,6 +322,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                                 'error',
                                 'sticky'
                             );
+                            self.loadingState(false);
                         });
                     } else if (response.data.payload.copado__IsSuccess__c === false) {
                         console.log(
@@ -307,21 +403,11 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         });
     }
 
-    // Method to show dynamic popups for various events
-    // Later, we can implement the Loading Functiontionality into the toast, because they can be triggered together.
-    showToastEvent(title, message, variant, mode) {
-        const event = new ShowToastEvent({
-            title,
-            message,
-            variant,
-            mode
-        });
-        this.dispatchEvent(event);
-    }
+
 
     /**
      * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
-     * @TODO: When the visible dataset is reduced, and one unselects an entry, this entry doesn't get 
+     * @TODO: It's not possible to remove a row, when the dataset is reduced (search)
      */
     handleSearch(event) {
 
@@ -345,6 +431,18 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         this[event.target.name] = event.detail.value;
     }
 
+        // Method to show dynamic popups for various events
+    // Later, we can implement the Loading Functiontionality into the toast, because they can be triggered together.
+    showToastEvent(title, message, variant, mode) {
+        const event = new ShowToastEvent({
+            title,
+            message,
+            variant,
+            mode
+        });
+        this.dispatchEvent(event);
+    }
+
     // Simple Function to Toggle the State of Loading
     loadingState(isLoading) {
         this.isLoading = isLoading;
@@ -352,4 +450,3 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         this.refreshButtonDisabled = isLoading;
     }
 }
-    
