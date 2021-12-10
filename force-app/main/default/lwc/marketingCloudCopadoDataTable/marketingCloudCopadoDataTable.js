@@ -30,12 +30,6 @@ import { MessageContext, subscribe as subscribeMessageService, publish as publis
 
 
 import { CurrentPageReference } from 'lightning/navigation';
-import { getRecord, getFieldValue } from 'lightning/uiRecordApi';
-
-import USERSTORY_ID_FIELD from '@salesforce/schema/copado__User_Story__c.Id';
-import USERSTORY_NAME_FIELD from '@salesforce/schema/copado__User_Story__c.Name';
-import ENVIRONMENT_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Environment__c';
-import CREDENTIAL_FIELD from '@salesforce/schema/copado__User_Story__c.copado__Org_Credential__c';
 
 export default class MarketingCloudCopadoDataTable extends LightningElement {
 
@@ -51,7 +45,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         try {
             if (currentPageReference) {
                 const userStoryId = currentPageReference.state.copado__recordId;
-                console.log(userStoryId);
+                console.log("userStoryId", userStoryId);
                 this.userStoryId = userStoryId;
             }
         } catch(err) {
@@ -64,36 +58,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             );
             console.error("There might be a problem with CurrentPageReference: ", currentPageReference)
         }   
-    }
-
-/*
-     // Holds current Record ID
-    @api recordId;
-    
-
-    // Use the Record ID to fetch the fields
-    @wire(getRecord, { recordId: '$recordId', fields: [USERSTORY_NAME_FIELD, ENVIRONMENT_FIELD, USERSTORY_ID_FIELD, CREDENTIAL_FIELD] })
-    userStory;
-
-    // getter functions to get field values
-    get userStoryName() {
-        return getFieldValue(this.userStory.data, USERSTORY_NAME_FIELD);
-    }
-
-    get userStoryId() {
-        return getFieldValue(this.userStory.data, USERSTORY_ID_FIELD);
-    }
-
-    get envId() {
-        return getFieldValue(this.userStory.data, ENVIRONMENT_FIELD);
-    }
-
-    get copadoOrgCredential() {
-        return getFieldValue(this.userStory.data, CREDENTIAL_FIELD);
-    }
-    */
-
-    
+    }    
 
     @wire(MessageContext)
     _context;
@@ -131,18 +96,16 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     isLoading = true;
     showTable = false;
     refreshButtonDisabled = true;
-    loadingMessage = "Starting Retrieve";
+    progressStatus = "Starting Retrieve";
 
     // Subscription related variables
     empSubscription = {};
     channelName = '/event/copado__MC_Result__e';
 
-    // ?
     _subscribeToMessageService() {
         subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => this._handleCommitPageCommunicationMessage(message));
     }
 
-    // ?
     async _handleCommitPageCommunicationMessage(message) {
         console.log('Async _handleCommitPageCommunicationMessage starts now');
         try {
@@ -172,12 +135,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         }
     }
 
-    // ?
     _handleRequestMessage() {
         console.log('_handleRequestMessage runs now');
-        //console.log("This is the recordId: ", this.recordId);
-        //console.log("This is the currentPageReference: ", currentPageReference);
-
         const selectedRows = this.template.querySelector('lightning-datatable').getSelectedRows();
         const selectedChanges = [];
         for (let i = 0; i < selectedRows.length; i++) {
@@ -196,8 +155,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                 }
             ) 
         }
-        
-        console.log('_handleRequestMessage started', selectedChanges);
+
         const payload = {
             type: 'changes',
             value: selectedChanges
@@ -205,7 +163,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         publishMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, payload);
     }
 
-    // ?
     async _handleChangesMessage(message) {
         console.log('_handleChangesMessage runs now');
         const metadatas = message.value;
@@ -241,13 +198,14 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         }
 
         // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
-        getMetadataFromEnvironment()
-        .then((result)=> {
-            const parsedData = JSON.parse(result);
-            this.data = parsedData;
-            this.visibleData = parsedData;
-        })
-        .catch((err) => {
+        try {
+            getMetadataFromEnvironment()
+            .then((result)=> {
+                const parsedResult = JSON.parse(result);
+                this.data = parsedResult;
+                this.visibleData = parsedResult;
+            })
+        } catch(err) {
             console.error('Error while fetching the Metadata from the Org: ', err);
             this.showToastEvent(
                 `${err.name}: An error occurred while getting the metadata from the environment`,
@@ -255,20 +213,16 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                 'error',
                 'sticky'
             );
-        })
-        .finally(() => {
+        } finally {
             this.loadingState(false);
-        })
+        }
     }
 
     // Function to get the newest Commitable Metadata, and save it in the environment
     retrieve() { 
-        console.log('retrieve starts now');
-        
-        console.log("Activate Loading State");
+
         // Activate Loading State
         this.loadingState(true);
-        console.log("Loading State set");
         
         //recordId = ((new URL(window.location.href)).searchParams.get("copado__recordId"));
         const userStoryId = this.userStoryId;
@@ -292,7 +246,13 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             console.log("This is the result ID: ", resultId)
             // The response tells whether the function has finished and was successful or not
             const messageCallback = function(response) {
-                if (response.data.payload.copado__IsFinished__c === true) {
+                const isFinished = response.data.payload.copado__IsFinished__c;
+                const isSuccess = response.data.payload.copado__IsSuccess__c;
+                const progressStatus = response.data.payload.copado__Progress_Status__c;
+
+                if (isFinished === false) {
+                    self.progressStatus = progressStatus;
+                } else if (isFinished === true) {
                     try {
                         unsubscribeEmp(self.empSubscription, response => {
                             console.log('unsubscribe() response: ', response);
@@ -307,16 +267,16 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                         );
                     }
                     
-                    if (response.data.payload.copado__IsSuccess__c === true) {
-                         getMetadataFromEnvironment()
-                        .then((result)=> {
-                            console.log('Metadata fetched from Environment: ', result);
-                            const parsedData = JSON.parse(result);
-                            self.data = parsedData;
-                            self.visibleData = parsedData;
-                             self.loadingState(false);
-                        })
-                        .catch((err) => {
+                    if (isSuccess === true) {
+                        try {
+                            getMetadataFromEnvironment()
+                            .then((result)=> {
+                                console.log('Metadata fetched from Environment: ', result);
+                                const parsedResult = JSON.parse(result);
+                                self.data = parsedResult;
+                                self.visibleData = parsedResult;
+                            })
+                        } catch(err) {
                             console.error('Error fetching the Metadata from File after the Retrievement: ', err);
                             self.showToastEvent(
                                 `${err.name}: Error fetching the Metadata from File after the Retrievement`,
@@ -324,9 +284,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                                 'error',
                                 'sticky'
                             );
-                            self.loadingState(false);
-                        });
-                    } else if (response.data.payload.copado__IsSuccess__c === false) {
+                        };
+                    } else if (isSuccess === false) {
                         console.log(
                             `Running The Retrieve Function Failed! 
                             Please Check the Result with the ID "${resultId}" 
@@ -341,27 +300,38 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                         );
                     }
                     self.loadingState(false);
-                } else if (response.data.payload.copado__IsFinished__c === false) {
-                    self.loadingMessage = response.data.payload.copado__Progress_Status__c;
                 }
             }
 
             // Invoke subscribe method of empApi. Pass reference to messageCallback
+            try {
             subscribeEmp(this.channelName, -1, messageCallback).then(response => {
                 // Response contains the subscription information on subscribe call
                 console.log('Subscribed to ', response.channel);
                 this.empSubscription = response;
             });
+            } catch(err) {
+                console.error('Error while subscribing to Emp API: ', err);
+                self.showToastEvent(
+                    `${err.name}: An error occurred while subscribing to Emp API`,
+                    `${err.message}`,
+                    'error',
+                    'sticky'
+                );
+            }
+            
         })
         .catch((err) => {
             console.error("Error while running Retrieve: ", err);
             this.showToastEvent(
-                'An error occurred during the execution of the retrieve',
-                'Check the console for more information.',
+                `${err.name}: An error occurred during the execution of the retrieve`,
+                `${err.message}`,
                 'error',
                 'sticky'
             );
             this.loadingState(false);
+
+            // if previously Rows have been selected, set them as selected again
             if(self.selectedRows.length > 0) {
                 self.selectedRows = selectedMetadata.map(({ k }) => k);
             }
