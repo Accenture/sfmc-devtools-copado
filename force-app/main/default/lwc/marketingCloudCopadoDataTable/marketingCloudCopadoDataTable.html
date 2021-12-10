@@ -14,7 +14,7 @@
 					<lightning-input type="search" name="search" label="Search" value={keyword} oncommit={handleSearch}>
 					</lightning-input>
 				</div>
-				<lightning-datatable key-field="key" columns={columns} data={visibleData} default-sort-direction={defaultSortDirection} sorted-direction={sortDirection} sorted-by={sortedBy}
+				<lightning-datatable key-field="k" columns={columns} data={visibleData} default-sort-direction={defaultSortDirection} sorted-direction={sortDirection} sorted-by={sortedBy}
 				onsort={onHandleSort} selected-rows={selectedRows}>
 				</lightning-datatable>
 			</div>

@@ -105,6 +105,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     // Static definition of the columns 
     columns = [
         {label: 'Name', fieldName: 'n', type: 'string', sortable: true},
+        {label: 'Key', fieldName: 'k', type: 'string', sortable: true},
         {label: 'Type', fieldName: 't', type: 'string', sortable: true},
         {label: 'Last Modified By ID', fieldName: 'lb', type: 'string', sortable: true},
         {label: 'Last Modified Date', fieldName: 'ld', type: 'date', sortable: true},
@@ -191,7 +192,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                     "cb": selectedRows[i].cb,
                     "ld": selectedRows[i].ld,
                     "lb": selectedRows[i].lb,
-                    "j": "{\"key\":\"" + selectedRows[i].key + "\"}"
+                    "j": "{\"key\":\"" + selectedRows[i].k + "\"}"
                 }
             ) 
         }
@@ -362,7 +363,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             );
             this.loadingState(false);
             if(self.selectedRows.length > 0) {
-                self.selectedRows = selectedMetadata.map(({ key }) => key);
+                self.selectedRows = selectedMetadata.map(({ k }) => k);
             }
          });
     }
@@ -426,7 +427,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       );
 
       // Set selected Rows
-      this.selectedRows = this.allSelectedRows.map(({ key }) => key);
+      this.selectedRows = this.allSelectedRows.map(({ k }) => k);
     }
 
     // General Handler for simple Inputs
