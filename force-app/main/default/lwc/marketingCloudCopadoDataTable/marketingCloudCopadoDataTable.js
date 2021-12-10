@@ -130,6 +130,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     isLoading = true;
     showTable = false;
     refreshButtonDisabled = true;
+    loadingMessage = "Starting Retrieve";
 
     // Subscription related variables
     empSubscription = {};
@@ -339,6 +340,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                         );
                     }
                     self.loadingState(false);
+                } else if (response.data.payload.copado__IsFinished__c === false) {
+                    self.loadingMessage = response.data.payload.copado__Progress_Status__c;
                 }
             }
 
