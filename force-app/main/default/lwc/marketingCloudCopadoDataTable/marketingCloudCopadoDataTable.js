@@ -118,7 +118,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                 // extension"
                 case 'retrievedChanges':
                 case 'pulledChanges':
-                    await this._handleChangesMessage(message);
+                    /* await this._handleChangesMessage(message); */
                     break;
                 default:
             }
@@ -163,12 +163,11 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         publishMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, payload);
     }
 
-    async _handleChangesMessage(message) {
+/*     async _handleChangesMessage(message) {
         console.log('_handleChangesMessage runs now');
         const metadatas = message.value;
         const metadataRows = prepareRows(this.recordId, metadatas, this.keyField);
-        await this._addMetadataRowsToTable(metadataRows);
-    }
+    } */
 
     // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
     // Get Metadata from environment, Deactivate the Loading State
@@ -242,17 +241,20 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         ExecuteRetrieveFromCopado({
             userStoryId
          })
-        .then((resultId) => {
-            console.log("This is the result ID: ", resultId)
+        .then((jobExecutionId) => {
+            /* TODO: Make sure to only return the correct result... */
+            console.log("This is the Job Execution ID: ", jobExecutionId)
             // The response tells whether the function has finished and was successful or not
             const messageCallback = function(response) {
                 const isFinished = response.data.payload.copado__IsFinished__c;
                 const isSuccess = response.data.payload.copado__IsSuccess__c;
                 const progressStatus = response.data.payload.copado__Progress_Status__c;
 
+                
                 if (isFinished === false) {
                     self.progressStatus = progressStatus;
                 } else if (isFinished === true) {
+
                     try {
                         unsubscribeEmp(self.empSubscription, response => {
                             console.log('unsubscribe() response: ', response);
@@ -288,12 +290,12 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                     } else if (isSuccess === false) {
                         console.log(
                             `Running The Retrieve Function Failed! 
-                            Please Check the Result with the ID "${resultId}" 
+                            Please Check the Job Execution with the ID "${jobExecutionId}" 
                             in the Execution History of the Retrieve Function.`
                         );
                         self.showToastEvent(
                             'Executing Retrieve failed!', 
-                            `Please Check the Result with the ID "${resultId}"
+                            `Please Check the Job Execution with the ID "${jobExecutionId}"
                             in the Execution History of the Copado Retrieve Function.`, 
                             'error', 
                             'sticky'

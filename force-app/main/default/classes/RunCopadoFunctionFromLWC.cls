@@ -47,7 +47,7 @@ public with sharing class RunCopadoFunctionFromLWC {
             throw new AuraHandledException(e.getMessage());
         }
     }
-    
+
     /**
      * This function calls the MC_Retrieve Copado Function and passes the parameters accordingly. 
      * This should retrieve the available Metadata, that is available for Commits, and save it to a file,
@@ -109,64 +109,21 @@ public with sharing class RunCopadoFunctionFromLWC {
                 throw new AuraHandledException(e.getMessage());
             }
 
-            String credentialName = 'Copado-MarkClDevOps';
-            String mcdevVersion = '3.0.3';
-            String clientId = 'uk9mnvcpt0q8aqwu8p8hs5oz';
-            String clientSecret = 'GlplqKwMcG84iS08oSkUWu2k';
-            String tenant= 'mct0l7nxfq2r988t1kxfy8sc47mq'; 
-
-            String gitJson = '{$Context.Repository.Credential}';
-
-            String parametersJSON;
-
-            try {
-                parametersJSON = '[{ "name" : "envId", "value" : "'+ envId + '"},{ "name" : "git_json", "value" : "' + gitJson + '"},{ "name" : "main_branch", "value" : "'+ mainBranch + '"},{ "name" : "mcdev_version", "value" : "'+ mcdevVersion + '"},{ "name" : "clientId", "value" : "'+ clientId + '"},{ "name" : "clientSecret", "value" : "'+ clientSecret + '"},{ "name" : "tenant", "value" : "'+ tenant + '"},{ "name" : "credentialName", "value" : "'+ credentialName + '"}]';
-            } catch (Exception e) {
-                throw new AuraHandledException(e.getMessage());
-            }
-
-            
-
-            String copadoFunctionApiName = 'MC_Retrieve';
-            //String contextId; // = 'a0h09000000eAZkAAM'; //temporary workaround
-            Boolean showValidationErrors = true;         
-            
-
-            /*
-            try {
-                List<copado__User_Story__c> UserStoryEnv = [
-                    SELECT copado__Environment__c 
-                    FROM copado__User_Story__c
-                    WHERE Id = :userStoryId
-                ];
-                envId = UserStoryEnv[0].copado__Environment__c;
-            } catch (Exception e) {
-                throw new AuraHandledException(e.getMessage());
-            }
-            */
-
-            
-
-            
-
-            
-            
-
             try {                
-                // Instaciate apex-copado__RunCopadoFunction.InvocableVariables to set the instance variables
-                copado.RunCopadoFunction.InvocableVariables invocableVariable = new copado.RunCopadoFunction.InvocableVariables();
+                String templateName = 'MC Retrieve Action_1';
 
-                invocableVariable.functionApiName = copadoFunctionApiName;
-                invocableVariable.contextId = repositoryId;
-                invocableVariable.showValidationErrors = showValidationErrors;
-                invocableVariable.parametersJSON = parametersJSON;
+                copado.CreateExecution.Request request = new copado.CreateExecution.Request();
+                request.parentId = userStoryId; 
+                request.templateName = templateName; 
+                request.pipelineId = pipelineId;
+                request.sourceId = envId; 
+                request.runAfterInstantiation = true; 
 
-                // Now invoke it as a list
-                List<String> result = copado.RunCopadoFunction.execute(new List<copado.RunCopadoFunction.InvocableVariables> { invocableVariable });
+                List<copado__JobExecution__c> jobExecution = copado.CreateExecution.execute(new List<copado.CreateExecution.Request>{ request });
+                
+                Id jobExecutionId = jobExecution[0].Id;
+                return jobExecutionId;
 
-                String resultId = result[0];
-
-                return resultId;
             } catch (Exception e) {
                 throw new AuraHandledException(e.getMessage());
             }
