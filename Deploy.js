@@ -24,7 +24,7 @@ const clientId          = process.env.clientId;
 const clientSecret      = process.env.clientSecret;
 const tenant            = process.env.tenant;
 
-const git_depth         = -100  
+const git_depth         = 100  
 	//set a default git depth of 100 commits
 const merge_strategy    = process.env.merge_strategy 
 	//set default merge strategy
