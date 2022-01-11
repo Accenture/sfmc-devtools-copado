@@ -16,11 +16,18 @@ const fromCommit        = 'promotion/' + process.env.promotion;
     //The source branch of a PR, typically something like 'feature/...'
 const toBranch          = process.env.toBranch;     
     //The target branch of a PR, like master. This commit will be lastly checked out
+const promotionBranch   = process.env.promotionBranch;     
+    //The promotion branch of a PR
 const mcdevVersion      = process.env.mcdev_version;
 const credentialName    = process.env.credentialName;
 const clientId          = process.env.clientId;
 const clientSecret      = process.env.clientSecret;
 const tenant            = process.env.tenant;
+
+const git_depth         = -100  
+	//set a default git depth of 100 commits
+const merge_strategy    = process.env.merge_strategy 
+	//set default merge strategy
 
 const authJson = `{
     "credentials": {
@@ -334,6 +341,34 @@ function push(toBranch) {
                 "Completed pushing branch");
 }
 
+/**
+ * Promote changes by merging into the promotion branch
+ * @param {*} toBranch 
+ * @param {*} promotionBranch 
+ */
+function promote(toBranch) {
+    //execCommand("Checking out the branch " + toBranch, 
+    //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch, 
+    //            "Completed cloning branch");
+    execCommand("Checking out the branch " + promotionBranch, 
+                "cd /tmp && copado-git-get --depth " + git_depth + ' ' + promotionBranch, 
+                "Completed cloning branch");
+
+    if ( merge_strategy ) {
+    	mergeOption = '-X ' + merge_strategy + ' '
+    }
+    else {
+    	mergeOption = ''
+    }    
+    execCommand("Merge commit " + toBranch, 
+                "cd /tmp && git merge " + mergeOption + "-m \"Auto merge " + toBranch + "\" \"" + toBranch + "\"",
+                "Completed merging");
+
+	execCommand("Push branch " + promotionBranch, 
+                "cd /tmp && git push origin \"" + promotionBranch + "\"",
+                "Completed pushing branch");
+}
+
 logDebug("")
 logDebug("Parameters")
 logDebug("==========")
@@ -403,6 +438,13 @@ if ( true == createDeltaPackage('/tmp/' + deployFolder) ) {
     logInfo("-----------------------")
     push(toBranch);
 }
+
+logInfo("")
+logInfo("Merge into promotion branch")
+logInfo("===========================")
+logInfo("")
+promote(toBranch, promotionBranch)
+
 logInfo("")
 logInfo("Finished")
 logInfo("========")
