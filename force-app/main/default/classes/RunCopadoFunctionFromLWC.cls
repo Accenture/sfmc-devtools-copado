@@ -110,7 +110,7 @@ public with sharing class RunCopadoFunctionFromLWC {
             }
 
             try {                
-                String templateName = 'MC Retrieve Action_1';
+                String templateName = 'MC_Retrieve';
 
                 copado.CreateExecution.Request request = new copado.CreateExecution.Request();
                 request.parentId = userStoryId; 
