@@ -1,6 +1,6 @@
 ---
 name: 🐞 Bug
-about: Suggest an idea for this project
+about: File a bug/issue
 title: "[BUG] <title>"
 labels: NEW, bug
 assignees: ''
