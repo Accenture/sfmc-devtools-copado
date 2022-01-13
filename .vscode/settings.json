@@ -3,5 +3,34 @@
     "**/node_modules": true,
     "**/bower_components": true,
     "**/.sfdx": true
-  }
+  },
+  "editor.codeActionsOnSave": {
+    "source.fixAll.eslint": true,
+    "source.fixAll.markdownlint": true
+},
+"editor.formatOnSave": true,
+"files.eol": "\n",
+"[javascript]": {
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+},
+"[json]": {
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
+},
+"breadcrumbs.showVariables": false,
+"breadcrumbs.showProperties": false,
+"githubIssues.issueBranchTitle": "bugfix/i${issueNumber}-${sanitizedIssueTitle}",
+"githubIssues.queries": [
+    {
+        "label": "My Issues",
+        "query": "default"
+    },
+    {
+        "label": "New Issues",
+        "query": "no:assignee state:open repo:${owner}/${repository} sort:created-desc"
+    },
+    {
+        "label": "Created By Me",
+        "query": "author:${user} state:open repo:${owner}/${repository} sort:created-desc"
+    }
+]
 }
