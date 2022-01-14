@@ -16,9 +16,11 @@
 "[json]": {
   "editor.defaultFormatter": "esbenp.prettier-vscode"
 },
+"outline.showProperties": false,
+"outline.showVariables": false,
 "breadcrumbs.showVariables": false,
 "breadcrumbs.showProperties": false,
-"githubIssues.issueBranchTitle": "bugfix/i${issueNumber}-${sanitizedIssueTitle}",
+"githubIssues.issueBranchTitle": "feature/${issueNumber}-${sanitizedIssueTitle}",
 "githubIssues.queries": [
     {
         "label": "My Issues",
