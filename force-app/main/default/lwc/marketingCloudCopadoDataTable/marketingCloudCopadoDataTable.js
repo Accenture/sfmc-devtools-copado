@@ -14,7 +14,7 @@
  */
 
 // LWC from the official component library
-import { LightningElement, api, wire } from "lwc";
+import { LightningElement, wire } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import {
   subscribe as subscribeEmp,
