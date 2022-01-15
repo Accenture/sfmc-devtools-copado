@@ -14,16 +14,33 @@ public with sharing class RunCopadoFunctionFromLWC {
      * @return      Returns the content of the file with the Metadata
      */
     @AuraEnabled
-    public static String getMetadataFromEnvironment() {
+    public static String getMetadataFromEnvironment(
+        String userStoryId
+    ) {
         try {
-            String data;
 
-            List<ContentDocumentLink> cDI = [
+            List<copado__User_Story__c> userStory;
+            Id envId;
+
+            try {
+                userStory = [
+                    SELECT copado__Environment__c, copado__Project__c 
+                    FROM copado__User_Story__c 
+                    WHERE Id = :userStoryId
+                ];
+                envId = userStory[0].copado__Environment__c;
+            } catch (Exception e) {
+                throw new AuraHandledException(e.getMessage());
+            }
+
+            List<ContentDocumentLink> cDI;
+            cDI = [
                 SELECT ContentDocumentId 
                 FROM ContentDocumentLink 
-                WHERE LinkedEntityId = 'a0V09000000rIkdEAE'
+                WHERE LinkedEntityId = :envId
             ];
 
+            String data;
             if(!cDI.isEmpty()) {
 
                 Integer lastIndexCDI = cDI.size() - 1;

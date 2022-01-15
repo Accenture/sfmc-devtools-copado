@@ -225,7 +225,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
     try {
-      getMetadataFromEnvironment().then((result) => {
+      getMetadataFromEnvironment(this.userStoryId).then((result) => {
         const parsedResult = JSON.parse(result);
         this.data = parsedResult;
         this.visibleData = parsedResult;
