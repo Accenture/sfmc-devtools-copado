@@ -426,9 +426,10 @@ class Metadata {
      * Build the metadata JSON for a automation component
      * @private
      * @param {string} filePath path to json
+     * @param {string} [action] pass in value do govern what to do
      * @returns {MetadataItem} one table row
      */
-    static _buildAutomationMetadataJson(filePath) {
+    static _buildAutomationMetadataJson(filePath, action) {
         // Load the file
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
@@ -441,6 +442,10 @@ class Metadata {
         // metadata['ld'] = parsed[''];
         // metadata['lb'] = parsed[''];
 
+        if (action) {
+            metadata.a = action;
+        }
+
         return metadata;
     }
 
@@ -448,9 +453,10 @@ class Metadata {
      * Build the metadata JSON for a data extension component
      * @private
      * @param {string} filePath path to json
+     * @param {string} [action] pass in value do govern what to do
      * @returns {MetadataItem} one table row
      */
-    static _buildDataExtensionMetadataJson(filePath) {
+    static _buildDataExtensionMetadataJson(filePath, action) {
         // Load the file
         const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
@@ -462,6 +468,10 @@ class Metadata {
         // metadata['cb'] = parsed[''];
         // metadata['ld'] = parsed[''];
         // metadata['lb'] = parsed[''];
+
+        if (action) {
+            metadata.a = action;
+        }
 
         return metadata;
     }
