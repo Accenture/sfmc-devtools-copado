@@ -11,30 +11,21 @@
  * @property {string} [lb] last modified by name
  */
 
-const readFileSync = require('fs').readFileSync;
-const readdirSync = require('fs').readdirSync;
-const existsSync = require('fs').existsSync;
-const writeFileSync = require('fs').writeFileSync;
-const statSync = require('fs').statSync;
-const rmSync = require('fs').rmSync;
-const basename = require('path').basename;
-const dirname = require('path').dirname;
-const join = require('path').join;
-
+const fs = require('fs');
+const path = require('path');
 const execSync = require('child_process').execSync;
 
 const CONFIG = {
-    mcdev: 'node ./node_modules/mcdev/lib/index.js',
-    debug: true,
-    configFilePath: '/tmp/.mcdevrc.json',
-    metadataFilePath: '/tmp/mcmetadata.json',
-
-    mainBranch: process.env.main_branch,
-    envId: process.env.envId,
-    mcdevVersion: process.env.mcdev_version,
-    credentialName: process.env.credentialName,
     clientId: process.env.clientId,
     clientSecret: process.env.clientSecret,
+    configFilePath: '/tmp/.mcdevrc.json',
+    credentialName: process.env.credentialName,
+    debug: true,
+    envId: process.env.envId,
+    mainBranch: process.env.main_branch,
+    mcdev: 'node ./node_modules/mcdev/lib/index.js',
+    mcdevVersion: process.env.mcdev_version,
+    metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
 };
 
@@ -213,7 +204,7 @@ class Util {
             }
         }`;
         Log.progress('Provide authentication');
-        writeFileSync('/tmp/.mcdev-auth.json', authJson);
+        fs.writeFileSync('/tmp/.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -228,19 +219,15 @@ class Util {
  */
 class Retrieve {
     /**
-     * constructor
-     */
-    constructor() {}
-    /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
      * TODO: replace by simply requiring the config file
      * @returns {string} retrieve folder
      */
     static getRetrieveFolder() {
-        if (!existsSync(CONFIG.configFilePath)) {
+        if (!fs.existsSync(CONFIG.configFilePath)) {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
-        const config = JSON.parse(readFileSync(CONFIG.configFilePath, 'utf8'));
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
         const directories = config['directories'];
         if (null == directories) {
             throw new Error('Could not find directories in ' + CONFIG.configFilePath);
@@ -261,10 +248,10 @@ class Retrieve {
      * @returns {string} BU
      */
     static getSourceBU() {
-        if (!existsSync(CONFIG.configFilePath)) {
+        if (!fs.existsSync(CONFIG.configFilePath)) {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
-        const config = JSON.parse(readFileSync(CONFIG.configFilePath, 'utf8'));
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
         const options = config['options'];
         if (null == options) {
             throw new Error('Could not find options in ' + CONFIG.configFilePath);
@@ -330,18 +317,20 @@ class Retrieve {
      * The retrieve folder is deleted before retrieving to make
      * sure we have only components that really exist in the BU.
      * TODO: replace execCommand with call to required mcdev
-     * @param {string} retrieveFolder place where mcdev will download to
      * @param {string} sourceBU specific subfolder for downloads
+     * @param {string} [retrieveFolder] place where mcdev will download to
      * @returns {void}
      */
-    static retrieveComponents(retrieveFolder, sourceBU) {
-        const retrievePath = join('/tmp', retrieveFolder, sourceBU);
-        let retrievePathFixed = retrievePath;
-        if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-            retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+    static retrieveComponents(sourceBU, retrieveFolder) {
+        if (retrieveFolder) {
+            const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+            let retrievePathFixed = retrievePath;
+            if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
+                retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+            }
+            Log.info('Delete retrieve folder ' + retrievePathFixed);
+            fs.rmSync(retrievePathFixed, { recursive: true, force: true });
         }
-        Log.info('Delete retrieve folder ' + retrievePathFixed);
-        rmSync(retrievePathFixed, { recursive: true, force: true });
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
             'Retrieve components from ' + sourceBU,
@@ -365,7 +354,7 @@ class Metadata {
      * @returns {void}
      */
     static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
-        const retrievePath = join('/tmp', retrieveFolder, sourceBU);
+        const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
         let retrievePathFixed = retrievePath;
         if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
             retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
@@ -377,7 +366,7 @@ class Metadata {
         Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
-        writeFileSync(metadataFilePath, metadataString);
+        fs.writeFileSync(metadataFilePath, metadataString);
     }
 
     /**
@@ -392,13 +381,13 @@ class Metadata {
      */
     static _buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
         // Handle files within the current directory
-        const filesAndFolders = readdirSync(retrieveFolder).map((entry) =>
-            join(retrieveFolder, entry)
-        );
+        const filesAndFolders = fs
+            .readdirSync(retrieveFolder)
+            .map((entry) => path.join(retrieveFolder, entry));
         filesAndFolders.forEach(function (filePath) {
-            if (statSync(filePath).isFile()) {
-                const dirName = dirname(filePath);
-                const componentType = basename(dirName);
+            if (fs.statSync(filePath).isFile()) {
+                const dirName = path.dirname(filePath);
+                const componentType = path.basename(dirName);
 
                 let componentJson;
                 switch (componentType) {
@@ -427,7 +416,7 @@ class Metadata {
 
         // Get folders within the current directory
         filesAndFolders.forEach(function (folderPath) {
-            if (statSync(folderPath).isDirectory()) {
+            if (fs.statSync(folderPath).isDirectory()) {
                 Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
             }
         });
@@ -441,7 +430,7 @@ class Metadata {
      */
     static _buildAutomationMetadataJson(filePath) {
         // Load the file
-        const parsed = JSON.parse(readFileSync(filePath, 'utf8'));
+        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
         const metadata = {};
         metadata['n'] = parsed['name'] ? parsed['name'] : parsed['key'];
@@ -463,7 +452,7 @@ class Metadata {
      */
     static _buildDataExtensionMetadataJson(filePath) {
         // Load the file
-        const parsed = JSON.parse(readFileSync(filePath, 'utf8'));
+        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
         const metadata = {};
         metadata['n'] = parsed['Name'] ? parsed['Name'] : parsed['CustomerKey'];
@@ -476,6 +465,12 @@ class Metadata {
 
         return metadata;
     }
+}
+
+/**
+ * methods to handle interaction with the copado platform
+ */
+class Copado {
     /**
      * Finally, attach the resulting metadata JSON.
      * @param {string} metadataFilePath where we stored the temporary json file
@@ -541,7 +536,7 @@ Log.info('');
 Log.info('Retrieve components');
 Log.info('===================');
 Log.info('');
-Retrieve.retrieveComponents(retrieveFolder, sourceBU);
+Retrieve.retrieveComponents(sourceBU, retrieveFolder);
 
 Log.info('');
 Log.info('Build metadata JSON');
@@ -553,4 +548,4 @@ Log.info('');
 Log.info('Attach JSON');
 Log.info('===========');
 Log.info('');
-Metadata.attachJson(CONFIG.metadataFilePath);
+Copado.attachJson(CONFIG.metadataFilePath);
