@@ -16,6 +16,7 @@ const path = require('path');
 const execSync = require('child_process').execSync;
 
 const CONFIG = {
+    // generic
     clientId: process.env.clientId,
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
@@ -27,6 +28,18 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
+    // commit
+    commitMessage: null,
+    featureBranch: null,
+    metadataFile: null,
+    metadataFileName: null,
+    // deploy
+    deltaPackageLog: null,
+    fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
+    git_depth: null, // set a default git depth of 100 commits
+    merge_strategy: null, // set default merge strategy
+    promotionBranch: null, // The promotion branch of a PR
+    toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -138,29 +151,6 @@ class Util {
         }
 
         return exitCode;
-    }
-
-    /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
-     * @returns {void}
-     */
-    static checkoutSrc(mainBranch, featureBranch) {
-        Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            'cd /tmp && copado-git-get "' + mainBranch + '"',
-            'Completed cloning/checking out main branch'
-        );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
-                'Completed creating/checking out feature branch'
-            );
-        }
     }
 
     /**
@@ -497,6 +487,29 @@ class Copado {
             'Completed attaching JSON'
         );
     }
+
+    /**
+     * Checks out the source repository.
+     * if a feature branch is available creates
+     * the feature branch based on the main branch.
+     * @param {string} mainBranch ?
+     * @param {string} featureBranch can be null/undefined
+     * @returns {void}
+     */
+    static checkoutSrc(mainBranch, featureBranch) {
+        Util.execCommand(
+            'Cloning and checking out the main branch ' + mainBranch,
+            'cd /tmp && copado-git-get "' + mainBranch + '"',
+            'Completed cloning/checking out main branch'
+        );
+        if (featureBranch) {
+            Util.execCommand(
+                'Creating resp. checking out the feature branch ' + featureBranch,
+                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
+                'Completed creating/checking out feature branch'
+            );
+        }
+    }
 }
 
 Log.debug('');
@@ -516,7 +529,7 @@ Log.info('');
 Log.info('Clone repository');
 Log.info('================');
 Log.info('');
-Util.checkoutSrc(CONFIG.mainBranch);
+Copado.checkoutSrc(CONFIG.mainBranch);
 
 Log.info('');
 Log.info('Preparing');

@@ -16,6 +16,7 @@ const path = require('path');
 const execSync = require('child_process').execSync;
 
 const CONFIG = {
+    // generic
     clientId: process.env.clientId,
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
@@ -27,11 +28,19 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
+    // commit
+    commitMessage: process.env.commit_message,
+    featureBranch: process.env.feature_branch,
+    metadataFile: process.env.metadata_file, // TODO: check if this duplicates CONFIG.metadataFilePath
+    metadataFileName: 'Copado Commit changes.json',
+    // deploy
+    deltaPackageLog: null,
+    fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
+    git_depth: null, // set a default git depth of 100 commits
+    merge_strategy: null, // set default merge strategy
+    promotionBranch: null, // The promotion branch of a PR
+    toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
-CONFIG.commitMessage = process.env.commit_message;
-CONFIG.featureBranch = process.env.feature_branch;
-CONFIG.metadataFile = process.env.metadata_file; // TODO: check if this duplicates CONFIG.metadataFilePath
-CONFIG.metadataFileName = 'Copado Commit changes.json';
 
 /**
  * logger class
@@ -142,29 +151,6 @@ class Util {
         }
 
         return exitCode;
-    }
-
-    /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
-     * @returns {void}
-     */
-    static checkoutSrc(mainBranch, featureBranch) {
-        Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            'cd /tmp && copado-git-get "' + mainBranch + '"',
-            'Completed cloning/checking out main branch'
-        );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
-                'Completed creating/checking out feature branch'
-            );
-        }
     }
 
     /**
@@ -503,6 +489,67 @@ class Copado {
     }
 
     /**
+     * Checks out the source repository.
+     * if a feature branch is available creates
+     * the feature branch based on the main branch.
+     * @param {string} mainBranch ?
+     * @param {string} featureBranch can be null/undefined
+     * @returns {void}
+     */
+    static checkoutSrc(mainBranch, featureBranch) {
+        Util.execCommand(
+            'Cloning and checking out the main branch ' + mainBranch,
+            'cd /tmp && copado-git-get "' + mainBranch + '"',
+            'Completed cloning/checking out main branch'
+        );
+        if (featureBranch) {
+            Util.execCommand(
+                'Creating resp. checking out the feature branch ' + featureBranch,
+                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
+                'Completed creating/checking out feature branch'
+            );
+        }
+    }
+    /**
+     * Checks out the source repository and branch
+     * @param {string} fromCommit commit id to merge
+     * @param {string} toBranch branch name to merge into
+     * @returns {void}
+     */
+    static checkoutSrcDeploy(fromCommit, toBranch) {
+        // First make sure that the from branch is available
+        Util.execCommand(
+            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
+            'cd /tmp && copado-git-get -d . ' + fromCommit,
+            'Completed cloning commit/branch'
+        );
+
+        // Now checkout the target branch.
+        // That branch/commit that contains changed files should be checked out.
+        // When working with PRs, this is the target branch, after the source branch
+        // has been merged into this branch. So basically the version range to deploy
+        // is HEAD^..HEAD.
+        Util.execCommand(
+            'Cloning resp. checking out the repository branch ' + toBranch,
+            'cd /tmp && copado-git-get -d . ' + toBranch,
+            'Completed cloning branch'
+        );
+    }
+    /**
+     * Merge from branch into target branch
+     * @param {string} fromCommit commit id to merge
+     * @returns {void}
+     */
+    static merge(fromCommit) {
+        // Merge and commit changes.
+        Util.execCommand(
+            'Merge commit ' + fromCommit,
+            'cd /tmp && git merge "' + fromCommit + '"',
+            'Completed merging commit'
+        );
+    }
+
+    /**
      * After components have been retrieved,
      * adds selected components to the Git history.
      * @param {string} retrieveFolder path from mcdev config
@@ -634,7 +681,7 @@ Log.info('');
 Log.info('Clone repository');
 Log.info('================');
 Log.info('');
-Util.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
+Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
 
 Log.info('');
 Log.info('Preparing');
