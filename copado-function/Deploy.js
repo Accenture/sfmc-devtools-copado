@@ -525,7 +525,7 @@ if (true == Deploy.createDeltaPackage('/tmp/' + deployFolder)) {
     Log.info('Deploy BUs');
     Log.info('----------');
     let exitCode = 0;
-    bus.forEach(function (bu) {
+    bus.forEach((bu) => {
         const ec = Deploy.deployBU(bu);
         if (0 != ec) {
             if (0 == exitCode) {

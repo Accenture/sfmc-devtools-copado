@@ -374,7 +374,7 @@ class Metadata {
         const filesAndFolders = fs
             .readdirSync(retrieveFolder)
             .map((entry) => path.join(retrieveFolder, entry));
-        filesAndFolders.forEach(function (filePath) {
+        filesAndFolders.forEach((filePath) => {
             if (fs.statSync(filePath).isFile()) {
                 const dirName = path.dirname(filePath);
                 const componentType = path.basename(dirName);
@@ -405,7 +405,7 @@ class Metadata {
         });
 
         // Get folders within the current directory
-        filesAndFolders.forEach(function (folderPath) {
+        filesAndFolders.forEach((folderPath) => {
             if (fs.statSync(folderPath).isDirectory()) {
                 Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
             }
