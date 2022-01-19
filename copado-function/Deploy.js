@@ -1,9 +1,5 @@
 #!/usr/bin/env node
 
-// const readFileSync = require('fs').readFileSync;
-// const readdirSync = require('fs').readdirSync;
-// const existsSync = require('fs').existsSync;
-// const writeFileSync = require('fs').writeFileSync;
 const fs = require('fs');
 const execSync = require('child_process').execSync;
 
@@ -478,6 +474,7 @@ class Copado {
     }
 }
 
+Log.info('Deploy.js started');
 Log.debug('');
 Log.debug('Parameters');
 Log.debug('==========');
@@ -555,3 +552,4 @@ Log.info('');
 Log.info('Finished');
 Log.info('========');
 Log.info('');
+Log.info('Deploy.js done');

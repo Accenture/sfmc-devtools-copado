@@ -662,6 +662,7 @@ class Copado {
     }
 }
 
+Log.info('Commit.js started');
 Log.debug('');
 Log.debug('Parameters');
 Log.debug('==========');
@@ -753,3 +754,8 @@ Log.info('Commit and push');
 Log.info('===============');
 Log.info('');
 Copado.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+Log.info('');
+Log.info('Finished');
+Log.info('========');
+Log.info('');
+Log.info('Commit.js done');

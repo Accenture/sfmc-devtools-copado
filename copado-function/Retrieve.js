@@ -512,6 +512,7 @@ class Copado {
     }
 }
 
+Log.info('Retrieve.js started');
 Log.debug('');
 Log.debug('Parameters');
 Log.debug('==========');
@@ -572,3 +573,8 @@ Log.info('Attach JSON');
 Log.info('===========');
 Log.info('');
 Copado.attachJson(CONFIG.metadataFilePath);
+Log.info('');
+Log.info('Finished');
+Log.info('========');
+Log.info('');
+Log.info('Retrieve.js done');
