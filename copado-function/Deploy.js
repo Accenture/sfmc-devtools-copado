@@ -11,6 +11,7 @@ const CONFIG = {
     credentialName: process.env.credentialName,
     debug: true,
     envId: null,
+    enterpriseId: process.env.enterprise_id,
     mainBranch: null,
     mcdev: 'node ./node_modules/mcdev/lib/index.js',
     mcdevVersion: process.env.mcdev_version,
@@ -169,15 +170,13 @@ class Util {
      * @returns {void}
      */
     static initProject() {
-        // ! UPDATE NEEDED
-        // TODO make eid configurable!!!
         const authJson = `{
             "credentials": {
                 "${CONFIG.credentialName}": {
                     "clientId": "${CONFIG.clientId}",
                     "clientSecret": "${CONFIG.clientSecret}",
                     "tenant": "${CONFIG.tenant}",
-                    "eid": "7281698"
+                    "eid": "${CONFIG.enterpriseId}"
                 }
             }
         }`;
