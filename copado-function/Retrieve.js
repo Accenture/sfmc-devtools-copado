@@ -122,13 +122,16 @@ class Util {
     /**
      * Execute command
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {void}
      */
     static execCommand(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
+        }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
         }
         Log.debug(command);
 
@@ -185,17 +188,28 @@ class Util {
     static provideMCDevTools() {
         Util.execCommand(
             'Initializing npm',
-            'cd /tmp && npm init -y',
+            ['cd /tmp', 'npm init -y'],
             'Completed initializing NPM'
         );
+        let installer;
+        if (CONFIG.mcdevVersion.charAt(0) === '#') {
+            // assume branch of mcdev's git repo shall be loaded
 
+            installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
+        } else if (!CONFIG.mcdevVersion) {
+            Log.error('Please specify mcdev_version in pipeline & environment settings');
+            throw new Error();
+        } else {
+            // default, install via npm at specified version
+            installer = `mcdev@${CONFIG.mcdevVersion}`;
+        }
         Util.execCommand(
             'Initializing MC Dev Tools version ' + CONFIG.mcdevVersion,
-            'cd /tmp && npm install --save mcdev@' +
-                CONFIG.mcdevVersion +
-                ' --foreground-scripts && ' +
-                CONFIG.mcdev +
-                ' --version',
+            [
+                'cd /tmp',
+                `npm install --save ${installer} --foreground-scripts`,
+                CONFIG.mcdev + ' --version',
+            ],
             'Completed installing MC Dev Tools'
         );
     }
