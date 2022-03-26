@@ -486,6 +486,18 @@ class Copado {
             'Completed attaching JSON'
         );
     }
+    /**
+     * Finally, attach the resulting metadata JSON.
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachLog(metadataFilePath) {
+        Util.execCommand(
+            'Attach Custom Log ' + metadataFilePath,
+            `copado --uploadfile "${metadataFilePath}"`,
+            'Completed attaching JSON'
+        );
+    }
 
     /**
      * Checks out the source repository.
@@ -509,6 +521,18 @@ class Copado {
             );
         }
     }
+
+    /**
+     * to be executed at the very end
+     * @returns {void}
+     */
+    static uploadToolLogs() {
+        Log.debug('mcdev logs:');
+        fs.readdirSync('/tmp/logs').forEach((file) => {
+            Log.debug('- ' + file);
+            Copado.attachLog('/tmp/logs/' + file);
+        });
+    }
 }
 
 Log.info('Retrieve.js started');
@@ -525,55 +549,82 @@ Log.debug(`credentialName    = ${CONFIG.credentialName}`);
 // Log.debug(`clientSecret      = ${clientSecret}`);
 // Log.debug(`tenant            = ${tenant}`);
 
-Log.info('');
-Log.info('Clone repository');
-Log.info('================');
-Log.info('');
-Copado.checkoutSrc(CONFIG.mainBranch);
+try {
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('================');
+    Log.info('');
+    Copado.checkoutSrc(CONFIG.mainBranch);
+} catch (error) {
+    Log.error('Cloning failed:' + error.message);
+}
 
-Log.info('');
-Log.info('Preparing');
-Log.info('=========');
-Log.info('');
-Util.provideMCDevTools();
+try {
+    Log.info('');
+    Log.info('Preparing');
+    Log.info('=========');
+    Log.info('');
+    Util.provideMCDevTools();
 
-Log.info('');
-Log.info('Initialize project');
-Log.info('==================');
-Log.info('');
-Util.initProject();
+    Log.info('');
+    Log.info('Initialize project');
+    Log.info('==================');
+    Log.info('');
+    Util.initProject();
+} catch (error) {
+    Log.error('initializing failed:' + error.message);
+}
+let retrieveFolder;
+let sourceBU;
+try {
+    Log.info('');
+    Log.info('Determine retrieve folder');
+    Log.info('=========================');
+    Log.info('');
+    retrieveFolder = Retrieve.getRetrieveFolder();
 
-Log.info('');
-Log.info('Determine retrieve folder');
-Log.info('=========================');
-Log.info('');
-const retrieveFolder = Retrieve.getRetrieveFolder();
+    Log.info('');
+    Log.info('Get source BU');
+    Log.info('=============');
+    Log.info('');
+    sourceBU = Retrieve.getSourceBU();
 
-Log.info('');
-Log.info('Get source BU');
-Log.info('=============');
-Log.info('');
-const sourceBU = Retrieve.getSourceBU();
+    Log.info('');
+    Log.info('Retrieve components');
+    Log.info('===================');
+    Log.info('');
+    Retrieve.retrieveComponents(sourceBU, retrieveFolder);
+} catch (error) {
+    Log.error('Retrieving failed:' + error.message);
+}
 
-Log.info('');
-Log.info('Retrieve components');
-Log.info('===================');
-Log.info('');
-Retrieve.retrieveComponents(sourceBU, retrieveFolder);
-
-Log.info('');
-Log.info('Build metadata JSON');
-Log.info('===================');
-Log.info('');
-Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
-
-Log.info('');
-Log.info('Attach JSON');
-Log.info('===========');
-Log.info('');
-Copado.attachJson(CONFIG.metadataFilePath);
+try {
+    Log.info('');
+    Log.info('Build metadata JSON');
+    Log.info('===================');
+    Log.info('');
+    Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
+} catch (error) {
+    Log.error('Creating Metadata file failed:' + error.message);
+}
+try {
+    Log.info('');
+    Log.info('Attach JSON');
+    Log.info('===========');
+    Log.info('');
+    Copado.attachJson(CONFIG.metadataFilePath);
+} catch (error) {
+    Log.error('Attaching JSON file failed:' + error.message);
+}
 Log.info('');
 Log.info('Finished');
 Log.info('========');
 Log.info('');
 Log.info('Retrieve.js done');
+
+try {
+    Log.info('attaching logs');
+    Copado.uploadToolLogs();
+} catch (error) {
+    Log.error('attaching mcdev logs failed:' + error.message);
+}
