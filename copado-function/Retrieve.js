@@ -21,7 +21,7 @@ const CONFIG = {
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
     credentialName: process.env.credentialName,
-    debug: true,
+    debug: true, // TODO: needs to be moved into pipeline config!
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
@@ -650,4 +650,8 @@ try {
     Copado.uploadToolLogs();
 } catch (error) {
     Log.error('attaching mcdev logs failed:' + error.message);
+}
+
+if (CONFIG.debug) {
+    throw new Error('dont finish me');
 }
