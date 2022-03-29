@@ -238,6 +238,17 @@ class Util {
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
     }
+
+    /**
+     *
+     * @param {number} sec seconds to pause execution for
+     * @returns {Promise} -
+     */
+    static sleep(sec) {
+        return new Promise((resolve) => {
+            setTimeout(resolve, sec * 1000);
+        });
+    }
 }
 
 /**
@@ -563,12 +574,23 @@ class Copado {
      * to be executed at the very end
      * @returns {void}
      */
-    static uploadToolLogs() {
-        Log.debug('mcdev logs:');
-        fs.readdirSync('/tmp/logs').forEach((file) => {
-            Log.debug('- ' + file);
-            Copado.attachLog('/tmp/logs/' + file);
-        });
+    static async uploadToolLogs() {
+        Log.progress('Waiting for mcdev logs to be written');
+        await Util.sleep(30);
+        Log.progress('Getting mcdev logs');
+
+        try {
+            fs.readdirSync('/tmp/logs').forEach((file) => {
+                Log.debug('- ' + file);
+                Copado.attachLog('/tmp/logs/' + file);
+            });
+            Log.progress('Attached mcdev logs');
+        } catch (error) {
+            Log.info('attaching mcdev logs failed:' + error.message);
+        }
+        if (CONFIG.debug) {
+            throw new Error('dont finish the job during debugging');
+        }
     }
 }
 
@@ -632,7 +654,7 @@ try {
     Log.info('');
     Retrieve.retrieveComponents(sourceBU, retrieveFolder);
 } catch (error) {
-    Log.error('Retrieving failed:' + error.message);
+    Log.info('Retrieving failed:' + error.message);
 }
 
 try {
@@ -642,7 +664,7 @@ try {
     Log.info('');
     Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
 } catch (error) {
-    Log.error('Creating Metadata file failed:' + error.message);
+    Log.info('Creating Metadata file failed:' + error.message);
 }
 try {
     Log.info('');
@@ -651,7 +673,7 @@ try {
     Log.info('');
     Copado.attachJson(CONFIG.metadataFilePath);
 } catch (error) {
-    Log.error('Attaching JSON file failed:' + error.message);
+    Log.info('Attaching JSON file failed:' + error.message);
 }
 Log.info('');
 Log.info('Finished');
@@ -659,13 +681,5 @@ Log.info('========');
 Log.info('');
 Log.info('Retrieve.js done');
 
-try {
-    Log.info('attaching logs');
-    Copado.uploadToolLogs();
-} catch (error) {
-    Log.error('attaching mcdev logs failed:' + error.message);
-}
-
-if (CONFIG.debug) {
-    throw new Error('dont finish me');
-}
+Log.info('attaching logs');
+Copado.uploadToolLogs();
