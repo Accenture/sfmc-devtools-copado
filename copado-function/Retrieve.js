@@ -204,7 +204,7 @@ class Util {
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
         Util.execCommand(
-            'Initializing MC Dev Tools version ' + CONFIG.mcdevVersion,
+            `Initializing SFMC DevTools (${installer})`,
             [
                 'cd /tmp',
                 `npm install --save ${installer} --foreground-scripts`,
