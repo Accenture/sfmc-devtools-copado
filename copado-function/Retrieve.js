@@ -46,6 +46,104 @@ const CONFIG = {
 };
 
 /**
+ * main method that combines runs this function
+ * @returns {void}
+ */
+function run() {
+    Log.info('Retrieve.js started');
+    Log.debug('');
+    Log.debug('Parameters');
+    Log.debug('==========');
+    Log.debug(CONFIG);
+
+    try {
+        Log.info('');
+        Log.info('Clone repository');
+        Log.info('================');
+        Log.info('');
+        Copado.checkoutSrc(CONFIG.mainBranch);
+    } catch (ex) {
+        Log.error('Cloning failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('=========');
+        Log.info('');
+        Util.provideMCDevTools();
+
+        Log.info('');
+        Log.info('Initialize project');
+        Log.info('==================');
+        Log.info('');
+        Util.initProject();
+    } catch (ex) {
+        Log.error('initializing failed:' + ex.message);
+        throw ex;
+    }
+    let retrieveFolder;
+    let sourceBU;
+    try {
+        Log.info('');
+        Log.info('Determine retrieve folder');
+        Log.info('=========================');
+        Log.info('');
+        retrieveFolder = Retrieve.getRetrieveFolder();
+
+        Log.info('');
+        Log.info('Get source BU');
+        Log.info('=============');
+        Log.info('');
+        sourceBU = Retrieve.getSourceBU();
+
+        Log.info('');
+        Log.info('Retrieve components');
+        Log.info('===================');
+        Log.info('');
+        Retrieve.retrieveComponents(sourceBU, retrieveFolder);
+    } catch (ex) {
+        Log.info('Retrieving failed:' + ex.message);
+        Copado.uploadToolLogs();
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Build metadata JSON');
+        Log.info('===================');
+        Log.info('');
+        Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
+    } catch (ex) {
+        Log.info('Creating Metadata file failed:' + ex.message);
+        throw ex;
+    }
+    try {
+        Log.info('');
+        Log.info('Attach JSON');
+        Log.info('===========');
+        Log.info('');
+        Copado.attachJson(CONFIG.metadataFilePath);
+    } catch (ex) {
+        Log.info('Attaching JSON file failed:' + ex.message);
+        throw ex;
+    }
+    Log.info('');
+    Log.info('Finished');
+    Log.info('========');
+    Log.info('');
+    Log.info('Retrieve.js done');
+
+    Copado.uploadToolLogs();
+
+    if (CONFIG.debug) {
+        Log.error('dont finish the job during debugging');
+        throw new Error();
+    }
+}
+
+/**
  * logger class
  */
 class Log {
@@ -580,99 +678,7 @@ class Copado {
         } catch (error) {
             Log.info('attaching mcdev logs failed:' + error.message);
         }
-        if (CONFIG.debug) {
-            Log.error('dont finish the job during debugging');
-            throw new Error();
-        }
     }
 }
 
-Log.info('Retrieve.js started');
-Log.debug('');
-Log.debug('Parameters');
-Log.debug('==========');
-Log.debug('');
-Log.debug(`mainBranch        = ${CONFIG.mainBranch}`);
-Log.debug(`envId             = ${CONFIG.envId}`);
-Log.debug('');
-Log.debug(`mcdevVersion      = ${CONFIG.mcdevVersion}`);
-Log.debug(`credentialName    = ${CONFIG.credentialName}`);
-// Log.debug(`clientId          = ${clientId}`);
-// Log.debug(`clientSecret      = ${clientSecret}`);
-// Log.debug(`tenant            = ${tenant}`);
-
-try {
-    Log.info('');
-    Log.info('Clone repository');
-    Log.info('================');
-    Log.info('');
-    Copado.checkoutSrc(CONFIG.mainBranch);
-} catch (error) {
-    Log.error('Cloning failed:' + error.message);
-}
-
-try {
-    Log.info('');
-    Log.info('Preparing');
-    Log.info('=========');
-    Log.info('');
-    Util.provideMCDevTools();
-
-    Log.info('');
-    Log.info('Initialize project');
-    Log.info('==================');
-    Log.info('');
-    Util.initProject();
-} catch (error) {
-    Log.error('initializing failed:' + error.message);
-}
-let retrieveFolder;
-let sourceBU;
-try {
-    Log.info('');
-    Log.info('Determine retrieve folder');
-    Log.info('=========================');
-    Log.info('');
-    retrieveFolder = Retrieve.getRetrieveFolder();
-
-    Log.info('');
-    Log.info('Get source BU');
-    Log.info('=============');
-    Log.info('');
-    sourceBU = Retrieve.getSourceBU();
-
-    Log.info('');
-    Log.info('Retrieve components');
-    Log.info('===================');
-    Log.info('');
-    Retrieve.retrieveComponents(sourceBU, retrieveFolder);
-} catch (error) {
-    Log.info('Retrieving failed:' + error.message);
-}
-
-try {
-    Log.info('');
-    Log.info('Build metadata JSON');
-    Log.info('===================');
-    Log.info('');
-    Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
-} catch (error) {
-    Log.info('Creating Metadata file failed:' + error.message);
-}
-try {
-    Log.info('');
-    Log.info('Attach JSON');
-    Log.info('===========');
-    Log.info('');
-    Copado.attachJson(CONFIG.metadataFilePath);
-} catch (error) {
-    Log.info('Attaching JSON file failed:' + error.message);
-}
-Log.info('');
-Log.info('Finished');
-Log.info('========');
-Log.info('');
-Log.info('Retrieve.js done');
-
-Log.info('attaching logs');
-Copado.uploadToolLogs();
+run();
