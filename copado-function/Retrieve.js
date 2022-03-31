@@ -59,7 +59,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate() + msg);
+            console.log(Log._getFormattedDate(), msg);
         }
     }
     /**
@@ -67,14 +67,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate() + msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate() + msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
@@ -99,19 +99,20 @@ class Log {
     static _getFormattedDate() {
         const date = new Date();
 
-        let month = date.getMonth() + 1;
-        let day = date.getDate();
+        // let month = date.getMonth() + 1;
+        // let day = date.getDate();
         let hour = date.getHours();
         let min = date.getMinutes();
         let sec = date.getSeconds();
 
-        month = (month < 10 ? '0' : '') + month;
-        day = (day < 10 ? '0' : '') + day;
+        // month = (month < 10 ? '0' : '') + month;
+        // day = (day < 10 ? '0' : '') + day;
         hour = (hour < 10 ? '0' : '') + hour;
         min = (min < 10 ? '0' : '') + min;
         sec = (sec < 10 ? '0' : '') + sec;
 
-        const str = `(${date.getFullYear()}-${month}-${day}_${hour}:${min}:${sec}) `;
+        // const str = `(${date.getFullYear()}-${month}-${day} ${hour}:${min}:${sec}) `;
+        const str = `(${hour}:${min}:${sec}) `;
 
         return str;
     }
