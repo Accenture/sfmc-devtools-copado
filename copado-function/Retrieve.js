@@ -25,7 +25,9 @@ const CONFIG = {
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
-    mcdev: 'node ./node_modules/mcdev/lib/index.js',
+    mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
+        ? 'node ./node_modules/mcdev/lib/index.js'
+        : 'node ./node_modules/mcdev/lib/cli.js',
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
@@ -208,10 +210,13 @@ class Util {
             [
                 'cd /tmp',
                 `npm install --save ${installer} --foreground-scripts`,
-                CONFIG.mcdev + ' --version',
+                CONFIG.mcdev_exec + ' --version',
             ],
             'Completed installing MC Dev Tools'
         );
+        mcdev = require('mcdev');
+        const Definition = require('mcdev/MetadataTypeDefinitions');
+        const MetadataType = require('mcdev/MetadataTypeInfo');
     }
 
     /**
@@ -371,7 +376,7 @@ class Retrieve {
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
             'Retrieve components from ' + sourceBU,
-            'cd /tmp && ' + CONFIG.mcdev + ' retrieve ' + sourceBU + ' --skipInteraction',
+            'cd /tmp && ' + CONFIG.mcdev_exec + ' retrieve ' + sourceBU + ' --skipInteraction',
             'Completed retrieving components'
         );
     }
