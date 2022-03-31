@@ -491,7 +491,6 @@ class Metadata {
          */
         const metadataJson = [];
         Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-        Log.info('Found items:' + metadataJson.length);
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
@@ -512,6 +511,7 @@ class Metadata {
         const filesAndFolders = fs
             .readdirSync(retrieveFolder)
             .map((entry) => path.join(retrieveFolder, entry));
+        let skipped = 0;
         filesAndFolders.forEach((filePath) => {
             if (fs.statSync(filePath).isFile()) {
                 const dirName = path.dirname(filePath);
@@ -535,12 +535,16 @@ class Metadata {
                                 componentType +
                                 ' is not supported'
                         );
+                        skipped++;
+                        return;
                 }
 
                 // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
                 metadataJson.push(componentJson);
             }
         });
+        Log.info('Good items:' + metadataJson.length);
+        Log.info('Skipped items:' + skipped);
 
         // Get folders within the current directory
         filesAndFolders.forEach((folderPath) => {
@@ -612,7 +616,7 @@ class Metadata {
  */
 class Copado {
     /**
-     * Finally, attach the resulting metadata JSON.
+     * Finally, attach the resulting metadata JSON to the source environment
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
