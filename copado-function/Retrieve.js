@@ -21,7 +21,7 @@ const CONFIG = {
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
     credentialName: process.env.credentialName,
-    debug: true, // TODO: needs to be moved into pipeline config!
+    debug: process.env.debug === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
