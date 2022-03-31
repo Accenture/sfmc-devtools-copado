@@ -214,9 +214,6 @@ class Util {
             ],
             'Completed installing MC Dev Tools'
         );
-        mcdev = require('mcdev');
-        const Definition = require('mcdev/MetadataTypeDefinitions');
-        const MetadataType = require('mcdev/MetadataTypeInfo');
     }
 
     /**
@@ -242,17 +239,6 @@ class Util {
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
-    }
-
-    /**
-     *
-     * @param {number} sec seconds to pause execution for
-     * @returns {Promise} -
-     */
-    static sleep(sec) {
-        return new Promise((resolve) => {
-            setTimeout(resolve, sec * 1000);
-        });
     }
 }
 
@@ -406,6 +392,7 @@ class Metadata {
          */
         const metadataJson = [];
         Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+        Log.info('Found items:' + metadataJson.length);
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
@@ -442,8 +429,8 @@ class Metadata {
                         componentJson = Metadata._buildDataExtensionMetadataJson(filePath);
                         break;
                     default:
-                        throw new Error(
-                            'Component ' +
+                        Log.info(
+                            'Skipping: Component ' +
                                 filePath +
                                 ' with type ' +
                                 componentType +
@@ -487,6 +474,7 @@ class Metadata {
         if (action) {
             metadata.a = action;
         }
+        Log.info('automation: ' + metadata['n']);
 
         return metadata;
     }
@@ -514,6 +502,7 @@ class Metadata {
         if (action) {
             metadata.a = action;
         }
+        Log.info('dataExtension: ' + metadata['n']);
 
         return metadata;
     }
@@ -579,9 +568,7 @@ class Copado {
      * to be executed at the very end
      * @returns {void}
      */
-    static async uploadToolLogs() {
-        Log.progress('Waiting for mcdev logs to be written');
-        await Util.sleep(30);
+    static uploadToolLogs() {
         Log.progress('Getting mcdev logs');
 
         try {
@@ -594,7 +581,8 @@ class Copado {
             Log.info('attaching mcdev logs failed:' + error.message);
         }
         if (CONFIG.debug) {
-            throw new Error('dont finish the job during debugging');
+            Log.error('dont finish the job during debugging');
+            throw new Error();
         }
     }
 }
