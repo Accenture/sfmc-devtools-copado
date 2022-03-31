@@ -136,7 +136,7 @@ class Util {
         Log.debug(command);
 
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (error) {
             Log.error(error.status + ': ' + error.message);
             throw new Error(error);
@@ -162,7 +162,7 @@ class Util {
 
         let exitCode = null;
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
