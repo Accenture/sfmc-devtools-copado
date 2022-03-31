@@ -363,7 +363,7 @@ class Retrieve {
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
             'Retrieve components from ' + sourceBU,
-            'cd /tmp && ' + CONFIG.mcdev_exec + ' retrieve ' + sourceBU + ' --skipInteraction',
+            ['cd /tmp', `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`],
             'Completed retrieving components'
         );
     }
@@ -521,11 +521,10 @@ class Copado {
     static attachJson(metadataFilePath) {
         Util.execCommand(
             'Attach JSON ' + metadataFilePath,
-            'cd /tmp && copado --uploadfile "' +
-                metadataFilePath +
-                '" --parentid "' +
-                CONFIG.envId +
-                '"',
+            [
+                'cd /tmp',
+                'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
+            ],
             'Completed attaching JSON'
         );
     }
@@ -553,13 +552,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            'cd /tmp && copado-git-get "' + mainBranch + '"',
+            ['cd /tmp', 'copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
+                ['cd /tmp', 'copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
