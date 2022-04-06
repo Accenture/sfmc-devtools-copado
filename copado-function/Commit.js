@@ -21,11 +21,13 @@ const CONFIG = {
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
     credentialName: process.env.credentialName,
-    debug: true,
+    debug: process.env.debug === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
-    mcdev: 'node ./node_modules/mcdev/lib/index.js',
+    mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
+        ? 'node ./node_modules/mcdev/lib/index.js'
+        : 'node ./node_modules/mcdev/lib/cli.js',
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
@@ -44,6 +46,109 @@ const CONFIG = {
 };
 
 /**
+ * main method that combines runs this function
+ * @returns {void}
+ */
+function run() {
+    Log.info('Commit.js started');
+    Log.debug('');
+    Log.debug('Parameters');
+    Log.debug('==========');
+    Log.debug('');
+    Log.debug(`mainBranch               = ${CONFIG.mainBranch}`);
+    Log.debug(`featurebranch            = ${CONFIG.featureBranch}`);
+    Log.debug(`metadataFile             = ${CONFIG.metadataFile}`);
+    Log.debug(`commitMessage            = ${CONFIG.commitMessage}`);
+    Log.debug('');
+    Log.debug(`mcdevVersion             = ${CONFIG.mcdevVersion}`);
+    Log.debug(`credentialName           = ${CONFIG.credentialName}`);
+    // Log.debug(`clientId                 = ${clientId}`);
+    // Log.debug(`clientSecret             = ${clientSecret}`);
+    // Log.debug(`tenant                   = ${tenant}`);
+
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('================');
+    Log.info('');
+    Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
+
+    Log.info('');
+    Log.info('Preparing');
+    Log.info('=========');
+    Log.info('');
+    Util.provideMCDevTools();
+
+    Log.info('');
+    Log.info('Initialize project');
+    Log.info('==================');
+    Log.info('');
+    Util.initProject();
+
+    Log.info('');
+    Log.info('Determine retrieve folder');
+    Log.info('=========================');
+    Log.info('');
+    const retrieveFolder = Retrieve.getRetrieveFolder();
+
+    Log.info('');
+    Log.info('Get source BU');
+    Log.info('=============');
+    Log.info('');
+    const sourceBU = Retrieve.getSourceBU();
+
+    Log.info('');
+    Log.info('Retrieve components');
+    Log.info('===================');
+    Log.info('');
+    Retrieve.retrieveComponents(sourceBU);
+
+    let metadataJson;
+    if (!CONFIG.metadataFile) {
+        Log.info('');
+        Log.info('Add all components to the metadata JSON');
+        Log.info('=======================================');
+        Log.info('');
+        const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+        let retrievePathFixed = retrievePath;
+        if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
+            retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+        }
+        metadataJson = [];
+        Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+    } else {
+        Log.info('');
+        Log.info(`Add selected components defined in ${CONFIG.metadataFile} to metadata JSON`);
+        Log.info('====================================================================');
+        Log.info('');
+
+        Util.execCommand(
+            `Download ${CONFIG.metadataFile}.`,
+            `copado --downloadfiles "${CONFIG.metadataFile}"`,
+            'Completed download'
+        );
+
+        const metadata = fs.readFileSync(CONFIG.metadataFileName, 'utf8');
+        metadataJson = JSON.parse(metadata);
+    }
+
+    Log.info('');
+    Log.info('Add components in metadata JSON to Git history');
+    Log.info('==============================================');
+    Log.info('');
+    Commit.addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
+
+    Log.info('');
+    Log.info('Commit and push');
+    Log.info('===============');
+    Log.info('');
+    Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+    Log.info('');
+    Log.info('Finished');
+    Log.info('========');
+    Log.info('');
+    Log.info('Commit.js done');
+}
+/**
  * logger class
  */
 class Log {
@@ -57,7 +162,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(msg);
+            console.log(Log._getFormattedDate(), msg);
         }
     }
     /**
@@ -65,14 +170,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
@@ -90,6 +195,30 @@ class Log {
         Log.debug(msg);
         execSync("copado --progress '" + msg + "'");
     }
+    /**
+     * used to overcome bad timestmaps created by copado that seem to be created asynchronously
+     * @returns {string} readable timestamp
+     */
+    static _getFormattedDate() {
+        const date = new Date();
+
+        // let month = date.getMonth() + 1;
+        // let day = date.getDate();
+        let hour = date.getHours();
+        let min = date.getMinutes();
+        let sec = date.getSeconds();
+
+        // month = (month < 10 ? '0' : '') + month;
+        // day = (day < 10 ? '0' : '') + day;
+        hour = (hour < 10 ? '0' : '') + hour;
+        min = (min < 10 ? '0' : '') + min;
+        sec = (sec < 10 ? '0' : '') + sec;
+
+        // const str = `(${date.getFullYear()}-${month}-${day} ${hour}:${min}:${sec}) `;
+        const str = `(${hour}:${min}:${sec}) `;
+
+        return str;
+    }
 }
 
 /**
@@ -99,7 +228,7 @@ class Util {
     /**
      * Execute command
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {void}
      */
@@ -107,10 +236,13 @@ class Util {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
+        }
         Log.debug(command);
 
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (error) {
             Log.error(error.status + ': ' + error.message);
             throw new Error(error);
@@ -124,7 +256,7 @@ class Util {
     /**
      * Execute command but return the exit code
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @return {number} exit code
      */
@@ -132,11 +264,14 @@ class Util {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
+        }
         Log.debug(command);
 
         let exitCode = null;
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
@@ -162,17 +297,28 @@ class Util {
     static provideMCDevTools() {
         Util.execCommand(
             'Initializing npm',
-            'cd /tmp && npm init -y',
+            ['cd /tmp', 'npm init -y'],
             'Completed initializing NPM'
         );
+        let installer;
+        if (CONFIG.mcdevVersion.charAt(0) === '#') {
+            // assume branch of mcdev's git repo shall be loaded
 
+            installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
+        } else if (!CONFIG.mcdevVersion) {
+            Log.error('Please specify mcdev_version in pipeline & environment settings');
+            throw new Error();
+        } else {
+            // default, install via npm at specified version
+            installer = `mcdev@${CONFIG.mcdevVersion}`;
+        }
         Util.execCommand(
-            'Initializing MC Dev Tools version ' + CONFIG.mcdevVersion,
-            'cd /tmp && npm install --save mcdev@' +
-                CONFIG.mcdevVersion +
-                ' --foreground-scripts && ' +
-                CONFIG.mcdev +
-                ' --version',
+            `Initializing SFMC DevTools (${installer})`,
+            [
+                'cd /tmp',
+                `npm install --save ${installer} --foreground-scripts`,
+                CONFIG.mcdev_exec + ' --version',
+            ],
             'Completed installing MC Dev Tools'
         );
     }
@@ -183,15 +329,15 @@ class Util {
      */
     static initProject() {
         const authJson = `{
-            "credentials": {
-                "${CONFIG.credentialName}": {
-                    "clientId": "${CONFIG.clientId}",
-                    "clientSecret": "${CONFIG.clientSecret}",
-                    "tenant": "${CONFIG.tenant}",
-                    "eid": "${CONFIG.enterpriseId}"
-                }
-            }
-        }`;
+             "credentials": {
+                 "${CONFIG.credentialName}": {
+                     "clientId": "${CONFIG.clientId}",
+                     "clientSecret": "${CONFIG.clientSecret}",
+                     "tenant": "${CONFIG.tenant}",
+                     "eid": "${CONFIG.enterpriseId}"
+                 }
+             }
+         }`;
         Log.progress('Provide authentication');
         fs.writeFileSync('/tmp/.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -323,7 +469,7 @@ class Retrieve {
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
             'Retrieve components from ' + sourceBU,
-            'cd /tmp && ' + CONFIG.mcdev + ' retrieve ' + sourceBU + ' --skipInteraction',
+            ['cd /tmp', CONFIG.mcdev_exec + ' retrieve ' + sourceBU + ' --skipInteraction'],
             'Completed retrieving components'
         );
     }
@@ -353,6 +499,7 @@ class Metadata {
          */
         const metadataJson = [];
         Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+        Log.info('Found items:' + metadataJson.length);
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
@@ -389,8 +536,8 @@ class Metadata {
                         componentJson = Metadata._buildDataExtensionMetadataJson(filePath, 'add');
                         break;
                     default:
-                        throw new Error(
-                            'Component ' +
+                        Log.info(
+                            'Skipping: Component ' +
                                 filePath +
                                 ' with type ' +
                                 componentType +
@@ -478,15 +625,25 @@ class Copado {
     static attachJson(metadataFilePath) {
         Util.execCommand(
             'Attach JSON ' + metadataFilePath,
-            'cd /tmp && copado --uploadfile "' +
-                metadataFilePath +
-                '" --parentid "' +
-                CONFIG.envId +
-                '"',
+            [
+                'cd /tmp',
+                'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
+            ],
             'Completed attaching JSON'
         );
     }
-
+    /**
+     * Finally, attach the resulting metadata JSON.
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachLog(metadataFilePath) {
+        Util.execCommand(
+            'Attach Custom Log ' + metadataFilePath,
+            `copado --uploadfile "${metadataFilePath}"`,
+            'Completed attaching JSON'
+        );
+    }
     /**
      * Checks out the source repository.
      * if a feature branch is available creates
@@ -498,55 +655,78 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            'cd /tmp && copado-git-get "' + mainBranch + '"',
+            ['cd /tmp', 'copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
+                ['cd /tmp', 'copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
     }
+    /**
+     * to be executed at the very end
+     * @returns {void}
+     */
+    static uploadToolLogs() {
+        Log.progress('Getting mcdev logs');
+
+        try {
+            fs.readdirSync('/tmp/logs').forEach((file) => {
+                Log.debug('- ' + file);
+                Copado.attachLog('/tmp/logs/' + file);
+            });
+            Log.progress('Attached mcdev logs');
+        } catch (error) {
+            Log.info('attaching mcdev logs failed:' + error.message);
+        }
+    }
+}
+
+/**
+ * methods to handle interaction with the copado platform
+ */
+class Commit {
     /**
      * Checks out the source repository and branch
      * @param {string} fromCommit commit id to merge
      * @param {string} toBranch branch name to merge into
      * @returns {void}
      */
-    static checkoutSrcDeploy(fromCommit, toBranch) {
-        // First make sure that the from branch is available
-        Util.execCommand(
-            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
-            'cd /tmp && copado-git-get -d . ' + fromCommit,
-            'Completed cloning commit/branch'
-        );
+    //  static checkoutSrcDeploy(fromCommit, toBranch) {
+    //     // First make sure that the from branch is available
+    //     Util.execCommand(
+    //         'Cloning resp. checking out the repository commit/branch ' + fromCommit,
+    //         ['cd /tmp', 'copado-git-get -d . ' + fromCommit],
+    //         'Completed cloning commit/branch'
+    //     );
 
-        // Now checkout the target branch.
-        // That branch/commit that contains changed files should be checked out.
-        // When working with PRs, this is the target branch, after the source branch
-        // has been merged into this branch. So basically the version range to deploy
-        // is HEAD^..HEAD.
-        Util.execCommand(
-            'Cloning resp. checking out the repository branch ' + toBranch,
-            'cd /tmp && copado-git-get -d . ' + toBranch,
-            'Completed cloning branch'
-        );
-    }
+    //     // Now checkout the target branch.
+    //     // That branch/commit that contains changed files should be checked out.
+    //     // When working with PRs, this is the target branch, after the source branch
+    //     // has been merged into this branch. So basically the version range to deploy
+    //     // is HEAD^..HEAD.
+    //     Util.execCommand(
+    //         'Cloning resp. checking out the repository branch ' + toBranch,
+    //         ['cd /tmp', 'copado-git-get -d . ' + toBranch],
+    //         'Completed cloning branch'
+    //     );
+    // }
     /**
      * Merge from branch into target branch
      * @param {string} fromCommit commit id to merge
      * @returns {void}
      */
-    static merge(fromCommit) {
-        // Merge and commit changes.
-        Util.execCommand(
-            'Merge commit ' + fromCommit,
-            'cd /tmp && git merge "' + fromCommit + '"',
-            'Completed merging commit'
-        );
-    }
+    // static merge(fromCommit) {
+    //     // Merge and commit changes.
+    //     Util.execCommand(
+    //         'Merge commit ' + fromCommit,
+    //         ['cd /tmp', 'git merge "' + fromCommit + '"'],
+    //         'Completed merging commit'
+    //     );
+    // }
 
     /**
      * After components have been retrieved,
@@ -597,7 +777,7 @@ class Copado {
                     // Add this component to the Git index.
                     Util.execCommand(
                         'Add ' + componentPath,
-                        'cd /tmp && git add "' + componentPath + '"',
+                        ['cd /tmp', 'git add "' + componentPath + '"'],
                         'Completed adding component'
                     );
                 } else {
@@ -611,7 +791,6 @@ class Copado {
             }
         });
     }
-
     /**
      * Commits and pushes after adding selected components
      * @param {string} mainBranch
@@ -631,12 +810,12 @@ class Copado {
         if (stdout && 0 < stdout.length) {
             Util.execCommand(
                 'Commit',
-                'cd /tmp && git commit -m "' + CONFIG.commitMessage + '"',
+                ['cd /tmp', 'git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const ec = Util.execCommandReturnStatus(
                 'Push branch ' + branch,
-                'cd /tmp && git push origin "' + branch + '" --atomic',
+                ['cd /tmp', 'git push origin "' + branch + '" --atomic'],
                 'Completed pushing branch'
             );
             if (0 != ec) {
@@ -661,100 +840,4 @@ class Copado {
     }
 }
 
-Log.info('Commit.js started');
-Log.debug('');
-Log.debug('Parameters');
-Log.debug('==========');
-Log.debug('');
-Log.debug(`mainBranch               = ${CONFIG.mainBranch}`);
-Log.debug(`featurebranch            = ${CONFIG.featureBranch}`);
-Log.debug(`metadataFile             = ${CONFIG.metadataFile}`);
-Log.debug(`commitMessage            = ${CONFIG.commitMessage}`);
-Log.debug('');
-Log.debug(`mcdevVersion             = ${CONFIG.mcdevVersion}`);
-Log.debug(`credentialName           = ${CONFIG.credentialName}`);
-// Log.debug(`clientId                 = ${clientId}`);
-// Log.debug(`clientSecret             = ${clientSecret}`);
-// Log.debug(`tenant                   = ${tenant}`);
-
-Log.info('');
-Log.info('Clone repository');
-Log.info('================');
-Log.info('');
-Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
-
-Log.info('');
-Log.info('Preparing');
-Log.info('=========');
-Log.info('');
-Util.provideMCDevTools();
-
-Log.info('');
-Log.info('Initialize project');
-Log.info('==================');
-Log.info('');
-Util.initProject();
-
-Log.info('');
-Log.info('Determine retrieve folder');
-Log.info('=========================');
-Log.info('');
-const retrieveFolder = Retrieve.getRetrieveFolder();
-
-Log.info('');
-Log.info('Get source BU');
-Log.info('=============');
-Log.info('');
-const sourceBU = Retrieve.getSourceBU();
-
-Log.info('');
-Log.info('Retrieve components');
-Log.info('===================');
-Log.info('');
-Retrieve.retrieveComponents(sourceBU);
-
-let metadataJson;
-if (!CONFIG.metadataFile) {
-    Log.info('');
-    Log.info('Add all components to the metadata JSON');
-    Log.info('=======================================');
-    Log.info('');
-    const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-    let retrievePathFixed = retrievePath;
-    if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-        retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-    }
-    metadataJson = [];
-    Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-} else {
-    Log.info('');
-    Log.info(`Add selected components defined in ${CONFIG.metadataFile} to metadata JSON`);
-    Log.info('====================================================================');
-    Log.info('');
-
-    Util.execCommand(
-        `Download ${CONFIG.metadataFile}.`,
-        `copado --downloadfiles "${CONFIG.metadataFile}"`,
-        'Completed download'
-    );
-
-    const metadata = fs.readFileSync(CONFIG.metadataFileName, 'utf8');
-    metadataJson = JSON.parse(metadata);
-}
-
-Log.info('');
-Log.info('Add components in metadata JSON to Git history');
-Log.info('==============================================');
-Log.info('');
-Copado.addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
-
-Log.info('');
-Log.info('Commit and push');
-Log.info('===============');
-Log.info('');
-Copado.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
-Log.info('');
-Log.info('Finished');
-Log.info('========');
-Log.info('');
-Log.info('Commit.js done');
+run();
