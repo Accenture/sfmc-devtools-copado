@@ -50,81 +50,106 @@ function run() {
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
 
-    Log.info('Deploy.js started');
-    Log.debug('');
-    Log.debug('Parameters');
-    Log.debug('==========');
-    Log.debug('');
-    Log.debug(`fromCommit        = ${CONFIG.fromCommit}`);
-    Log.debug(`toBranch          = ${CONFIG.toBranch}`);
-    Log.debug('');
-    Log.debug(`mcdevVersion      = ${CONFIG.mcdevVersion}`);
-    Log.debug(`credentialName    = ${CONFIG.credentialName}`);
-
-    Log.info('');
-    Log.info('Clone repository');
-    Log.info('================');
-    Log.info('');
-    Copado.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
-
-    Log.info('');
-    Log.info('Merge branch');
-    Log.info('============');
-    Log.info('');
-    Copado.merge(CONFIG.fromCommit);
-
-    Log.info('');
-    Log.info('Preparing');
-    Log.info('=========');
-    Log.info('');
-    Util.provideMCDevTools();
-
-    Log.info('');
-    Log.info('Initialize project');
-    Log.info('==================');
-    Log.info('');
-    Util.initProject();
-
-    Log.info('');
-    Log.info('Determine deploy folder');
-    Log.info('=======================');
-    Log.info('');
-    const deployFolder = Deploy.getDeployFolder();
-
-    Log.info('');
-    Log.info('Create delta package');
-    Log.info('====================');
-    Log.info('');
-    if (true == Deploy.createDeltaPackage('/tmp/' + deployFolder)) {
-        const bus = Deploy.getDeployTargetBUs();
-
-        Log.info('Deploy BUs');
-        Log.info('----------');
-        let exitCode = 0;
-        bus.forEach((bu) => {
-            const ec = Deploy.deployBU(bu);
-            if (0 != ec) {
-                if (0 == exitCode) {
-                    exitCode = ec;
-                }
-            }
-        });
-        if (0 != exitCode) {
-            throw new Error(
-                'Deployment of at least one BU failed. See previous output for details'
-            );
-        }
-
-        Log.info('Commit and push changes');
-        Log.info('-----------------------');
-        Copado.push(CONFIG.toBranch);
+    try {
+        Log.info('');
+        Log.info('Clone repository');
+        Log.info('================');
+        Log.info('');
+        Copado.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
+    } catch (ex) {
+        Log.error('Cloning failed:' + ex.message);
+        throw ex;
     }
 
-    Log.info('');
-    Log.info('Merge into promotion branch');
-    Log.info('===========================');
-    Log.info('');
-    Copado.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+    try {
+        Log.info('');
+        Log.info('Merge branch');
+        Log.info('============');
+        Log.info('');
+        Copado.merge(CONFIG.fromCommit);
+    } catch (ex) {
+        Log.error('Merge failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('=========');
+        Log.info('');
+        Util.provideMCDevTools();
+
+        Log.info('');
+        Log.info('Initialize project');
+        Log.info('==================');
+        Log.info('');
+        Util.initProject();
+    } catch (ex) {
+        Log.error('initializing failed:' + ex.message);
+        throw ex;
+    }
+
+    let deployFolder;
+    try {
+        Log.info('');
+        Log.info('Determine deploy folder');
+        Log.info('=======================');
+        Log.info('');
+        deployFolder = Deploy.getDeployFolder();
+    } catch (ex) {
+        Log.info('getDeployFolder failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Create delta package');
+        Log.info('====================');
+        Log.info('');
+        if (true == Deploy.createDeltaPackage('/tmp/' + deployFolder)) {
+            const bus = Deploy.getDeployTargetBUs();
+
+            Log.info('Deploy BUs');
+            Log.info('----------');
+            let exitCode = 0;
+            bus.forEach((bu) => {
+                const ec = Deploy.deployBU(bu);
+                if (0 != ec) {
+                    if (0 == exitCode) {
+                        exitCode = ec;
+                    }
+                }
+            });
+            if (0 != exitCode) {
+                throw new Error(
+                    'Deployment of at least one BU failed. See previous output for details'
+                );
+            }
+        }
+    } catch (ex) {
+        Log.info('Deploy failed:' + ex.message);
+        Copado.uploadToolLogs();
+        throw ex;
+    }
+
+    try {
+        Log.info('git-push changes');
+        Log.info('-----------------------');
+        Copado.push(CONFIG.toBranch);
+    } catch (ex) {
+        Log.info('git push failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('Merge into promotion branch');
+        Log.info('===========================');
+        Log.info('');
+        Copado.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+    } catch (ex) {
+        Log.info('promote failed:' + ex.message);
+        throw ex;
+    }
 
     Log.info('');
     Log.info('Finished');
