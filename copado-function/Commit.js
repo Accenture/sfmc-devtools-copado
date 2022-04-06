@@ -522,6 +522,7 @@ class Metadata {
         const filesAndFolders = fs
             .readdirSync(retrieveFolder)
             .map((entry) => path.join(retrieveFolder, entry));
+        let skipped = 0;
         filesAndFolders.forEach((filePath) => {
             if (fs.statSync(filePath).isFile()) {
                 const dirName = path.dirname(filePath);
@@ -545,12 +546,16 @@ class Metadata {
                                 componentType +
                                 ' is not supported'
                         );
+                        skipped++;
+                        return;
                 }
 
                 // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
                 metadataJson.push(componentJson);
             }
         });
+        Log.info('Good items:' + metadataJson.length);
+        Log.info('Skipped items:' + skipped);
 
         // Get folders within the current directory
         filesAndFolders.forEach((folderPath) => {
