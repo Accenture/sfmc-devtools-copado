@@ -137,10 +137,10 @@ function run() {
 
     Copado.uploadToolLogs();
 
-    if (CONFIG.debug) {
-        Log.error('dont finish the job during debugging');
-        throw new Error();
-    }
+    // if (CONFIG.debug) {
+    //     Log.error('dont finish the job during debugging');
+    //     throw new Error();
+    // }
 }
 
 /**
@@ -251,13 +251,16 @@ class Util {
     /**
      * Execute command but return the exit code
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @return {number} exit code
      */
     static execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
+        }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
         }
         Log.debug(command);
 
@@ -577,7 +580,6 @@ class Metadata {
         if (action) {
             metadata.a = action;
         }
-        Log.info('automation: ' + metadata['n']);
 
         return metadata;
     }
@@ -605,7 +607,6 @@ class Metadata {
         if (action) {
             metadata.a = action;
         }
-        Log.info('dataExtension: ' + metadata['n']);
 
         return metadata;
     }
