@@ -147,6 +147,8 @@ function run() {
     Log.info('========');
     Log.info('');
     Log.info('Commit.js done');
+
+    Copado.uploadToolLogs();
 }
 /**
  * logger class
@@ -793,7 +795,7 @@ class Commit {
     }
     /**
      * Commits and pushes after adding selected components
-     * @param {string} mainBranch
+     * @param {string} mainBranch name of master branch
      * @param {string} featureBranch can be null/undefined
      * @returns {void}
      */
