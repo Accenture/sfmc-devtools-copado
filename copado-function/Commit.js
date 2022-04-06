@@ -54,17 +54,13 @@ function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('==========');
-    Log.debug('');
-    Log.debug(`mainBranch               = ${CONFIG.mainBranch}`);
-    Log.debug(`featurebranch            = ${CONFIG.featureBranch}`);
-    Log.debug(`metadataFile             = ${CONFIG.metadataFile}`);
-    Log.debug(`commitMessage            = ${CONFIG.commitMessage}`);
-    Log.debug('');
-    Log.debug(`mcdevVersion             = ${CONFIG.mcdevVersion}`);
-    Log.debug(`credentialName           = ${CONFIG.credentialName}`);
-    // Log.debug(`clientId                 = ${clientId}`);
-    // Log.debug(`clientSecret             = ${clientSecret}`);
-    // Log.debug(`tenant                   = ${tenant}`);
+    Log.debug(CONFIG);
+
+    Log.debug('Environment');
+    Log.debug('==========');
+    Util.execCommand(null, 'npm --version', null);
+    Util.execCommand(null, 'node --version', null);
+    Util.execCommand(null, 'git version', null);
 
     Log.info('');
     Log.info('Clone repository');

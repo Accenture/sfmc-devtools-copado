@@ -56,6 +56,12 @@ function run() {
     Log.debug('==========');
     Log.debug(CONFIG);
 
+    Log.debug('Environment');
+    Log.debug('==========');
+    Util.execCommand(null, 'npm --version', null);
+    Util.execCommand(null, 'node --version', null);
+    Util.execCommand(null, 'git version', null);
+
     try {
         Log.info('');
         Log.info('Clone repository');
