@@ -9,11 +9,13 @@ const CONFIG = {
     clientSecret: process.env.clientSecret,
     configFilePath: '/tmp/.mcdevrc.json',
     credentialName: process.env.credentialName,
-    debug: true,
-    envId: null,
+    debug: process.env.debug === 'false' ? false : true,
+    envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
-    mainBranch: null,
-    mcdev: 'node ./node_modules/mcdev/lib/index.js',
+    mainBranch: process.env.main_branch,
+    mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
+        ? 'node ./node_modules/mcdev/lib/index.js'
+        : 'node ./node_modules/mcdev/lib/cli.js',
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: null,
     tenant: process.env.tenant,
@@ -32,6 +34,107 @@ const CONFIG = {
 };
 
 /**
+ * main method that combines runs this function
+ * @returns {void}
+ */
+function run() {
+    Log.info('Deploy.js started');
+    Log.debug('');
+    Log.debug('Parameters');
+    Log.debug('==========');
+    Log.debug(CONFIG);
+
+    Log.debug('Environment');
+    Log.debug('==========');
+    Util.execCommand(null, 'npm --version', null);
+    Util.execCommand(null, 'node --version', null);
+    Util.execCommand(null, 'git version', null);
+
+    Log.info('Deploy.js started');
+    Log.debug('');
+    Log.debug('Parameters');
+    Log.debug('==========');
+    Log.debug('');
+    Log.debug(`fromCommit        = ${CONFIG.fromCommit}`);
+    Log.debug(`toBranch          = ${CONFIG.toBranch}`);
+    Log.debug('');
+    Log.debug(`mcdevVersion      = ${CONFIG.mcdevVersion}`);
+    Log.debug(`credentialName    = ${CONFIG.credentialName}`);
+
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('================');
+    Log.info('');
+    Copado.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
+
+    Log.info('');
+    Log.info('Merge branch');
+    Log.info('============');
+    Log.info('');
+    Copado.merge(CONFIG.fromCommit);
+
+    Log.info('');
+    Log.info('Preparing');
+    Log.info('=========');
+    Log.info('');
+    Util.provideMCDevTools();
+
+    Log.info('');
+    Log.info('Initialize project');
+    Log.info('==================');
+    Log.info('');
+    Util.initProject();
+
+    Log.info('');
+    Log.info('Determine deploy folder');
+    Log.info('=======================');
+    Log.info('');
+    const deployFolder = Deploy.getDeployFolder();
+
+    Log.info('');
+    Log.info('Create delta package');
+    Log.info('====================');
+    Log.info('');
+    if (true == Deploy.createDeltaPackage('/tmp/' + deployFolder)) {
+        const bus = Deploy.getDeployTargetBUs();
+
+        Log.info('Deploy BUs');
+        Log.info('----------');
+        let exitCode = 0;
+        bus.forEach((bu) => {
+            const ec = Deploy.deployBU(bu);
+            if (0 != ec) {
+                if (0 == exitCode) {
+                    exitCode = ec;
+                }
+            }
+        });
+        if (0 != exitCode) {
+            throw new Error(
+                'Deployment of at least one BU failed. See previous output for details'
+            );
+        }
+
+        Log.info('Commit and push changes');
+        Log.info('-----------------------');
+        Copado.push(CONFIG.toBranch);
+    }
+
+    Log.info('');
+    Log.info('Merge into promotion branch');
+    Log.info('===========================');
+    Log.info('');
+    Copado.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+
+    Log.info('');
+    Log.info('Finished');
+    Log.info('========');
+    Log.info('');
+    Log.info('Deploy.js done');
+
+    Copado.uploadToolLogs();
+}
+/**
  * logger class
  */
 class Log {
@@ -45,7 +148,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(msg);
+            console.log(Log._getFormattedDate(), msg);
         }
     }
     /**
@@ -53,14 +156,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(msg);
+        console.log(Log._getFormattedDate(), msg);
     }
     /**
      * @param {string} msg your log message
@@ -77,6 +180,30 @@ class Log {
     static progress(msg) {
         Log.debug(msg);
         execSync("copado --progress '" + msg + "'");
+    }
+    /**
+     * used to overcome bad timestmaps created by copado that seem to be created asynchronously
+     * @returns {string} readable timestamp
+     */
+    static _getFormattedDate() {
+        const date = new Date();
+
+        // let month = date.getMonth() + 1;
+        // let day = date.getDate();
+        let hour = date.getHours();
+        let min = date.getMinutes();
+        let sec = date.getSeconds();
+
+        // month = (month < 10 ? '0' : '') + month;
+        // day = (day < 10 ? '0' : '') + day;
+        hour = (hour < 10 ? '0' : '') + hour;
+        min = (min < 10 ? '0' : '') + min;
+        sec = (sec < 10 ? '0' : '') + sec;
+
+        // const str = `(${date.getFullYear()}-${month}-${day} ${hour}:${min}:${sec}) `;
+        const str = `(${hour}:${min}:${sec}) `;
+
+        return str;
     }
 }
 
@@ -159,7 +286,7 @@ class Util {
             'cd /tmp && npm install --save mcdev@' +
                 CONFIG.mcdevVersion +
                 ' --foreground-scripts && ' +
-                CONFIG.mcdev +
+                CONFIG.mcdev_exec +
                 ' --version',
             'Completed installing MC Dev Tools'
         );
@@ -227,7 +354,11 @@ class Deploy {
         const versionRange = 'HEAD^..HEAD';
         Util.execCommand(
             'Create delta package using version range ' + versionRange,
-            'cd /tmp && ' + CONFIG.mcdev + ' createDeltaPkg ' + versionRange + ' --skipInteraction',
+            'cd /tmp && ' +
+                CONFIG.mcdev_exec +
+                ' createDeltaPkg ' +
+                versionRange +
+                ' --skipInteraction',
             'Completed creating delta package'
         );
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
@@ -324,7 +455,7 @@ class Deploy {
     static deployBU(bu) {
         const ec = Util.execCommandReturnStatus(
             'Deploy BU ' + bu,
-            'cd /tmp && ' + CONFIG.mcdev + ' deploy ' + bu,
+            'cd /tmp && ' + CONFIG.mcdev_exec + ' deploy ' + bu,
             'Completed deploying BU'
         );
         if (0 != ec) {
@@ -473,82 +604,4 @@ class Copado {
     }
 }
 
-Log.info('Deploy.js started');
-Log.debug('');
-Log.debug('Parameters');
-Log.debug('==========');
-Log.debug('');
-Log.debug(`fromCommit        = ${CONFIG.fromCommit}`);
-Log.debug(`toBranch          = ${CONFIG.toBranch}`);
-Log.debug('');
-Log.debug(`mcdevVersion      = ${CONFIG.mcdevVersion}`);
-Log.debug(`credentialName    = ${CONFIG.credentialName}`);
-
-Log.info('');
-Log.info('Clone repository');
-Log.info('================');
-Log.info('');
-Copado.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
-
-Log.info('');
-Log.info('Merge branch');
-Log.info('============');
-Log.info('');
-Copado.merge(CONFIG.fromCommit);
-
-Log.info('');
-Log.info('Preparing');
-Log.info('=========');
-Log.info('');
-Util.provideMCDevTools();
-
-Log.info('');
-Log.info('Initialize project');
-Log.info('==================');
-Log.info('');
-Util.initProject();
-
-Log.info('');
-Log.info('Determine deploy folder');
-Log.info('=======================');
-Log.info('');
-const deployFolder = Deploy.getDeployFolder();
-
-Log.info('');
-Log.info('Create delta package');
-Log.info('====================');
-Log.info('');
-if (true == Deploy.createDeltaPackage('/tmp/' + deployFolder)) {
-    const bus = Deploy.getDeployTargetBUs();
-
-    Log.info('Deploy BUs');
-    Log.info('----------');
-    let exitCode = 0;
-    bus.forEach((bu) => {
-        const ec = Deploy.deployBU(bu);
-        if (0 != ec) {
-            if (0 == exitCode) {
-                exitCode = ec;
-            }
-        }
-    });
-    if (0 != exitCode) {
-        throw new Error('Deployment of at least one BU failed. See previous output for details');
-    }
-
-    Log.info('Commit and push changes');
-    Log.info('-----------------------');
-    Copado.push(CONFIG.toBranch);
-}
-
-Log.info('');
-Log.info('Merge into promotion branch');
-Log.info('===========================');
-Log.info('');
-Copado.promote(CONFIG.toBranch, CONFIG.promotionBranch);
-
-Log.info('');
-Log.info('Finished');
-Log.info('========');
-Log.info('');
-Log.info('Deploy.js done');
+run();
