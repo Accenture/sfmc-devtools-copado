@@ -62,82 +62,114 @@ function run() {
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
 
-    Log.info('');
-    Log.info('Clone repository');
-    Log.info('================');
-    Log.info('');
-    Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
-
-    Log.info('');
-    Log.info('Preparing');
-    Log.info('=========');
-    Log.info('');
-    Util.provideMCDevTools();
-
-    Log.info('');
-    Log.info('Initialize project');
-    Log.info('==================');
-    Log.info('');
-    Util.initProject();
-
-    Log.info('');
-    Log.info('Determine retrieve folder');
-    Log.info('=========================');
-    Log.info('');
-    const retrieveFolder = Retrieve.getRetrieveFolder();
-
-    Log.info('');
-    Log.info('Get source BU');
-    Log.info('=============');
-    Log.info('');
-    const sourceBU = Retrieve.getSourceBU();
-
-    Log.info('');
-    Log.info('Retrieve components');
-    Log.info('===================');
-    Log.info('');
-    Retrieve.retrieveComponents(sourceBU);
-
-    let metadataJson;
-    if (!CONFIG.metadataFile) {
+    try {
         Log.info('');
-        Log.info('Add all components to the metadata JSON');
-        Log.info('=======================================');
+        Log.info('Clone repository');
+        Log.info('================');
         Log.info('');
-        const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-        let retrievePathFixed = retrievePath;
-        if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-            retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-        }
-        metadataJson = [];
-        Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-    } else {
-        Log.info('');
-        Log.info(`Add selected components defined in ${CONFIG.metadataFile} to metadata JSON`);
-        Log.info('====================================================================');
-        Log.info('');
-
-        Util.execCommand(
-            `Download ${CONFIG.metadataFile}.`,
-            `copado --downloadfiles "${CONFIG.metadataFile}"`,
-            'Completed download'
-        );
-
-        const metadata = fs.readFileSync(CONFIG.metadataFileName, 'utf8');
-        metadataJson = JSON.parse(metadata);
+        Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
+    } catch (ex) {
+        Log.error('Cloning failed:' + ex.message);
+        throw ex;
     }
 
-    Log.info('');
-    Log.info('Add components in metadata JSON to Git history');
-    Log.info('==============================================');
-    Log.info('');
-    Commit.addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
+    try {
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('=========');
+        Log.info('');
+        Util.provideMCDevTools();
 
-    Log.info('');
-    Log.info('Commit and push');
-    Log.info('===============');
-    Log.info('');
-    Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+        Log.info('');
+        Log.info('Initialize project');
+        Log.info('==================');
+        Log.info('');
+        Util.initProject();
+    } catch (ex) {
+        Log.error('initializing failed:' + ex.message);
+        throw ex;
+    }
+
+    let retrieveFolder;
+    let sourceBU;
+    try {
+        Log.info('');
+        Log.info('Determine retrieve folder');
+        Log.info('=========================');
+        Log.info('');
+        retrieveFolder = Retrieve.getRetrieveFolder();
+
+        Log.info('');
+        Log.info('Get source BU');
+        Log.info('=============');
+        Log.info('');
+        sourceBU = Retrieve.getSourceBU();
+
+        Log.info('');
+        Log.info('Retrieve components');
+        Log.info('===================');
+        Log.info('');
+        Retrieve.retrieveComponents(sourceBU); // TODO check why retrieveFolder is not passed in
+    } catch (ex) {
+        Log.info('Retrieving failed:' + ex.message);
+        Copado.uploadToolLogs();
+        throw ex;
+    }
+
+    let metadataJson;
+    try {
+        if (!CONFIG.metadataFile) {
+            Log.info('');
+            Log.info('Add all components to the metadata JSON');
+            Log.info('=======================================');
+            Log.info('');
+            const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+            let retrievePathFixed = retrievePath;
+            if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
+                retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+            }
+            metadataJson = [];
+            Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+        } else {
+            Log.info('');
+            Log.info(`Add selected components defined in ${CONFIG.metadataFile} to metadata JSON`);
+            Log.info('====================================================================');
+            Log.info('');
+
+            Util.execCommand(
+                `Download ${CONFIG.metadataFile}.`,
+                `copado --downloadfiles "${CONFIG.metadataFile}"`,
+                'Completed download'
+            );
+
+            const metadata = fs.readFileSync(CONFIG.metadataFileName, 'utf8');
+            metadataJson = JSON.parse(metadata);
+        }
+    } catch (ex) {
+        Log.info('Getting Metadata file failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Add components in metadata JSON to Git history');
+        Log.info('==============================================');
+        Log.info('');
+        Commit.addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
+    } catch (ex) {
+        Log.info('git add failed:' + ex.message);
+        throw ex;
+    }
+    try {
+        Log.info('');
+        Log.info('Commit and push');
+        Log.info('===============');
+        Log.info('');
+        Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+    } catch (ex) {
+        Log.info('git commit / push failed:' + ex.message);
+        throw ex;
+    }
     Log.info('');
     Log.info('Finished');
     Log.info('========');
