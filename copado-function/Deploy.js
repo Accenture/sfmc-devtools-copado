@@ -66,7 +66,7 @@ function run() {
         Log.info('Merge branch');
         Log.info('============');
         Log.info('');
-        Copado.merge(CONFIG.fromCommit);
+        Deploy.merge(CONFIG.fromCommit);
     } catch (ex) {
         Log.error('Merge failed:' + ex.message);
         throw ex;
@@ -135,7 +135,7 @@ function run() {
     try {
         Log.info('git-push changes');
         Log.info('-----------------------');
-        Copado.push(CONFIG.toBranch);
+        Deploy.push(CONFIG.toBranch);
     } catch (ex) {
         Log.info('git push failed:' + ex.message);
         throw ex;
@@ -145,7 +145,7 @@ function run() {
         Log.info('Merge into promotion branch');
         Log.info('===========================');
         Log.info('');
-        Copado.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+        Deploy.promote(CONFIG.toBranch, CONFIG.promotionBranch);
     } catch (ex) {
         Log.info('promote failed:' + ex.message);
         throw ex;
@@ -239,7 +239,7 @@ class Util {
     /**
      * Execute command
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {void}
      */
@@ -247,10 +247,13 @@ class Util {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
+        }
         Log.debug(command);
 
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (error) {
             Log.error(error.status + ': ' + error.message);
             throw new Error(error);
@@ -264,7 +267,7 @@ class Util {
     /**
      * Execute command but return the exit code
      * @param {string} [preMsg] the message displayed to the user in copado before execution
-     * @param {string} command the cli command to execute synchronously
+     * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @return {number} exit code
      */
@@ -272,11 +275,14 @@ class Util {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
+        if (command && Array.isArray(command)) {
+            command = command.join(' && ');
+        }
         Log.debug(command);
 
         let exitCode = null;
         try {
-            execSync(command, { stdio: 'inherit', stderr: 'inherit' });
+            execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
@@ -302,17 +308,28 @@ class Util {
     static provideMCDevTools() {
         Util.execCommand(
             'Initializing npm',
-            'cd /tmp && npm init -y',
+            ['cd /tmp', 'npm init -y'],
             'Completed initializing NPM'
         );
+        let installer;
+        if (CONFIG.mcdevVersion.charAt(0) === '#') {
+            // assume branch of mcdev's git repo shall be loaded
 
+            installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
+        } else if (!CONFIG.mcdevVersion) {
+            Log.error('Please specify mcdev_version in pipeline & environment settings');
+            throw new Error();
+        } else {
+            // default, install via npm at specified version
+            installer = `mcdev@${CONFIG.mcdevVersion}`;
+        }
         Util.execCommand(
-            'Initializing MC Dev Tools version ' + CONFIG.mcdevVersion,
-            'cd /tmp && npm install --save mcdev@' +
-                CONFIG.mcdevVersion +
-                ' --foreground-scripts && ' +
-                CONFIG.mcdev_exec +
-                ' --version',
+            `Initializing SFMC DevTools (${installer})`,
+            [
+                'cd /tmp',
+                `npm install --save ${installer} --foreground-scripts`,
+                CONFIG.mcdev_exec + ' --version',
+            ],
             'Completed installing MC Dev Tools'
         );
     }
@@ -379,11 +396,10 @@ class Deploy {
         const versionRange = 'HEAD^..HEAD';
         Util.execCommand(
             'Create delta package using version range ' + versionRange,
-            'cd /tmp && ' +
-                CONFIG.mcdev_exec +
-                ' createDeltaPkg ' +
-                versionRange +
-                ' --skipInteraction',
+            [
+                'cd /tmp',
+                CONFIG.mcdev_exec + ' createDeltaPkg ' + versionRange + ' --skipInteraction',
+            ],
             'Completed creating delta package'
         );
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
@@ -421,6 +437,7 @@ class Deploy {
     static _getConfigForToBranch(branch) {
         let configBranch = branch;
         if (branch.startsWith('release/')) {
+            // TODO discuss with Copado!
             configBranch = 'release/*';
         } else if (branch.startsWith('hotfix/')) {
             configBranch = 'hotfix/*';
@@ -480,7 +497,7 @@ class Deploy {
     static deployBU(bu) {
         const ec = Util.execCommandReturnStatus(
             'Deploy BU ' + bu,
-            'cd /tmp && ' + CONFIG.mcdev_exec + ' deploy ' + bu,
+            ['cd /tmp', CONFIG.mcdev_exec + ' deploy ' + bu],
             'Completed deploying BU'
         );
         if (0 != ec) {
@@ -498,75 +515,6 @@ class Deploy {
 
         return ec;
     }
-}
-
-/**
- * methods to handle interaction with the copado platform
- */
-class Copado {
-    /**
-     * Finally, attach the resulting metadata JSON.
-     * @param {string} metadataFilePath where we stored the temporary json file
-     * @returns {void}
-     */
-    static attachJson(metadataFilePath) {
-        Util.execCommand(
-            'Attach JSON ' + metadataFilePath,
-            'cd /tmp && copado --uploadfile "' +
-                metadataFilePath +
-                '" --parentid "' +
-                CONFIG.envId +
-                '"',
-            'Completed attaching JSON'
-        );
-    }
-    /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
-     * @returns {void}
-     */
-    static checkoutSrc(mainBranch, featureBranch) {
-        Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            'cd /tmp && copado-git-get "' + mainBranch + '"',
-            'Completed cloning/checking out main branch'
-        );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                'cd /tmp && copado-git-get --create "' + featureBranch + '"',
-                'Completed creating/checking out feature branch'
-            );
-        }
-    }
-    /**
-     * Checks out the source repository and branch
-     * @param {string} fromCommit commit id to merge
-     * @param {string} toBranch branch name to merge into
-     * @returns {void}
-     */
-    static checkoutSrcDeploy(fromCommit, toBranch) {
-        // First make sure that the from branch is available
-        Util.execCommand(
-            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
-            'cd /tmp && copado-git-get -d . ' + fromCommit,
-            'Completed cloning commit/branch'
-        );
-
-        // Now checkout the target branch.
-        // That branch/commit that contains changed files should be checked out.
-        // When working with PRs, this is the target branch, after the source branch
-        // has been merged into this branch. So basically the version range to deploy
-        // is HEAD^..HEAD.
-        Util.execCommand(
-            'Cloning resp. checking out the repository branch ' + toBranch,
-            'cd /tmp && copado-git-get -d . ' + toBranch,
-            'Completed cloning branch'
-        );
-    }
     /**
      * Merge from branch into target branch
      * @param {string} fromCommit commit id to merge
@@ -576,7 +524,7 @@ class Copado {
         // Merge and commit changes.
         Util.execCommand(
             'Merge commit ' + fromCommit,
-            'cd /tmp && git merge "' + fromCommit + '"',
+            ['cd /tmp', 'git merge "' + fromCommit + '"'],
             'Completed merging commit'
         );
     }
@@ -588,7 +536,7 @@ class Copado {
     static push(toBranch) {
         Util.execCommand(
             'Push branch ' + toBranch,
-            'cd /tmp && git push origin "' + toBranch + '"',
+            ['cd /tmp', 'git push origin "' + toBranch + '"'],
             'Completed pushing branch'
         );
     }
@@ -605,26 +553,106 @@ class Copado {
         //            "Completed cloning branch");
         Util.execCommand(
             'Checking out the branch ' + CONFIG.promotionBranch,
-            'cd /tmp && copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.promotionBranch,
+            [
+                'cd /tmp',
+                'copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.promotionBranch,
+            ],
             'Completed cloning branch'
         );
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
         Util.execCommand(
             'Merge commit ' + toBranch,
-            'cd /tmp && git merge ' +
-                mergeOption +
-                '-m "Auto merge ' +
-                toBranch +
-                '" "' +
-                toBranch +
-                '"',
+            [
+                'cd /tmp',
+                'git merge ' + mergeOption + '-m "Auto merge ' + toBranch + '" "' + toBranch + '"',
+            ],
             'Completed merging'
         );
 
         Util.execCommand(
             'Push branch ' + CONFIG.promotionBranch,
-            'cd /tmp && git push origin "' + CONFIG.promotionBranch + '"',
+            ['cd /tmp', 'git push origin "' + CONFIG.promotionBranch + '"'],
             'Completed pushing branch'
+        );
+    }
+}
+
+/**
+ * methods to handle interaction with the copado platform
+ */
+class Copado {
+    /**
+     * Finally, attach the resulting metadata JSON.
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachJson(metadataFilePath) {
+        Util.execCommand(
+            'Attach JSON ' + metadataFilePath,
+            [
+                'cd /tmp',
+                'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
+            ],
+            'Completed attaching JSON'
+        );
+    }
+    /**
+     * Finally, attach the resulting metadata JSON.
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachLog(metadataFilePath) {
+        Util.execCommand(
+            'Attach Custom Log ' + metadataFilePath,
+            `copado --uploadfile "${metadataFilePath}"`,
+            'Completed attaching JSON'
+        );
+    }
+    /**
+     * Checks out the source repository.
+     * if a feature branch is available creates
+     * the feature branch based on the main branch.
+     * @param {string} mainBranch ?
+     * @param {string} featureBranch can be null/undefined
+     * @returns {void}
+     */
+    static checkoutSrc(mainBranch, featureBranch) {
+        Util.execCommand(
+            'Cloning and checking out the main branch ' + mainBranch,
+            ['cd /tmp', 'copado-git-get "' + mainBranch + '"'],
+            'Completed cloning/checking out main branch'
+        );
+        if (featureBranch) {
+            Util.execCommand(
+                'Creating resp. checking out the feature branch ' + featureBranch,
+                ['cd /tmp', 'copado-git-get --create "' + featureBranch + '"'],
+                'Completed creating/checking out feature branch'
+            );
+        }
+    }
+    /**
+     * Checks out the source repository and branch
+     * @param {string} fromCommit commit id to merge
+     * @param {string} toBranch branch name to merge into
+     * @returns {void}
+     */
+    static checkoutSrcDeploy(fromCommit, toBranch) {
+        // First make sure that the from branch is available
+        Util.execCommand(
+            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
+            ['cd /tmp', 'copado-git-get -d . ' + fromCommit],
+            'Completed cloning commit/branch'
+        );
+
+        // Now checkout the target branch.
+        // That branch/commit that contains changed files should be checked out.
+        // When working with PRs, this is the target branch, after the source branch
+        // has been merged into this branch. So basically the version range to deploy
+        // is HEAD^..HEAD.
+        Util.execCommand(
+            'Cloning resp. checking out the repository branch ' + toBranch,
+            ['cd /tmp', 'copado-git-get -d . ' + toBranch],
+            'Completed cloning branch'
         );
     }
 }
