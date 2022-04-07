@@ -655,6 +655,23 @@ class Copado {
             'Completed cloning branch'
         );
     }
+    /**
+     * to be executed at the very end
+     * @returns {void}
+     */
+    static uploadToolLogs() {
+        Log.progress('Getting mcdev logs');
+
+        try {
+            fs.readdirSync('/tmp/logs').forEach((file) => {
+                Log.debug('- ' + file);
+                Copado.attachLog('/tmp/logs/' + file);
+            });
+            Log.progress('Attached mcdev logs');
+        } catch (error) {
+            Log.info('attaching mcdev logs failed:' + error.message);
+        }
+    }
 }
 
 run();
