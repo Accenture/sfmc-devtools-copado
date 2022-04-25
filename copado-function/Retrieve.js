@@ -31,6 +31,7 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: '/tmp/mcmetadata.json',
     tenant: process.env.tenant,
+    tmpDirectory: '/tmp',
     // commit
     commitMessage: null,
     featureBranch: null,
@@ -45,6 +46,14 @@ const CONFIG = {
     toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
+if (process.env.LOCAL_DEV === 'true') {
+    // for local development only
+    CONFIG.metadataFilePath = '.' + CONFIG.metadataFilePath;
+    CONFIG.configFilePath = '.' + CONFIG.configFilePath;
+    CONFIG.tmpDirectory = '.' + CONFIG.tmpDirectory;
+    fs.rmdirSync(CONFIG.tmpDirectory, { recursive: true, force: true });
+    fs.mkdirSync(CONFIG.tmpDirectory);
+}
 /**
  * main method that combines runs this function
  * @returns {void}
@@ -186,7 +195,7 @@ class Log {
      */
     static error(msg) {
         Log.warn(msg);
-        execSync("copado --error-message '" + msg + "'");
+        execSync(`copado --error-message "${msg}"`);
     }
     /**
      * @param {string} msg your log message
@@ -194,7 +203,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync("copado --progress '" + msg + "'");
+        execSync(`copado --progress "${msg}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -298,7 +307,7 @@ class Util {
     static provideMCDevTools() {
         Util.execCommand(
             'Initializing npm',
-            ['cd /tmp', 'npm init -y'],
+            ['cd ' + CONFIG.tmpDirectory, 'npm init -y'],
             'Completed initializing NPM'
         );
         let installer;
@@ -316,7 +325,7 @@ class Util {
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
             [
-                'cd /tmp',
+                'cd ' + CONFIG.tmpDirectory,
                 `npm install --save ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
@@ -340,7 +349,7 @@ class Util {
             }
         }`;
         Log.progress('Provide authentication');
-        fs.writeFileSync('/tmp/.mcdev-auth.json', authJson);
+        fs.writeFileSync(CONFIG.tmpDirectory + '/.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -459,7 +468,7 @@ class Retrieve {
      */
     static retrieveComponents(sourceBU, retrieveFolder) {
         if (retrieveFolder) {
-            const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+            const retrievePath = path.join(CONFIG.tmpDirectory, retrieveFolder, sourceBU);
             let retrievePathFixed = retrievePath;
             if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
                 retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
@@ -470,7 +479,10 @@ class Retrieve {
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
             'Retrieve components from ' + sourceBU,
-            ['cd /tmp', `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`],
+            [
+                'cd ' + CONFIG.tmpDirectory,
+                `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`,
+            ],
             'Completed retrieving components'
         );
     }
@@ -490,7 +502,7 @@ class Metadata {
      * @returns {void}
      */
     static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
-        const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+        const retrievePath = path.join(CONFIG.tmpDirectory, retrieveFolder, sourceBU);
         let retrievePathFixed = retrievePath;
         if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
             retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
@@ -631,7 +643,7 @@ class Copado {
         Util.execCommand(
             'Attach JSON ' + metadataFilePath,
             [
-                'cd /tmp',
+                'cd ' + CONFIG.tmpDirectory,
                 'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
             ],
             'Completed attaching JSON'
@@ -661,13 +673,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            ['cd /tmp', 'copado-git-get "' + mainBranch + '"'],
+            ['cd ' + CONFIG.tmpDirectory, 'copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                ['cd /tmp', 'copado-git-get --create "' + featureBranch + '"'],
+                ['cd ' + CONFIG.tmpDirectory, 'copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
@@ -681,9 +693,9 @@ class Copado {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync('/tmp/logs').forEach((file) => {
+            fs.readdirSync(CONFIG.tmpDirectory + '/logs').forEach((file) => {
                 Log.debug('- ' + file);
-                Copado.attachLog('/tmp/logs/' + file);
+                Copado.attachLog(CONFIG.tmpDirectory + '/logs/' + file);
             });
             Log.progress('Attached mcdev logs');
         } catch (error) {

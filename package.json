@@ -13,7 +13,11 @@
     "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prettier:verify": "prettier --list-different \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "postinstall": "husky install",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "cop_retrieve": "node copado-function/Retrieve.js",
+    "cop_commit": "node copado-function/Commit.js",
+    "cop_deploy": "node copado-function/Deploy.js",
+    "cop_promote": "node copado-function/Promote.js"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^1.0.1",

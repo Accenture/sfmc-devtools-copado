@@ -215,7 +215,7 @@ class Log {
      */
     static error(msg) {
         Log.warn(msg);
-        execSync("copado --error-message '" + msg + "'");
+        execSync(`copado --error-message "${msg}"`);
     }
     /**
      * @param {string} msg your log message
@@ -223,7 +223,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync("copado --progress '" + msg + "'");
+        execSync(`copado --progress "${msg}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
