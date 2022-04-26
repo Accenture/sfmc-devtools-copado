@@ -19,7 +19,7 @@ const CONFIG = {
     // generic
     clientId: process.env.clientId,
     clientSecret: process.env.clientSecret,
-    configFilePath: '/tmp/.mcdevrc.json',
+    configFilePath: '.mcdevrc.json',
     credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
     envId: process.env.envId,
@@ -29,7 +29,7 @@ const CONFIG = {
         ? 'node ./node_modules/mcdev/lib/index.js'
         : 'node ./node_modules/mcdev/lib/cli.js',
     mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: '/tmp/mcmetadata.json',
+    metadataFilePath: 'mcmetadata.json',
     tenant: process.env.tenant,
     tmpDirectory: '/tmp',
     // commit
@@ -48,17 +48,20 @@ const CONFIG = {
 
 if (process.env.LOCAL_DEV === 'true') {
     // for local development only
-    CONFIG.metadataFilePath = '.' + CONFIG.metadataFilePath;
-    CONFIG.configFilePath = '.' + CONFIG.configFilePath;
-    CONFIG.tmpDirectory = '.' + CONFIG.tmpDirectory;
+    // CONFIG.metadataFilePath = '.' + CONFIG.metadataFilePath;
+    // CONFIG.configFilePath = '.' + CONFIG.configFilePath;
+    CONFIG.tmpDirectoryRequire = '.' + CONFIG.tmpDirectory;
+    CONFIG.tmpDirectory = './copado-function' + CONFIG.tmpDirectory;
     // fs.rmdirSync(CONFIG.tmpDirectory, { recursive: true, force: true });
     // fs.mkdirSync(CONFIG.tmpDirectory);
+} else {
+    CONFIG.tmpDirectoryRequire = CONFIG.tmpDirectory;
 }
 /**
  * main method that combines runs this function
  * @returns {void}
  */
-function run() {
+async function run() {
     Log.info('Retrieve.js started');
     Log.debug('');
     Log.debug('Parameters');
@@ -71,6 +74,9 @@ function run() {
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
 
+    Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    process.chdir(CONFIG.tmpDirectory);
+    Log.debug(process.cwd());
     try {
         Log.info('');
         Log.info('Clone repository');
@@ -100,6 +106,7 @@ function run() {
     }
     let retrieveFolder;
     let sourceBU;
+    let metadataJson;
     try {
         Log.info('');
         Log.info('Determine retrieve folder');
@@ -117,7 +124,7 @@ function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        Retrieve.retrieveComponents(sourceBU, retrieveFolder);
+        metadataJson = await Retrieve.retrieveComponents(sourceBU, retrieveFolder);
     } catch (ex) {
         Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
@@ -126,12 +133,12 @@ function run() {
 
     try {
         Log.info('');
-        Log.info('Build metadata JSON');
+        Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Metadata.createMetadataFile(retrieveFolder, sourceBU, CONFIG.metadataFilePath);
+        Metadata.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
-        Log.info('Creating Metadata file failed:' + ex.message);
+        Log.info('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
     try {
@@ -305,14 +312,14 @@ class Util {
      * @returns {void}
      */
     static provideMCDevTools() {
-        Util.execCommand(
-            'Initializing npm',
-            ['cd ' + CONFIG.tmpDirectory, 'npm init -y'],
-            'Completed initializing NPM'
-        );
+        if (fs.existsSync('package.json')) {
+            Log.debug('package.json found, assuming npm was already initialized');
+        } else {
+            Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
+        }
         let installer;
         if (process.env.LOCAL_DEV) {
-            installer = process.env.LOCAL_mcdev;
+            installer = CONFIG.mcdevVersion;
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
 
@@ -327,7 +334,6 @@ class Util {
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
             [
-                'cd ' + CONFIG.tmpDirectory,
                 `npm install --save ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
@@ -351,7 +357,7 @@ class Util {
             }
         }`;
         Log.progress('Provide authentication');
-        fs.writeFileSync(CONFIG.tmpDirectory + '/.mcdev-auth.json', authJson);
+        fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -466,11 +472,11 @@ class Retrieve {
      * TODO: replace execCommand with call to required mcdev
      * @param {string} sourceBU specific subfolder for downloads
      * @param {string} [retrieveFolder] place where mcdev will download to
-     * @returns {void}
+     * @returns {object} changelog JSON
      */
-    static retrieveComponents(sourceBU, retrieveFolder) {
+    static async retrieveComponents(sourceBU, retrieveFolder) {
         if (retrieveFolder) {
-            const retrievePath = path.join(CONFIG.tmpDirectory, retrieveFolder, sourceBU);
+            const retrievePath = path.join(retrieveFolder, sourceBU);
             let retrievePathFixed = retrievePath;
             if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
                 retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
@@ -481,14 +487,99 @@ class Retrieve {
             }
         }
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
-        Util.execCommand(
-            'Retrieve components from ' + sourceBU,
-            [
-                'cd ' + CONFIG.tmpDirectory,
-                `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`,
-            ],
-            'Completed retrieving components'
+        // Util.execCommand(
+        //     'Retrieve components from ' + sourceBU,
+        //     [
+        //         'cd ' + CONFIG.tmpDirectory,
+        //         `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`,
+        //     ],
+        //     'Completed retrieving components'
+        // );
+        const mcdev = require('./tmp/node_modules/mcdev/lib/');
+        const Definition = require('./tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
+        const MetadataType = require('./tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+
+        const customDefinition = {
+            automation: {
+                keyField: 'CustomerKey',
+                nameField: 'Name',
+                createdDateField: 'CreatedDate',
+                createdNameField: 'CreatedBy',
+                lastmodDateField: 'LastSaveDate',
+                lastmodNameField: 'LastSavedBy',
+            },
+        };
+        // get userid>name mapping
+        const userList = (await mcdev.retrieve(sourceBU, 'accountUser', true)).accountUser;
+        // reduce userList to simple id-name map
+        Object.keys(userList).forEach((key) => {
+            userList[userList[key].ID] = userList[key].Name;
+            delete userList[key];
+        });
+
+        // get changed metadata
+        const changelogList = await mcdev.retrieve(sourceBU, null, true);
+        const allMetadata = [];
+        Object.keys(changelogList).map((type) => {
+            if (changelogList[type]) {
+                const def = customDefinition[type] || Definition[type];
+                allMetadata.push(
+                    ...Object.keys(changelogList[type]).map((key) => {
+                        const item = changelogList[type][key];
+                        if (
+                            MetadataType[type].isFiltered(item, true) ||
+                            MetadataType[type].isFiltered(item, false)
+                        ) {
+                            return;
+                        }
+
+                        const listEntry = {
+                            name: Retrieve.getAttrValue(item, def.nameField),
+                            key: Retrieve.getAttrValue(item, def.keyField),
+                            t: type,
+                            cd: Retrieve.getAttrValue(item, def.createdDateField),
+                            cb: Retrieve.getUserName(userList, item, def.createdNameField),
+                            ld: item[def.lastmodDateField],
+                            lb: Retrieve.getUserName(userList, item, def.lastmodNameField),
+                        };
+                        return listEntry;
+                    })
+                );
+            }
+        });
+        return allMetadata.filter((item) => undefined !== item);
+    }
+    /**
+     *
+     * @param {object<string,string>} userList user-id > user-name map
+     * @param {object<string,string>} item single metadata item
+     * @param {string} fieldname name of field containing the info
+     * @returns {string} username or user id or 'n/a'
+     */
+    static getUserName(userList, item, fieldname) {
+        return (
+            userList[this.getAttrValue(item, fieldname)] ||
+            this.getAttrValue(item, fieldname) ||
+            'n/a'
         );
+    }
+    /**
+     * helps get the value of complex and simple field references alike
+     * @param {MetadataItem} obj one item
+     * @param {string} key field key
+     * @returns {string} value of attribute
+     */
+    static getAttrValue(obj, key) {
+        if (!key) {
+            return null;
+        }
+        if (key.includes('.')) {
+            const keys = key.split('.');
+            const first = keys.shift();
+            return this.getAttrValue(obj[first], keys.join('.'));
+        } else {
+            return obj[key];
+        }
     }
 }
 
@@ -505,17 +596,30 @@ class Metadata {
      * @param {string} metadataFilePath filename & path to where we store the final json for copado
      * @returns {void}
      */
-    static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
-        const retrievePath = path.join(CONFIG.tmpDirectory, retrieveFolder, sourceBU);
-        let retrievePathFixed = retrievePath;
-        if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-            retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-        }
-        /**
-         * @type {MetadataItem}
-         */
-        const metadataJson = [];
-        Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+    // static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
+    //     const retrievePath = path.join(retrieveFolder, sourceBU);
+    //     let retrievePathFixed = retrievePath;
+    //     if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
+    //         retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+    //     }
+    //     /**
+    //      * @type {MetadataItem}
+    //      */
+    //     const metadataJson = [];
+    //     Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+    //     const metadataString = JSON.stringify(metadataJson);
+    //     // Log.debug('Metadata JSON is: ' + metadataString);
+    //     fs.writeFileSync(metadataFilePath, metadataString);
+    // }
+    /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     * @param {MetadataItem[]} metadataJson path where downloaded files are
+     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @returns {void}
+     */
+    static saveMetadataFile(metadataJson, metadataFilePath) {
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
@@ -531,53 +635,53 @@ class Metadata {
      * @param {MetadataItem[]} metadataJson reference to array that we want to pass to copado
      * @returns {void}
      */
-    static _buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
-        // Handle files within the current directory
-        const filesAndFolders = fs
-            .readdirSync(retrieveFolder)
-            .map((entry) => path.join(retrieveFolder, entry));
-        let skipped = 0;
-        filesAndFolders.forEach((filePath) => {
-            if (fs.statSync(filePath).isFile()) {
-                const dirName = path.dirname(filePath);
-                const componentType = path.basename(dirName);
+    // static _buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
+    //     // Handle files within the current directory
+    //     const filesAndFolders = fs
+    //         .readdirSync(retrieveFolder)
+    //         .map((entry) => path.join(retrieveFolder, entry));
+    //     let skipped = 0;
+    //     filesAndFolders.forEach((filePath) => {
+    //         if (fs.statSync(filePath).isFile()) {
+    //             const dirName = path.dirname(filePath);
+    //             const componentType = path.basename(dirName);
 
-                let componentJson;
-                switch (componentType) {
-                    case 'automation':
-                        Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-                        componentJson = Metadata._buildAutomationMetadataJson(filePath);
-                        break;
-                    case 'dataExtension':
-                        Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-                        componentJson = Metadata._buildDataExtensionMetadataJson(filePath);
-                        break;
-                    default:
-                        Log.info(
-                            'Skipping: Component ' +
-                                filePath +
-                                ' with type ' +
-                                componentType +
-                                ' is not supported'
-                        );
-                        skipped++;
-                        return;
-                }
+    //             let componentJson;
+    //             switch (componentType) {
+    //                 case 'automation':
+    //                     Log.debug('Handle component ' + filePath + ' with type ' + componentType);
+    //                     componentJson = Metadata._buildAutomationMetadataJson(filePath);
+    //                     break;
+    //                 case 'dataExtension':
+    //                     Log.debug('Handle component ' + filePath + ' with type ' + componentType);
+    //                     componentJson = Metadata._buildDataExtensionMetadataJson(filePath);
+    //                     break;
+    //                 default:
+    //                     Log.info(
+    //                         'Skipping: Component ' +
+    //                             filePath +
+    //                             ' with type ' +
+    //                             componentType +
+    //                             ' is not supported'
+    //                     );
+    //                     skipped++;
+    //                     return;
+    //             }
 
-                // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
-                metadataJson.push(componentJson);
-            }
-        });
-        Log.info('Good items:' + metadataJson.length);
-        Log.info('Skipped items:' + skipped);
+    //             // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
+    //             metadataJson.push(componentJson);
+    //         }
+    //     });
+    //     Log.info('Good items:' + metadataJson.length);
+    //     Log.info('Skipped items:' + skipped);
 
-        // Get folders within the current directory
-        filesAndFolders.forEach((folderPath) => {
-            if (fs.statSync(folderPath).isDirectory()) {
-                Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
-            }
-        });
-    }
+    //     // Get folders within the current directory
+    //     filesAndFolders.forEach((folderPath) => {
+    //         if (fs.statSync(folderPath).isDirectory()) {
+    //             Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
+    //         }
+    //     });
+    // }
 
     /**
      * Build the metadata JSON for a automation component
@@ -586,25 +690,25 @@ class Metadata {
      * @param {string} [action] pass in value do govern what to do
      * @returns {MetadataItem} one table row
      */
-    static _buildAutomationMetadataJson(filePath, action) {
-        // Load the file
-        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    // static _buildAutomationMetadataJson(filePath, action) {
+    //     // Load the file
+    //     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-        const metadata = {};
-        metadata['n'] = parsed['name'] ? parsed['name'] : parsed['key'];
-        metadata['k'] = parsed['key'];
-        metadata['t'] = 'automation';
-        // metadata['cd'] = parsed[''];
-        // metadata['cb'] = parsed[''];
-        // metadata['ld'] = parsed[''];
-        // metadata['lb'] = parsed[''];
+    //     const metadata = {};
+    //     metadata['n'] = parsed['name'] ? parsed['name'] : parsed['key'];
+    //     metadata['k'] = parsed['key'];
+    //     metadata['t'] = 'automation';
+    //     // metadata['cd'] = parsed[''];
+    //     // metadata['cb'] = parsed[''];
+    //     // metadata['ld'] = parsed[''];
+    //     // metadata['lb'] = parsed[''];
 
-        if (action) {
-            metadata.a = action;
-        }
+    //     if (action) {
+    //         metadata.a = action;
+    //     }
 
-        return metadata;
-    }
+    //     return metadata;
+    // }
 
     /**
      * Build the metadata JSON for a data extension component
@@ -613,25 +717,25 @@ class Metadata {
      * @param {string} [action] pass in value do govern what to do
      * @returns {MetadataItem} one table row
      */
-    static _buildDataExtensionMetadataJson(filePath, action) {
-        // Load the file
-        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
+    // static _buildDataExtensionMetadataJson(filePath, action) {
+    //     // Load the file
+    //     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
 
-        const metadata = {};
-        metadata['n'] = parsed['Name'] ? parsed['Name'] : parsed['CustomerKey'];
-        metadata['k'] = parsed['CustomerKey'];
-        metadata['t'] = 'dataExtension';
-        metadata['cd'] = parsed['CreatedDate'];
-        // metadata['cb'] = parsed[''];
-        // metadata['ld'] = parsed[''];
-        // metadata['lb'] = parsed[''];
+    //     const metadata = {};
+    //     metadata['n'] = parsed['Name'] ? parsed['Name'] : parsed['CustomerKey'];
+    //     metadata['k'] = parsed['CustomerKey'];
+    //     metadata['t'] = 'dataExtension';
+    //     metadata['cd'] = parsed['CreatedDate'];
+    //     // metadata['cb'] = parsed[''];
+    //     // metadata['ld'] = parsed[''];
+    //     // metadata['lb'] = parsed[''];
 
-        if (action) {
-            metadata.a = action;
-        }
+    //     if (action) {
+    //         metadata.a = action;
+    //     }
 
-        return metadata;
-    }
+    //     return metadata;
+    // }
 }
 
 /**
@@ -646,10 +750,7 @@ class Copado {
     static attachJson(metadataFilePath) {
         Util.execCommand(
             'Attach JSON ' + metadataFilePath,
-            [
-                'cd ' + CONFIG.tmpDirectory,
-                'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
-            ],
+            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
             'Completed attaching JSON'
         );
     }
@@ -677,13 +778,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            ['cd ' + CONFIG.tmpDirectory, 'copado-git-get "' + mainBranch + '"'],
+            ['copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                ['cd ' + CONFIG.tmpDirectory, 'copado-git-get --create "' + featureBranch + '"'],
+                ['copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
@@ -697,9 +798,9 @@ class Copado {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync(CONFIG.tmpDirectory + '/logs').forEach((file) => {
+            fs.readdirSync('logs').forEach((file) => {
                 Log.debug('- ' + file);
-                Copado.attachLog(CONFIG.tmpDirectory + '/logs/' + file);
+                Copado.attachLog('logs/' + file);
             });
             Log.progress('Attached mcdev logs');
         } catch (error) {
