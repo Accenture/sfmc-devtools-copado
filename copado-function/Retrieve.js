@@ -51,8 +51,8 @@ if (process.env.LOCAL_DEV === 'true') {
     CONFIG.metadataFilePath = '.' + CONFIG.metadataFilePath;
     CONFIG.configFilePath = '.' + CONFIG.configFilePath;
     CONFIG.tmpDirectory = '.' + CONFIG.tmpDirectory;
-    fs.rmdirSync(CONFIG.tmpDirectory, { recursive: true, force: true });
-    fs.mkdirSync(CONFIG.tmpDirectory);
+    // fs.rmdirSync(CONFIG.tmpDirectory, { recursive: true, force: true });
+    // fs.mkdirSync(CONFIG.tmpDirectory);
 }
 /**
  * main method that combines runs this function
@@ -311,7 +311,9 @@ class Util {
             'Completed initializing NPM'
         );
         let installer;
-        if (CONFIG.mcdevVersion.charAt(0) === '#') {
+        if (process.env.LOCAL_DEV) {
+            installer = process.env.LOCAL_mcdev;
+        } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
 
             installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
@@ -473,8 +475,10 @@ class Retrieve {
             if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
                 retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
             }
-            Log.info('Delete retrieve folder ' + retrievePathFixed);
-            fs.rmSync(retrievePathFixed, { recursive: true, force: true });
+            if (!process.env.LOCAL_DEV) {
+                Log.info('Delete retrieve folder ' + retrievePathFixed);
+                fs.rmSync(retrievePathFixed, { recursive: true, force: true });
+            }
         }
         // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
         Util.execCommand(
