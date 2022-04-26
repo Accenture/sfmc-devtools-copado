@@ -14,6 +14,22 @@
       "command": "npm run cop_retrieve",
       "cwd": "${workspaceFolder}",
       "envFile": "${workspaceFolder}/copado-function/environments/Retrieve.env",
+    },
+    {
+      "type": "node-terminal",
+      "name": "debug: cop_commit",
+      "request": "launch",
+      "command": "npm run cop_commit",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/copado-function/environments/Commit.env",
+    },
+    {
+      "type": "node-terminal",
+      "name": "debug: cop_deploy",
+      "request": "launch",
+      "command": "npm run cop_deploy",
+      "cwd": "${workspaceFolder}",
+      "envFile": "${workspaceFolder}/copado-function/environments/Deploy.env",
     }
   ]
 }
