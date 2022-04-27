@@ -26,12 +26,12 @@ const CONFIG = {
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
     mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
-        ? 'node ./node_modules/mcdev/lib/index.js'
-        : 'node ./node_modules/mcdev/lib/cli.js',
+        ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
+        : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json',
     tenant: process.env.tenant,
-    tmpDirectory: '/tmp',
+    tmpDirectory: '../tmp',
     // commit
     commitMessage: null,
     featureBranch: null,
@@ -46,17 +46,6 @@ const CONFIG = {
     toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
-if (process.env.LOCAL_DEV === 'true') {
-    // for local development only
-    // CONFIG.metadataFilePath = '.' + CONFIG.metadataFilePath;
-    // CONFIG.configFilePath = '.' + CONFIG.configFilePath;
-    CONFIG.tmpDirectoryRequire = '.' + CONFIG.tmpDirectory;
-    CONFIG.tmpDirectory = './copado-function' + CONFIG.tmpDirectory;
-    // fs.rmdirSync(CONFIG.tmpDirectory, { recursive: true, force: true });
-    // fs.mkdirSync(CONFIG.tmpDirectory);
-} else {
-    CONFIG.tmpDirectoryRequire = CONFIG.tmpDirectory;
-}
 /**
  * main method that combines runs this function
  * @returns {void}
@@ -495,9 +484,9 @@ class Retrieve {
         //     ],
         //     'Completed retrieving components'
         // );
-        const mcdev = require('./tmp/node_modules/mcdev/lib/');
-        const Definition = require('./tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
-        const MetadataType = require('./tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
+        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
 
         const customDefinition = {
             automation: {
@@ -778,13 +767,19 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            ['copado-git-get "' + mainBranch + '"'],
+            [
+                'git config --global --add safe.directory /tmp',
+                'copado-git-get "' + mainBranch + '"',
+            ],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                ['copado-git-get --create "' + featureBranch + '"'],
+                [
+                    'git config --global --add safe.directory /tmp',
+                    'copado-git-get --create "' + featureBranch + '"',
+                ],
                 'Completed creating/checking out feature branch'
             );
         }
