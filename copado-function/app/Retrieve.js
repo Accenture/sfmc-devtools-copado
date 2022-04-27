@@ -29,7 +29,7 @@ const CONFIG = {
         ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: 'mcmetadata.json',
+    metadataFilePath: 'retrieveChangelog.json',
     tenant: process.env.tenant,
     tmpDirectory: '../tmp',
     // commit
