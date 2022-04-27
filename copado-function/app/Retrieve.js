@@ -523,8 +523,8 @@ class Retrieve {
                         }
 
                         const listEntry = {
-                            name: Retrieve.getAttrValue(item, def.nameField),
-                            key: Retrieve.getAttrValue(item, def.keyField),
+                            n: Retrieve.getAttrValue(item, def.nameField),
+                            k: Retrieve.getAttrValue(item, def.keyField),
                             t: type,
                             cd: Retrieve.getAttrValue(item, def.createdDateField),
                             cb: Retrieve.getUserName(userList, item, def.createdNameField),
