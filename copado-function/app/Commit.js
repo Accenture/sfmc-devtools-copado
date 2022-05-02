@@ -122,18 +122,6 @@ async function run() {
             );
 
             commitSelectionArr = JSON.parse(fs.readFileSync(CONFIG.fileSelectionFileName, 'utf8'));
-            // } else {
-            //     Log.info('');
-            //     Log.info('Add all components to the metadata JSON');
-            //     Log.info('=======================================');
-            //     Log.info('');
-            //     const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-            //     let retrievePathFixed = retrievePath;
-            //     if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-            //         retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-            //     }
-            //     metadataJson = [];
-            //     Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
         }
     } catch (ex) {
         Log.info('Getting Commit-selection file failed:' + ex.message);
@@ -159,7 +147,7 @@ async function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        Retrieve.retrieveCommitSelection(sourceBU, commitSelectionArr);
+        await Retrieve.retrieveCommitSelection(sourceBU, commitSelectionArr);
     } catch (ex) {
         Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
@@ -572,7 +560,7 @@ class Retrieve {
         // get unique list of types that need to be retrieved
         const typeList = [...new Set(commitSelectionArr.map((item) => item.t))].join(',');
         // download all types of which
-        mcdev.retrieve(sourceBU, typeList, false);
+        await mcdev.retrieve(sourceBU, typeList, false);
     }
 
     /**
