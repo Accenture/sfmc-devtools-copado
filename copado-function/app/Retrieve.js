@@ -12,7 +12,6 @@
  */
 
 const fs = require('fs');
-const path = require('path');
 const execSync = require('child_process').execSync;
 
 const CONFIG = {
@@ -93,16 +92,9 @@ async function run() {
         Log.error('initializing failed:' + ex.message);
         throw ex;
     }
-    let retrieveFolder;
     let sourceBU;
     let metadataJson;
     try {
-        Log.info('');
-        Log.info('Determine retrieve folder');
-        Log.info('=========================');
-        Log.info('');
-        retrieveFolder = Retrieve.getRetrieveFolder();
-
         Log.info('');
         Log.info('Get source BU');
         Log.info('=============');
@@ -113,7 +105,7 @@ async function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        metadataJson = await Retrieve.retrieveComponents(sourceBU, retrieveFolder);
+        metadataJson = await Retrieve.retrieveChangelog(sourceBU);
     } catch (ex) {
         Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
@@ -459,22 +451,9 @@ class Retrieve {
      * The retrieve folder is deleted before retrieving to make
      * sure we have only components that really exist in the BU.
      * @param {string} sourceBU specific subfolder for downloads
-     * @param {string} [retrieveFolder] place where mcdev will download to
      * @returns {object} changelog JSON
      */
-    static async retrieveComponents(sourceBU, retrieveFolder) {
-        if (retrieveFolder) {
-            const retrievePath = path.join(retrieveFolder, sourceBU);
-            let retrievePathFixed = retrievePath;
-            if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-                retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-            }
-            if (!process.env.LOCAL_DEV) {
-                Log.info('Delete retrieve folder ' + retrievePathFixed);
-                fs.rmSync(retrievePathFixed, { recursive: true, force: true });
-            }
-        }
-
+    static async retrieveChangelog(sourceBU) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
