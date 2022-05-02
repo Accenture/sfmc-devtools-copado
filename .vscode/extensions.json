@@ -5,6 +5,7 @@
     "dbaeumer.vscode-eslint",
     "esbenp.prettier-vscode",
     "github.vscode-pull-request-github",
-    "financialforce.lana"
+    "financialforce.lana",
+    "mikestead.dotenv"
   ]
 }
