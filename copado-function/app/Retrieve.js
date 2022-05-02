@@ -125,7 +125,7 @@ async function run() {
         Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Metadata.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
+        Retrieve.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
         Log.info('Saving metadata JSON failed:' + ex.message);
         throw ex;
@@ -458,7 +458,6 @@ class Retrieve {
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
      * sure we have only components that really exist in the BU.
-     * TODO: replace execCommand with call to required mcdev
      * @param {string} sourceBU specific subfolder for downloads
      * @param {string} [retrieveFolder] place where mcdev will download to
      * @returns {object} changelog JSON
@@ -475,15 +474,6 @@ class Retrieve {
                 fs.rmSync(retrievePathFixed, { recursive: true, force: true });
             }
         }
-        // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
-        // Util.execCommand(
-        //     'Retrieve components from ' + sourceBU,
-        //     [
-        //         'cd ' + CONFIG.tmpDirectory,
-        //         `${CONFIG.mcdev_exec} retrieve ${sourceBU} --skipInteraction --silent`,
-        //     ],
-        //     'Completed retrieving components'
-        // );
 
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
@@ -525,13 +515,13 @@ class Retrieve {
                         }
 
                         const listEntry = {
-                            n: Retrieve.getAttrValue(item, def.nameField),
-                            k: Retrieve.getAttrValue(item, def.keyField),
+                            n: Retrieve._getAttrValue(item, def.nameField),
+                            k: Retrieve._getAttrValue(item, def.keyField),
                             t: type,
-                            cd: Retrieve.getAttrValue(item, def.createdDateField),
-                            cb: Retrieve.getUserName(userList, item, def.createdNameField),
+                            cd: Retrieve._getAttrValue(item, def.createdDateField),
+                            cb: Retrieve._getUserName(userList, item, def.createdNameField),
                             ld: item[def.lastmodDateField],
-                            lb: Retrieve.getUserName(userList, item, def.lastmodNameField),
+                            lb: Retrieve._getUserName(userList, item, def.lastmodNameField),
                         };
                         return listEntry;
                     })
@@ -542,66 +532,38 @@ class Retrieve {
     }
     /**
      *
+     * @private
      * @param {object<string,string>} userList user-id > user-name map
      * @param {object<string,string>} item single metadata item
      * @param {string} fieldname name of field containing the info
      * @returns {string} username or user id or 'n/a'
      */
-    static getUserName(userList, item, fieldname) {
+    static _getUserName(userList, item, fieldname) {
         return (
-            userList[this.getAttrValue(item, fieldname)] ||
-            this.getAttrValue(item, fieldname) ||
+            userList[this._getAttrValue(item, fieldname)] ||
+            this._getAttrValue(item, fieldname) ||
             'n/a'
         );
     }
     /**
      * helps get the value of complex and simple field references alike
+     * @private
      * @param {MetadataItem} obj one item
      * @param {string} key field key
      * @returns {string} value of attribute
      */
-    static getAttrValue(obj, key) {
+    static _getAttrValue(obj, key) {
         if (!key) {
             return null;
         }
         if (key.includes('.')) {
             const keys = key.split('.');
             const first = keys.shift();
-            return this.getAttrValue(obj[first], keys.join('.'));
+            return this._getAttrValue(obj[first], keys.join('.'));
         } else {
             return obj[key];
         }
     }
-}
-
-/**
- * handles creating the metadata json that we store for copado after retrieving it
- */
-class Metadata {
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     * @param {string} retrieveFolder path where downloaded files are
-     * @param {string} sourceBU subfolder for BU
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
-     * @returns {void}
-     */
-    // static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
-    //     const retrievePath = path.join(retrieveFolder, sourceBU);
-    //     let retrievePathFixed = retrievePath;
-    //     if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-    //         retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-    //     }
-    //     /**
-    //      * @type {MetadataItem}
-    //      */
-    //     const metadataJson = [];
-    //     Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-    //     const metadataString = JSON.stringify(metadataJson);
-    //     // Log.debug('Metadata JSON is: ' + metadataString);
-    //     fs.writeFileSync(metadataFilePath, metadataString);
-    // }
     /**
      * After components have been retrieved,
      * find all retrieved components and build a json containing as much
@@ -615,118 +577,6 @@ class Metadata {
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
     }
-
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     * @private
-     * @param {string} retrieveFolder path where downloaded files are
-     * @param {string} sourceBU subfolder for BU
-     * @param {MetadataItem[]} metadataJson reference to array that we want to pass to copado
-     * @returns {void}
-     */
-    // static _buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
-    //     // Handle files within the current directory
-    //     const filesAndFolders = fs
-    //         .readdirSync(retrieveFolder)
-    //         .map((entry) => path.join(retrieveFolder, entry));
-    //     let skipped = 0;
-    //     filesAndFolders.forEach((filePath) => {
-    //         if (fs.statSync(filePath).isFile()) {
-    //             const dirName = path.dirname(filePath);
-    //             const componentType = path.basename(dirName);
-
-    //             let componentJson;
-    //             switch (componentType) {
-    //                 case 'automation':
-    //                     Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-    //                     componentJson = Metadata._buildAutomationMetadataJson(filePath);
-    //                     break;
-    //                 case 'dataExtension':
-    //                     Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-    //                     componentJson = Metadata._buildDataExtensionMetadataJson(filePath);
-    //                     break;
-    //                 default:
-    //                     Log.info(
-    //                         'Skipping: Component ' +
-    //                             filePath +
-    //                             ' with type ' +
-    //                             componentType +
-    //                             ' is not supported'
-    //                     );
-    //                     skipped++;
-    //                     return;
-    //             }
-
-    //             // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
-    //             metadataJson.push(componentJson);
-    //         }
-    //     });
-    //     Log.info('Good items:' + metadataJson.length);
-    //     Log.info('Skipped items:' + skipped);
-
-    //     // Get folders within the current directory
-    //     filesAndFolders.forEach((folderPath) => {
-    //         if (fs.statSync(folderPath).isDirectory()) {
-    //             Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
-    //         }
-    //     });
-    // }
-
-    /**
-     * Build the metadata JSON for a automation component
-     * @private
-     * @param {string} filePath path to json
-     * @param {string} [action] pass in value do govern what to do
-     * @returns {MetadataItem} one table row
-     */
-    // static _buildAutomationMetadataJson(filePath, action) {
-    //     // Load the file
-    //     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-    //     const metadata = {};
-    //     metadata['n'] = parsed['name'] ? parsed['name'] : parsed['key'];
-    //     metadata['k'] = parsed['key'];
-    //     metadata['t'] = 'automation';
-    //     // metadata['cd'] = parsed[''];
-    //     // metadata['cb'] = parsed[''];
-    //     // metadata['ld'] = parsed[''];
-    //     // metadata['lb'] = parsed[''];
-
-    //     if (action) {
-    //         metadata.a = action;
-    //     }
-
-    //     return metadata;
-    // }
-
-    /**
-     * Build the metadata JSON for a data extension component
-     * @private
-     * @param {string} filePath path to json
-     * @param {string} [action] pass in value do govern what to do
-     * @returns {MetadataItem} one table row
-     */
-    // static _buildDataExtensionMetadataJson(filePath, action) {
-    //     // Load the file
-    //     const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-    //     const metadata = {};
-    //     metadata['n'] = parsed['Name'] ? parsed['Name'] : parsed['CustomerKey'];
-    //     metadata['k'] = parsed['CustomerKey'];
-    //     metadata['t'] = 'dataExtension';
-    //     metadata['cd'] = parsed['CreatedDate'];
-    //     // metadata['cb'] = parsed[''];
-    //     // metadata['ld'] = parsed[''];
-    //     // metadata['lb'] = parsed[''];
-
-    //     if (action) {
-    //         metadata.a = action;
-    //     }
-
-    //     return metadata;
-    // }
 }
 
 /**
