@@ -35,7 +35,7 @@ const CONFIG = {
     // commit
     commitMessage: null,
     featureBranch: null,
-    metadataFile: null,
+    metadataFile: null, // TODO: check if this duplicates CONFIG.metadataFilePath
     metadataFileName: null,
     // deploy
     deltaPackageLog: null,
@@ -484,6 +484,8 @@ class Retrieve {
         //     ],
         //     'Completed retrieving components'
         // );
+
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
         const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
