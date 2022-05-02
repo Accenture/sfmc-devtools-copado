@@ -10,32 +10,41 @@
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
  */
+/**
+ * @typedef {object} CommitSelection
+ * @property {string} t type
+ * @property {string} n name
+ * @property {string} m ???
+ * @property {string} j json string with exta info
+ * @property {'sfmc'} c system
+ * @property {'add'} a action
+ */
 
 const fs = require('fs');
-const path = require('path');
 const execSync = require('child_process').execSync;
 
 const CONFIG = {
     // generic
     clientId: process.env.clientId,
     clientSecret: process.env.clientSecret,
-    configFilePath: '/tmp/.mcdevrc.json',
+    configFilePath: '.mcdevrc.json',
     credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
     mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
-        ? 'node ./node_modules/mcdev/lib/index.js'
-        : 'node ./node_modules/mcdev/lib/cli.js',
+        ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
+        : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: '/tmp/mcmetadata.json',
+    metadataFilePath: 'retrieveChangelog.json',
     tenant: process.env.tenant,
+    tmpDirectory: '../tmp',
     // commit
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
-    metadataFile: process.env.metadata_file, // TODO: check if this duplicates CONFIG.metadataFilePath
-    metadataFileName: 'Copado Commit changes.json',
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileSelectionFileName: 'Copado Commit changes.json',
     // deploy
     deltaPackageLog: null,
     fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
@@ -49,7 +58,7 @@ const CONFIG = {
  * main method that combines runs this function
  * @returns {void}
  */
-function run() {
+async function run() {
     Log.info('Commit.js started');
     Log.debug('');
     Log.debug('Parameters');
@@ -62,6 +71,9 @@ function run() {
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
 
+    Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    process.chdir(CONFIG.tmpDirectory);
+    Log.debug(process.cwd());
     try {
         Log.info('');
         Log.info('Clone repository');
@@ -90,6 +102,44 @@ function run() {
         throw ex;
     }
 
+    /**
+     * @type CommitSelection[]
+     */
+    let commitSelectionArr;
+    try {
+        if (CONFIG.fileSelectionSalesforceId) {
+            Log.info('');
+            Log.info(
+                `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
+            );
+            Log.info('====================================================================');
+            Log.info('');
+
+            Util.execCommand(
+                `Download ${CONFIG.fileSelectionSalesforceId}.`,
+                `copado --downloadfiles "${CONFIG.fileSelectionSalesforceId}"`,
+                'Completed download'
+            );
+
+            commitSelectionArr = JSON.parse(fs.readFileSync(CONFIG.fileSelectionFileName, 'utf8'));
+            // } else {
+            //     Log.info('');
+            //     Log.info('Add all components to the metadata JSON');
+            //     Log.info('=======================================');
+            //     Log.info('');
+            //     const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
+            //     let retrievePathFixed = retrievePath;
+            //     if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
+            //         retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
+            //     }
+            //     metadataJson = [];
+            //     Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
+        }
+    } catch (ex) {
+        Log.info('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
     let retrieveFolder;
     let sourceBU;
     try {
@@ -109,44 +159,10 @@ function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        Retrieve.retrieveComponents(sourceBU); // TODO check why retrieveFolder is not passed in
+        Retrieve.retrieveCommitSelection(sourceBU, commitSelectionArr);
     } catch (ex) {
         Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
-        throw ex;
-    }
-
-    let metadataJson;
-    try {
-        if (!CONFIG.metadataFile) {
-            Log.info('');
-            Log.info('Add all components to the metadata JSON');
-            Log.info('=======================================');
-            Log.info('');
-            const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-            let retrievePathFixed = retrievePath;
-            if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-                retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-            }
-            metadataJson = [];
-            Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-        } else {
-            Log.info('');
-            Log.info(`Add selected components defined in ${CONFIG.metadataFile} to metadata JSON`);
-            Log.info('====================================================================');
-            Log.info('');
-
-            Util.execCommand(
-                `Download ${CONFIG.metadataFile}.`,
-                `copado --downloadfiles "${CONFIG.metadataFile}"`,
-                'Completed download'
-            );
-
-            const metadata = fs.readFileSync(CONFIG.metadataFileName, 'utf8');
-            metadataJson = JSON.parse(metadata);
-        }
-    } catch (ex) {
-        Log.info('Getting Metadata file failed:' + ex.message);
         throw ex;
     }
 
@@ -155,7 +171,7 @@ function run() {
         Log.info('Add components in metadata JSON to Git history');
         Log.info('==============================================');
         Log.info('');
-        Commit.addSelectedComponents(retrieveFolder, sourceBU, metadataJson);
+        Commit.addSelectedComponents(retrieveFolder, sourceBU, commitSelectionArr);
     } catch (ex) {
         Log.info('git add failed:' + ex.message);
         throw ex;
@@ -325,13 +341,15 @@ class Util {
      * @returns {void}
      */
     static provideMCDevTools() {
-        Util.execCommand(
-            'Initializing npm',
-            ['cd /tmp', 'npm init -y'],
-            'Completed initializing NPM'
-        );
+        if (fs.existsSync('package.json')) {
+            Log.debug('package.json found, assuming npm was already initialized');
+        } else {
+            Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
+        }
         let installer;
-        if (CONFIG.mcdevVersion.charAt(0) === '#') {
+        if (process.env.LOCAL_DEV) {
+            installer = CONFIG.mcdevVersion;
+        } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
 
             installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
@@ -345,7 +363,6 @@ class Util {
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
             [
-                'cd /tmp',
                 `npm install --save ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
@@ -359,17 +376,17 @@ class Util {
      */
     static initProject() {
         const authJson = `{
-             "credentials": {
-                 "${CONFIG.credentialName}": {
-                     "clientId": "${CONFIG.clientId}",
-                     "clientSecret": "${CONFIG.clientSecret}",
-                     "tenant": "${CONFIG.tenant}",
-                     "eid": "${CONFIG.enterpriseId}"
-                 }
-             }
-         }`;
+            "credentials": {
+                "${CONFIG.credentialName}": {
+                    "clientId": "${CONFIG.clientId}",
+                    "clientSecret": "${CONFIG.clientSecret}",
+                    "tenant": "${CONFIG.tenant}",
+                    "eid": "${CONFIG.enterpriseId}"
+                }
+            }
+        }`;
         Log.progress('Provide authentication');
-        fs.writeFileSync('/tmp/.mcdev-auth.json', authJson);
+        fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -481,170 +498,129 @@ class Retrieve {
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
      * sure we have only components that really exist in the BU.
-     * TODO: replace execCommand with call to required mcdev
      * @param {string} sourceBU specific subfolder for downloads
-     * @param {string} [retrieveFolder] place where mcdev will download to
+     * @returns {object} changelog JSON
+     */
+    static async retrieveChangelog(sourceBU) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
+        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+
+        const customDefinition = {
+            automation: {
+                keyField: 'CustomerKey',
+                nameField: 'Name',
+                createdDateField: 'CreatedDate',
+                createdNameField: 'CreatedBy',
+                lastmodDateField: 'LastSaveDate',
+                lastmodNameField: 'LastSavedBy',
+            },
+        };
+        // get userid>name mapping
+        const userList = (await mcdev.retrieve(sourceBU, 'accountUser', true)).accountUser;
+        // reduce userList to simple id-name map
+        Object.keys(userList).forEach((key) => {
+            userList[userList[key].ID] = userList[key].Name;
+            delete userList[key];
+        });
+
+        // get changed metadata
+        const changelogList = await mcdev.retrieve(sourceBU, null, true);
+        const allMetadata = [];
+        Object.keys(changelogList).map((type) => {
+            if (changelogList[type]) {
+                const def = customDefinition[type] || Definition[type];
+                allMetadata.push(
+                    ...Object.keys(changelogList[type]).map((key) => {
+                        const item = changelogList[type][key];
+                        if (
+                            MetadataType[type].isFiltered(item, true) ||
+                            MetadataType[type].isFiltered(item, false)
+                        ) {
+                            return;
+                        }
+
+                        const listEntry = {
+                            n: Retrieve._getAttrValue(item, def.nameField),
+                            k: Retrieve._getAttrValue(item, def.keyField),
+                            t: type,
+                            cd: Retrieve._getAttrValue(item, def.createdDateField),
+                            cb: Retrieve._getUserName(userList, item, def.createdNameField),
+                            ld: item[def.lastmodDateField],
+                            lb: Retrieve._getUserName(userList, item, def.lastmodNameField),
+                        };
+                        return listEntry;
+                    })
+                );
+            }
+        });
+        return allMetadata.filter((item) => undefined !== item);
+    }
+    /**
+     * Retrieve components into a clean retrieve folder.
+     * The retrieve folder is deleted before retrieving to make
+     * sure we have only components that really exist in the BU.
+     * @param {string} sourceBU specific subfolder for downloads
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
      * @returns {void}
      */
-    static retrieveComponents(sourceBU, retrieveFolder) {
-        if (retrieveFolder) {
-            const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-            let retrievePathFixed = retrievePath;
-            if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-                retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-            }
-            Log.info('Delete retrieve folder ' + retrievePathFixed);
-            fs.rmSync(retrievePathFixed, { recursive: true, force: true });
-        }
-        // TODO: should use the retrieve logic from mcdev's retrieveChangelog.js instead
-        Util.execCommand(
-            'Retrieve components from ' + sourceBU,
-            ['cd /tmp', CONFIG.mcdev_exec + ' retrieve ' + sourceBU + ' --skipInteraction'],
-            'Completed retrieving components'
+    static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+
+        // get unique list of types that need to be retrieved
+        const typeList = [...new Set(commitSelectionArr.map((item) => item.t))].join(',');
+        // download all types of which
+        mcdev.retrieve(sourceBU, typeList, false);
+    }
+
+    /**
+     *
+     * @private
+     * @param {object<string,string>} userList user-id > user-name map
+     * @param {object<string,string>} item single metadata item
+     * @param {string} fieldname name of field containing the info
+     * @returns {string} username or user id or 'n/a'
+     */
+    static _getUserName(userList, item, fieldname) {
+        return (
+            userList[this._getAttrValue(item, fieldname)] ||
+            this._getAttrValue(item, fieldname) ||
+            'n/a'
         );
     }
-}
-
-/**
- * handles creating the metadata json that we store for copado after retrieving it
- */
-class Metadata {
+    /**
+     * helps get the value of complex and simple field references alike
+     * @private
+     * @param {MetadataItem} obj one item
+     * @param {string} key field key
+     * @returns {string} value of attribute
+     */
+    static _getAttrValue(obj, key) {
+        if (!key) {
+            return null;
+        }
+        if (key.includes('.')) {
+            const keys = key.split('.');
+            const first = keys.shift();
+            return this._getAttrValue(obj[first], keys.join('.'));
+        } else {
+            return obj[key];
+        }
+    }
     /**
      * After components have been retrieved,
      * find all retrieved components and build a json containing as much
      * metadata as possible.
-     * @param {string} retrieveFolder path where downloaded files are
-     * @param {string} sourceBU subfolder for BU
+     * @param {MetadataItem[]} metadataJson path where downloaded files are
      * @param {string} metadataFilePath filename & path to where we store the final json for copado
      * @returns {void}
      */
-    static createMetadataFile(retrieveFolder, sourceBU, metadataFilePath) {
-        const retrievePath = path.join('/tmp', retrieveFolder, sourceBU);
-        let retrievePathFixed = retrievePath;
-        if (retrievePath.endsWith('/') || retrievePath.endsWith('\\')) {
-            retrievePathFixed = retrievePath.substring(0, retrievePath.length - 1);
-        }
-        /**
-         * @type {MetadataItem}
-         */
-        const metadataJson = [];
-        Metadata._buildMetadataJson(retrievePathFixed, sourceBU, metadataJson);
-        Log.info('Found items:' + metadataJson.length);
+    static saveMetadataFile(metadataJson, metadataFilePath) {
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
-    }
-
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     * @private
-     * @param {string} retrieveFolder path where downloaded files are
-     * @param {string} sourceBU subfolder for BU
-     * @param {MetadataItem[]} metadataJson reference to array that we want to pass to copado
-     * @returns {void}
-     */
-    static _buildMetadataJson(retrieveFolder, sourceBU, metadataJson) {
-        // Handle files within the current directory
-        const filesAndFolders = fs
-            .readdirSync(retrieveFolder)
-            .map((entry) => path.join(retrieveFolder, entry));
-        let skipped = 0;
-        filesAndFolders.forEach((filePath) => {
-            if (fs.statSync(filePath).isFile()) {
-                const dirName = path.dirname(filePath);
-                const componentType = path.basename(dirName);
-
-                let componentJson;
-                switch (componentType) {
-                    case 'automation':
-                        Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-                        componentJson = Metadata._buildAutomationMetadataJson(filePath, 'add');
-                        break;
-                    case 'dataExtension':
-                        Log.debug('Handle component ' + filePath + ' with type ' + componentType);
-                        componentJson = Metadata._buildDataExtensionMetadataJson(filePath, 'add');
-                        break;
-                    default:
-                        Log.info(
-                            'Skipping: Component ' +
-                                filePath +
-                                ' with type ' +
-                                componentType +
-                                ' is not supported'
-                        );
-                        skipped++;
-                        return;
-                }
-
-                // Log.debug('Metadata JSON for component ' + filePath + ' is: ' + JSON.stringify(componentJson));
-                metadataJson.push(componentJson);
-            }
-        });
-        Log.info('Good items:' + metadataJson.length);
-        Log.info('Skipped items:' + skipped);
-
-        // Get folders within the current directory
-        filesAndFolders.forEach((folderPath) => {
-            if (fs.statSync(folderPath).isDirectory()) {
-                Metadata._buildMetadataJson(folderPath, sourceBU, metadataJson);
-            }
-        });
-    }
-
-    /**
-     * Build the metadata JSON for a automation component
-     * @private
-     * @param {string} filePath path to json
-     * @param {string} [action] pass in value do govern what to do
-     * @returns {MetadataItem} one table row
-     */
-    static _buildAutomationMetadataJson(filePath, action) {
-        // Load the file
-        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-        const metadata = {};
-        metadata['n'] = parsed['name'] ? parsed['name'] : parsed['key'];
-        metadata['k'] = parsed['key'];
-        metadata['t'] = 'automation';
-        // metadata['cd'] = parsed[''];
-        // metadata['cb'] = parsed[''];
-        // metadata['ld'] = parsed[''];
-        // metadata['lb'] = parsed[''];
-
-        if (action) {
-            metadata.a = action;
-        }
-
-        return metadata;
-    }
-
-    /**
-     * Build the metadata JSON for a data extension component
-     * @private
-     * @param {string} filePath path to json
-     * @param {string} [action] pass in value do govern what to do
-     * @returns {MetadataItem} one table row
-     */
-    static _buildDataExtensionMetadataJson(filePath, action) {
-        // Load the file
-        const parsed = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-
-        const metadata = {};
-        metadata['n'] = parsed['Name'] ? parsed['Name'] : parsed['CustomerKey'];
-        metadata['k'] = parsed['CustomerKey'];
-        metadata['t'] = 'dataExtension';
-        metadata['cd'] = parsed['CreatedDate'];
-        // metadata['cb'] = parsed[''];
-        // metadata['ld'] = parsed[''];
-        // metadata['lb'] = parsed[''];
-
-        if (action) {
-            metadata.a = action;
-        }
-
-        return metadata;
     }
 }
 
@@ -653,17 +629,14 @@ class Metadata {
  */
 class Copado {
     /**
-     * Finally, attach the resulting metadata JSON.
+     * Finally, attach the resulting metadata JSON to the source environment
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
     static attachJson(metadataFilePath) {
         Util.execCommand(
             'Attach JSON ' + metadataFilePath,
-            [
-                'cd /tmp',
-                'copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"',
-            ],
+            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
             'Completed attaching JSON'
         );
     }
@@ -679,6 +652,7 @@ class Copado {
             'Completed attaching JSON'
         );
     }
+
     /**
      * Checks out the source repository.
      * if a feature branch is available creates
@@ -690,17 +664,24 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            ['cd /tmp', 'copado-git-get "' + mainBranch + '"'],
+            [
+                'git config --global --add safe.directory /tmp',
+                'copado-git-get "' + mainBranch + '"',
+            ],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                ['cd /tmp', 'copado-git-get --create "' + featureBranch + '"'],
+                [
+                    'git config --global --add safe.directory /tmp',
+                    'copado-git-get --create "' + featureBranch + '"',
+                ],
                 'Completed creating/checking out feature branch'
             );
         }
     }
+
     /**
      * to be executed at the very end
      * @returns {void}
@@ -709,9 +690,9 @@ class Copado {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync('/tmp/logs').forEach((file) => {
+            fs.readdirSync('logs').forEach((file) => {
                 Log.debug('- ' + file);
-                Copado.attachLog('/tmp/logs/' + file);
+                Copado.attachLog('logs/' + file);
             });
             Log.progress('Attached mcdev logs');
         } catch (error) {
@@ -725,80 +706,41 @@ class Copado {
  */
 class Commit {
     /**
-     * Checks out the source repository and branch
-     * @param {string} fromCommit commit id to merge
-     * @param {string} toBranch branch name to merge into
-     * @returns {void}
-     */
-    //  static checkoutSrcDeploy(fromCommit, toBranch) {
-    //     // First make sure that the from branch is available
-    //     Util.execCommand(
-    //         'Cloning resp. checking out the repository commit/branch ' + fromCommit,
-    //         ['cd /tmp', 'copado-git-get -d . ' + fromCommit],
-    //         'Completed cloning commit/branch'
-    //     );
-
-    //     // Now checkout the target branch.
-    //     // That branch/commit that contains changed files should be checked out.
-    //     // When working with PRs, this is the target branch, after the source branch
-    //     // has been merged into this branch. So basically the version range to deploy
-    //     // is HEAD^..HEAD.
-    //     Util.execCommand(
-    //         'Cloning resp. checking out the repository branch ' + toBranch,
-    //         ['cd /tmp', 'copado-git-get -d . ' + toBranch],
-    //         'Completed cloning branch'
-    //     );
-    // }
-    /**
-     * Merge from branch into target branch
-     * @param {string} fromCommit commit id to merge
-     * @returns {void}
-     */
-    // static merge(fromCommit) {
-    //     // Merge and commit changes.
-    //     Util.execCommand(
-    //         'Merge commit ' + fromCommit,
-    //         ['cd /tmp', 'git merge "' + fromCommit + '"'],
-    //         'Completed merging commit'
-    //     );
-    // }
-
-    /**
      * After components have been retrieved,
      * adds selected components to the Git history.
      * @param {string} retrieveFolder path from mcdev config
      * @param {string} sourceBU bu name for source
-     * @param {MetadataItem[]} metadataJson list of items to be added
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
      * @returns {void}
      */
-    static addSelectedComponents(retrieveFolder, sourceBU, metadataJson) {
+    static addSelectedComponents(retrieveFolder, sourceBU, commitSelectionArr) {
         // Iterate all metadata components selected by user to commit
         const retrieveFolderSeparator = retrieveFolder.endsWith('/') ? '' : '/';
 
-        metadataJson.forEach((component) => {
-            const name = component['n'];
-            const type = component['t'];
-            const actions = component['a'];
+        commitSelectionArr.forEach((component) => {
+            const name = component.n;
+            const type = component.t;
+            const actions = component.a;
             Log.debug(
                 'For component with name ' + name + ' and type ' + type + ', run actions ' + actions
             );
 
-            let key = null;
+            let key;
             // Add all components
-            if (component['k']) {
-                key = component['k'];
+            if (component.k) {
+                key = component.k;
             }
             // Add selected components
-            else if (component['j']) {
-                const componentJson = JSON.parse(component['j']);
-                if (componentJson['key']) {
-                    key = componentJson['key'];
+            else if (component.j) {
+                const componentJson = JSON.parse(component.j);
+                if (componentJson.key) {
+                    key = componentJson.key;
                 }
             }
             if (!key) {
                 throw 'Could not find key for component with name ' + name + ' and type ' + type;
             }
-            Log.debug('For component with name ' + name + ', key is ' + key);
+            // Log.debug('For component with name ' + name + ', key is ' + key);
 
             if (actions.includes('add')) {
                 // The file name seems to use always the key.
@@ -808,11 +750,12 @@ class Commit {
                     'For component with name ' + name + ', retrieve path is ' + componentPath
                 );
 
-                if (fs.existsSync(`/tmp/${componentPath}`)) {
+                if (fs.existsSync(`${componentPath}`)) {
                     // Add this component to the Git index.
+                    // TODO this does not deal with multi-file types (e.g. query, script, asset)
                     Util.execCommand(
                         'Add ' + componentPath,
-                        ['cd /tmp', 'git add "' + componentPath + '"'],
+                        ['git add "' + componentPath + '"'],
                         'Completed adding component'
                     );
                 } else {
@@ -840,17 +783,17 @@ class Commit {
         // and what is already in Git, so commit and push
         // can be skipped.
         const branch = featureBranch ? featureBranch : mainBranch;
-        const stdout = execSync('cd /tmp && git diff --staged --name-only');
+        const stdout = execSync('git diff --staged --name-only');
         Log.debug('Git diff ended with the result: >' + stdout + '<');
         if (stdout && 0 < stdout.length) {
             Util.execCommand(
                 'Commit',
-                ['cd /tmp', 'git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const ec = Util.execCommandReturnStatus(
                 'Push branch ' + branch,
-                ['cd /tmp', 'git push origin "' + branch + '" --atomic'],
+                ['git push origin "' + branch + '" --atomic'],
                 'Completed pushing branch'
             );
             if (0 != ec) {
