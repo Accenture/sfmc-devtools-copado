@@ -82,7 +82,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     { label: "Key", fieldName: "k", type: "string", sortable: true },
     { label: "Type", fieldName: "t", type: "string", sortable: true },
     {
-      label: "Last Modified By",
+      label: "Last Modified By ID",
       fieldName: "lb",
       type: "string",
       sortable: true
@@ -101,8 +101,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   selectedRows = [];
 
   // Sorting variables
-  defaultSortDirection = "desc";
-  sortDirection = "desc";
+  defaultSortDirection = "asc";
+  sortDirection = "asc";
   sortedBy = "ld";
 
   // Search Functionality related variables
@@ -225,11 +225,17 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
     try {
-      getMetadataFromEnvironment(this.userStoryId).then((result) => {
-        const parsedResult = JSON.parse(result);
-        this.data = parsedResult;
-        this.visibleData = parsedResult;
-      });
+      console.log(
+        "Running Initial getMetadataFromEnvironment, this is the userStoryId: ",
+        this.userStoryId
+      );
+      getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then(
+        (result) => {
+          const parsedResult = JSON.parse(result);
+          this.data = parsedResult;
+          this.visibleData = parsedResult;
+        }
+      );
     } catch (err) {
       console.error("Error while fetching the Metadata from the Org: ", err);
       this.showToastEvent(
@@ -276,6 +282,15 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
           const progressStatus =
             response.data.payload.copado__Progress_Status__c;
 
+          console.log("====================================");
+          console.log(
+            "[DEBUG] Logging the messageCallback response: ",
+            response
+          );
+          console.log("isFinished: ", isFinished);
+          console.log("isSuccess: ", isSuccess);
+          console.log("progressStatus: ", progressStatus);
+          console.log("====================================");
           if (isFinished === false) {
             self.progressStatus = progressStatus;
           } else if (isFinished === true) {
@@ -295,7 +310,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
             if (isSuccess === true) {
               try {
-                getMetadataFromEnvironment().then((result) => {
+                getMetadataFromEnvironment({ userStoryId }).then((result) => {
                   console.log("Metadata fetched from Environment: ", result);
                   const parsedResult = JSON.parse(result);
                   self.data = parsedResult;
@@ -362,7 +377,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
         // if previously Rows have been selected, set them as selected again
         if (self.selectedRows.length > 0) {
-          self.selectedRows = selectedMetadata.map(({ k }) => k);
+          self.selectedRows = self.selectedRows.map(({ k }) => k);
         }
       });
   }
