@@ -37,14 +37,14 @@ const CONFIG = {
         ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: 'retrieveChangelog.json',
+    metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
     tmpDirectory: '../tmp',
     // commit
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json',
+    fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
     // deploy
     deltaPackageLog: null,
     fromCommit: null, // The source branch of a PR, typically something like 'feature/...'

@@ -28,14 +28,14 @@ const CONFIG = {
         ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: 'retrieveChangelog.json',
+    metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
     tmpDirectory: '../tmp',
     // commit
     commitMessage: null,
     featureBranch: null,
-    metadataFile: null, // TODO: check if this duplicates CONFIG.metadataFilePath
-    metadataFileName: null,
+    fileSelectionSalesforceId: null,
+    fileSelectionFileName: null,
     // deploy
     deltaPackageLog: null,
     fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
