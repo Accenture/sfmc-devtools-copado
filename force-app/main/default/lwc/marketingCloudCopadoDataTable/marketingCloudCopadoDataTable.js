@@ -82,7 +82,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     { label: "Key", fieldName: "k", type: "string", sortable: true },
     { label: "Type", fieldName: "t", type: "string", sortable: true },
     {
-      label: "Last Modified By ID",
+      label: "Last Modified By",
       fieldName: "lb",
       type: "string",
       sortable: true
@@ -101,8 +101,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   selectedRows = [];
 
   // Sorting variables
-  defaultSortDirection = "asc";
-  sortDirection = "asc";
+  defaultSortDirection = "desc";
+  sortDirection = "desc";
   sortedBy = "ld";
 
   // Search Functionality related variables
@@ -280,8 +280,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             self.progressStatus = progressStatus;
           } else if (isFinished === true) {
             try {
-              unsubscribeEmp(self.empSubscription, (response) => {
-                console.log("unsubscribe() response: ", response);
+              unsubscribeEmp(self.empSubscription, (response2) => {
+                console.log("unsubscribe() response: ", response2);
               });
             } catch (err) {
               console.error("Error while unsubscribing from Emp API: ", err);
