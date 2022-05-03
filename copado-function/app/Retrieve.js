@@ -492,15 +492,26 @@ class Retrieve {
                         ) {
                             return;
                         }
+                        if (
+                            this._getAttrValue(item, def.nameField).startsWith(
+                                'QueryStudioResults at '
+                            )
+                        ) {
+                            return;
+                        }
 
                         const listEntry = {
-                            n: Retrieve._getAttrValue(item, def.nameField),
-                            k: Retrieve._getAttrValue(item, def.keyField),
+                            n: this._getAttrValue(item, def.nameField),
+                            k: this._getAttrValue(item, def.keyField),
                             t: type,
-                            cd: Retrieve._getAttrValue(item, def.createdDateField),
-                            cb: Retrieve._getUserName(userList, item, def.createdNameField),
-                            ld: item[def.lastmodDateField],
-                            lb: Retrieve._getUserName(userList, item, def.lastmodNameField),
+                            cd: this._convertTimestamp(
+                                this._getAttrValue(item, def.createdDateField)
+                            ),
+                            cb: this._getUserName(userList, item, def.createdNameField),
+                            ld: this._convertTimestamp(
+                                this._getAttrValue(item, def.lastmodDateField)
+                            ),
+                            lb: this._getUserName(userList, item, def.lastmodNameField),
                         };
                         return listEntry;
                     })
@@ -508,6 +519,18 @@ class Retrieve {
             }
         });
         return allMetadata.filter((item) => undefined !== item);
+    }
+    /**
+     * converts timestamps provided by SFMCs API into a format that SF core understands
+     *
+     * @private
+     * @param {string} iso8601dateTime 2021-10-16T15:20:41.990
+     * @returns {string} 2021-10-16T15:20:41.990-06:00
+     * //@returns {string} apexDateTime 2021-10-1615:20:41
+     */
+    static _convertTimestamp(iso8601dateTime) {
+        return iso8601dateTime + '-06:00';
+        // return iso8601dateTime.replace('T', ' ').split('.')[0];
     }
     /**
      *
