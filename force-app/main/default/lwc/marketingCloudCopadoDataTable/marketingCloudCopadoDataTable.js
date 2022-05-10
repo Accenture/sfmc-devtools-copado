@@ -264,15 +264,13 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     /*
         const userStoryName = this.userStoryName;               // Will be passed into the Copado Function Script
         const envId = this.envId;                               // Will be passed into the Copado Function Script
-        */
-
+    */
     console.log("Passing the following parameter into the Retrieve function:");
     console.log("userStoryId: ", userStoryId);
 
     ExecuteRetrieveFromCopado({
       userStoryId
-    })
-      .then((jobExecutionId) => {
+    }).then((jobExecutionId) => {
         /* TODO: Make sure to only return the correct result... */
         console.log("This is the Job Execution ID: ", jobExecutionId);
         // The response tells whether the function has finished and was successful or not
@@ -383,6 +381,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   sortBy(field, reverse, primer) {
+    console.log("param:"+primer);
     const key = primer
       ? function (x) {
           return primer(x[field]);
@@ -390,23 +389,42 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       : function (x) {
           return x[field];
         };
-
+        
     return function (a, b) {
-      a = key(a);
-      b = key(b);
+   //  console.log("a:"+a +" b:"+b);
+      a = key(a) ? key(a) :'';
+      b = key(b) ? key(b) :'';
+     
       return reverse * ((a > b) - (b > a));
     };
   }
 
   onHandleSort(event) {
-    const { fieldName: sortedBy, sortDirection } = event.detail;
-    const cloneData = [...this.visibleData];
-
-    cloneData.sort(this.sortBy(sortedBy, sortDirection === "asc" ? 1 : -1));
-    this.visibleData = cloneData;
-    this.sortDirection = sortDirection;
-    this.sortedBy = sortedBy;
+    this.sortedBy = event.detail.fieldName;
+    this.sortDirection = event.detail.sortDirection;
+    this.sortData(this.sortedBy, this.sortDirection);
   }
+
+  sortData(fieldname, direction) {
+    // alert("fieldname:"+fieldname);
+    // alert("direction:"+direction);
+    let parseData = JSON.parse(JSON.stringify( this.visibleData));
+    // Return the value stored in the field
+    let keyValue = (a) => {
+        return a[fieldname];
+    };
+    // cheking reverse direction
+    let isReverse = direction === 'asc' ? 1: -1;
+    // sorting data
+    parseData.sort((x, y) => {
+        x = keyValue(x) ? keyValue(x) : ''; // handling null values
+        y = keyValue(y) ? keyValue(y) : '';
+        // sorting values based on direction
+        return isReverse * ((x > y) - (y > x));
+    });
+    // alert('parseData'+parseData);
+    this.visibleData = parseData;
+  }    
 
   // Registers a listener to errors that the server returns by the empApi module
   registerEmpErrorListener() {
