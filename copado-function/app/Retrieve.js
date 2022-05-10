@@ -470,7 +470,7 @@ class Retrieve {
             },
         };
         // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, 'accountUser', true)).accountUser;
+        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], true)).accountUser;
         // reduce userList to simple id-name map
         Object.keys(userList).forEach((key) => {
             userList[userList[key].ID] = userList[key].Name;
