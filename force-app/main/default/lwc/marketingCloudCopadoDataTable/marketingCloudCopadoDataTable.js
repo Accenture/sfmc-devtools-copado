@@ -380,25 +380,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       });
   }
 
-  sortBy(field, reverse, primer) {
-    console.log("param:"+primer);
-    const key = primer
-      ? function (x) {
-          return primer(x[field]);
-        }
-      : function (x) {
-          return x[field];
-        };
-        
-    return function (a, b) {
-   //  console.log("a:"+a +" b:"+b);
-      a = key(a) ? key(a) :'';
-      b = key(b) ? key(b) :'';
-     
-      return reverse * ((a > b) - (b > a));
-    };
-  }
-
+ 
   onHandleSort(event) {
     this.sortedBy = event.detail.fieldName;
     this.sortDirection = event.detail.sortDirection;
@@ -406,8 +388,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   sortData(fieldname, direction) {
-    // alert("fieldname:"+fieldname);
-    // alert("direction:"+direction);
+    
     let parseData = JSON.parse(JSON.stringify( this.visibleData));
     // Return the value stored in the field
     let keyValue = (a) => {
@@ -422,7 +403,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         // sorting values based on direction
         return isReverse * ((x > y) - (y > x));
     });
-    // alert('parseData'+parseData);
     this.visibleData = parseData;
   }    
 
@@ -454,7 +434,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     this.allSelectedRows = ar;
 
     // Filter Rows
-    const regex = new RegExp(event.target.value, "gi");
+    const regex = new RegExp(event.target.value, "gi");// global and case insensitive match
     this.visibleData = this.data.filter((row) => regex.test(row.n) || regex.test(row.t) || regex.test(row.cd) || regex.test(row.cb)
     || regex.test(row.ld) || regex.test(row.lb) || regex.test(row.k));
  
