@@ -455,8 +455,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // Filter Rows
     const regex = new RegExp(event.target.value, "gi");
-    this.visibleData = this.data.filter((row) => regex.test(row.n));
-
+    this.visibleData = this.data.filter((row) => regex.test(row.n) || regex.test(row.t) || regex.test(row.cd) || regex.test(row.cb)
+    || regex.test(row.ld) || regex.test(row.lb) || regex.test(row.k));
+ 
     // Set selected Rows
     this.selectedRows = this.allSelectedRows.map(({ k }) => k);
   }
