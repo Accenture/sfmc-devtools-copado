@@ -78,9 +78,23 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   // Static definition of the columns
   columns = [
-    { label: "Name", fieldName: "n", type: "string", sortable: true },
-    { label: "Key", fieldName: "k", type: "string", sortable: true },
-    { label: "Type", fieldName: "t", type: "string", sortable: true },
+    { 
+      label: "Name", 
+      fieldName: "n", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Key", 
+      fieldName: "k", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Type", 
+      fieldName: "t", 
+      type: "string", 
+      sortable: true },
     {
       label: "Last Modified By ID",
       fieldName: "lb",
@@ -101,8 +115,18 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       },
       sortable: true
     },
-    { label: "Created By", fieldName: "cb", type: "string", sortable: true },
-    { label: "Created Date", fieldName: "cd", type: "date", sortable: true }
+    { 
+      label: "Created By", 
+      fieldName: "cb", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Created Date", 
+      fieldName: "cd", 
+      type: "date", 
+      sortable: true 
+    }
   ];
 
   // Row Selection
@@ -233,10 +257,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
     try {
-      console.log(
-        "Running Initial getMetadataFromEnvironment, this is the userStoryId: ",
-        this.userStoryId
-      );
+      console.log("Running Initial getMetadataFromEnvironment, this is the userStoryId: ",this.userStoryId);
       getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then(
         (result) => {
           const parsedResult = JSON.parse(result);
@@ -285,14 +306,10 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         const messageCallback = function (response) {
           const isFinished = response.data.payload.copado__IsFinished__c;
           const isSuccess = response.data.payload.copado__IsSuccess__c;
-          const progressStatus =
-            response.data.payload.copado__Progress_Status__c;
+          const progressStatus = response.data.payload.copado__Progress_Status__c;
 
           console.log("====================================");
-          console.log(
-            "[DEBUG] Logging the messageCallback response: ",
-            response
-          );
+          console.log("[DEBUG] Logging the messageCallback response: ",response);
           console.log("isFinished: ", isFinished);
           console.log("isSuccess: ", isSuccess);
           console.log("progressStatus: ", progressStatus);
@@ -433,11 +450,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   /**
    * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
    * TODO: It's not possible to remove a row, when the dataset is reduced (search)
-   */
+  */
   handleSearch(event) {
-    const visibleSelectedRowsBefore = this.template
-      .querySelector("lightning-datatable")
-      .getSelectedRows();
+    const visibleSelectedRowsBefore = this.template.querySelector("lightning-datatable").getSelectedRows();
 
     let ar = [
       ...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])
