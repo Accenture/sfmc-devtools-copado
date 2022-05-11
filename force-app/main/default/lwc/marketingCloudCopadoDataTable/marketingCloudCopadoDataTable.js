@@ -405,11 +405,14 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     // cheking reverse direction
     let isReverse = direction === 'asc' ? 1: -1;
     // sorting data
-    parseData.sort((x, y) => {
-        x = keyValue(x) ? keyValue(x) : ''; // handling null values
-        y = keyValue(y) ? keyValue(y) : '';
+    
+    parseData.sort((next, prev) => {
+        console.log('next:',keyValue(next));
+        console.log('prev:',keyValue(prev));
+        next = keyValue(next) ? keyValue(next) : ''; // handling null values
+        prev = keyValue(prev) ? keyValue(prev) : '';
         // sorting values based on direction
-        return isReverse * ((x > y) - (y > x));
+        return isReverse * ((next > prev) - (prev > next));
     });
     this.visibleData = parseData;
   }    
