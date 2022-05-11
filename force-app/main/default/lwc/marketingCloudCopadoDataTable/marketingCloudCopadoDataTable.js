@@ -91,6 +91,14 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       label: "Last Modified Date",
       fieldName: "ld",
       type: "date",
+      typeAttributes: {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit',
+        hour12: true
+      },
       sortable: true
     },
     { label: "Created By", fieldName: "cb", type: "string", sortable: true },
@@ -437,7 +445,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     const regex = new RegExp(event.target.value, "gi");// global and case insensitive match
     this.visibleData = this.data.filter((row) => regex.test(row.n) || regex.test(row.t) || regex.test(row.cd) || regex.test(row.cb)
     || regex.test(row.ld) || regex.test(row.lb) || regex.test(row.k));
- 
+    
     // Set selected Rows
     this.selectedRows = this.allSelectedRows.map(({ k }) => k);
   }
