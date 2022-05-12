@@ -162,7 +162,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   async _handleCommitPageCommunicationMessage(message) {
-    console.log("Async _handleCommitPageCommunicationMessage starts now");
+    console.log("Async _handleCommitPageCommunicationMessage starts now:",message);
     try {
       console.log("_handleCommitPageCommunicationMessage(message): ", message);
       this.loadingState(true);
@@ -231,6 +231,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
   // Get Metadata from environment, Deactivate the Loading State
   connectedCallback() {
+    console.log('in connected call back');
     try {
       this._subscribeToMessageService();
     } catch (err) {
@@ -424,8 +425,8 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     // sorting data
     
     parseData.sort((next, prev) => {
-        console.log('next:',keyValue(next));
-        console.log('prev:',keyValue(prev));
+        // console.log('next:',keyValue(next));
+        // console.log('prev:',keyValue(prev));
         next = keyValue(next) ? keyValue(next) : ''; // handling null values
         prev = keyValue(prev) ? keyValue(prev) : '';
         // sorting values based on direction
