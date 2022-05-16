@@ -305,6 +305,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         console.log("This is the Job Execution ID: ", jobExecutionId);
         // The response tells whether the function has finished and was successful or not
         const messageCallback = function (response) {
+          console.log("in messagecallback function: ", response);
           const isFinished = response.data.payload.copado__IsFinished__c;
           const isSuccess = response.data.payload.copado__IsSuccess__c;
           const progressStatus = response.data.payload.copado__Progress_Status__c;
@@ -372,6 +373,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
         // Invoke subscribe method of empApi. Pass reference to messageCallback
         try {
+          console.log("before subscribeEmp: ");
           subscribeEmp(this.channelName, -1, messageCallback).then(
             (response) => {
               // Response contains the subscription information on subscribe call
