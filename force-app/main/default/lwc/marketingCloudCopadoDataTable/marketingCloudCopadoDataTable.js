@@ -96,7 +96,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       type: "string", 
       sortable: true },
     {
-      label: "Last Modified By ID",
+      label: "Last Modified By",
       fieldName: "lb",
       type: "string",
       sortable: true
@@ -110,8 +110,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         month: 'short',
         year: 'numeric',
         hour: '2-digit',
-        minute: '2-digit',
-        hour12: true
+        minute: '2-digit'
       },
       sortable: true
     },
@@ -124,7 +123,14 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     { 
       label: "Created Date", 
       fieldName: "cd", 
-      type: "date", 
+      type: "date",
+      typeAttributes: {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }, 
       sortable: true 
     }
   ];
