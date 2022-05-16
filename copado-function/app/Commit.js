@@ -128,15 +128,9 @@ async function run() {
         throw ex;
     }
 
-    let retrieveFolder;
     let sourceBU;
+    let gitAddArr;
     try {
-        Log.info('');
-        Log.info('Determine retrieve folder');
-        Log.info('=========================');
-        Log.info('');
-        retrieveFolder = Retrieve.getRetrieveFolder();
-
         Log.info('');
         Log.info('Get source BU');
         Log.info('=============');
@@ -147,7 +141,7 @@ async function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        await Retrieve.retrieveCommitSelection(sourceBU, commitSelectionArr);
+        gitAddArr = await Retrieve.retrieveCommitSelection(sourceBU, commitSelectionArr);
     } catch (ex) {
         Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
@@ -159,7 +153,7 @@ async function run() {
         Log.info('Add components in metadata JSON to Git history');
         Log.info('==============================================');
         Log.info('');
-        Commit.addSelectedComponents(retrieveFolder, sourceBU, commitSelectionArr);
+        Commit.addSelectedComponents(gitAddArr);
     } catch (ex) {
         Log.info('git add failed:' + ex.message);
         throw ex;
@@ -366,27 +360,27 @@ class Util {
     static initProject() {
         const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
             ? `{
-            "credentials": {
-                "${CONFIG.credentialName}": {
-                    "clientId": "${CONFIG.clientId}",
-                    "clientSecret": "${CONFIG.clientSecret}",
-                    "tenant": "${CONFIG.tenant}",
-                    "eid": "${CONFIG.enterpriseId}"
-                }
-            }
-        }`
+    "credentials": {
+        "${CONFIG.credentialName}": {
+            "clientId": "${CONFIG.clientId}",
+            "clientSecret": "${CONFIG.clientSecret}",
+            "tenant": "${CONFIG.tenant}",
+            "eid": "${CONFIG.enterpriseId}"
+        }
+    }
+}`
             : `{
-            "${CONFIG.credentialName}": {
-                "client_id": "${CONFIG.clientId}",
-                "client_secret": "${CONFIG.clientSecret}",
-                "auth_url": "${
-                    CONFIG.tenant.startsWith('https')
-                        ? CONFIG.tenant
-                        : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
-                }",
+    "${CONFIG.credentialName}": {
+        "client_id": "${CONFIG.clientId}",
+        "client_secret": "${CONFIG.clientSecret}",
+        "auth_url": "${
+            CONFIG.tenant.startsWith('https')
+                ? CONFIG.tenant
+                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
+        }",
         "account_id": ${CONFIG.enterpriseId}
-            }
-        }`;
+    }
+}`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -569,16 +563,29 @@ class Retrieve {
      * sure we have only components that really exist in the BU.
      * @param {string} sourceBU specific subfolder for downloads
      * @param {CommitSelection[]} commitSelectionArr list of items to be added
-     * @returns {void}
+     * @returns {Promise<string[]>} list of files to git add & commit
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
-
+        // limit to files that git believes need to be added
+        commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
         // get unique list of types that need to be retrieved
-        const typeList = [...new Set(commitSelectionArr.map((item) => item.t))].join(',');
+        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
         // download all types of which
-        await mcdev.retrieve(sourceBU, typeList, false);
+        await mcdev.retrieve(sourceBU, typeArr, false);
+        const fileArr = (
+            await Promise.all(
+                typeArr.map((type) => {
+                    const keyArr = commitSelectionArr
+                        .filter((item) => item.t === type)
+                        .map((item) => JSON.parse(item.j).key);
+                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                })
+            )
+        ).flat();
+        console.log(fileArr);
+        return fileArr;
     }
 
     /**
@@ -714,66 +721,20 @@ class Commit {
     /**
      * After components have been retrieved,
      * adds selected components to the Git history.
-     * @param {string} retrieveFolder path from mcdev config
-     * @param {string} sourceBU bu name for source
-     * @param {CommitSelection[]} commitSelectionArr list of items to be added
+     * @param {string[]} gitAddArr list of items to be added
      * @returns {void}
      */
-    static addSelectedComponents(retrieveFolder, sourceBU, commitSelectionArr) {
+    static addSelectedComponents(gitAddArr) {
         // Iterate all metadata components selected by user to commit
-        const retrieveFolderSeparator = retrieveFolder.endsWith('/') ? '' : '/';
 
-        commitSelectionArr.forEach((component) => {
-            const name = component.n;
-            const type = component.t;
-            const actions = component.a;
-            Log.debug(
-                'For component with name ' + name + ' and type ' + type + ', run actions ' + actions
-            );
-
-            let key;
-            // Add all components
-            if (component.k) {
-                key = component.k;
+        for (const filePath of gitAddArr) {
+            if (fs.existsSync(filePath)) {
+                // Add this component to the Git index.
+                Util.execCommand(null, ['git add "' + filePath + '"'], 'staged ' + filePath);
+            } else {
+                Log.warn('❌  could not find ' + filePath);
             }
-            // Add selected components
-            else if (component.j) {
-                const componentJson = JSON.parse(component.j);
-                if (componentJson.key) {
-                    key = componentJson.key;
-                }
-            }
-            if (!key) {
-                throw 'Could not find key for component with name ' + name + ' and type ' + type;
-            }
-            // Log.debug('For component with name ' + name + ', key is ' + key);
-
-            if (actions.includes('add')) {
-                // The file name seems to use always the key.
-                // TODO: check if the path is correctly created, also because the type is directly used twice.
-                const componentPath = `${retrieveFolder}${retrieveFolderSeparator}${sourceBU}/${type}/${key}.${type}-meta.json`;
-                Log.debug(
-                    'For component with name ' + name + ', retrieve path is ' + componentPath
-                );
-
-                if (fs.existsSync(`${componentPath}`)) {
-                    // Add this component to the Git index.
-                    // TODO this does not deal with multi-file types (e.g. query, script, asset)
-                    Util.execCommand(
-                        'Add ' + componentPath,
-                        ['git add "' + componentPath + '"'],
-                        'Completed adding component'
-                    );
-                } else {
-                    Log.warn(
-                        'For component with name ' +
-                            name +
-                            ', could not find retrieved component file ' +
-                            componentPath
-                    );
-                }
-            }
-        });
+        }
     }
     /**
      * Commits and pushes after adding selected components
@@ -813,7 +774,7 @@ class Commit {
             }
         } else {
             Log.info(
-                'Nothing to commit as all selected components have the same content as already exists in Git.'
+                '❌  Nothing to commit as all selected components have the same content as already exists in Git.'
             );
             Util.execCommand(
                 'Nothing to Commit.',
