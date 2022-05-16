@@ -330,27 +330,39 @@ class Util {
                 `npm install --save ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
-            'Completed installing MC Dev Tools'
+            'Completed installing SFMC DevTools'
         );
     }
-
     /**
      * Initializes MC project
      * @returns {void}
      */
     static initProject() {
-        const authJson = `{
-            "credentials": {
-                "${CONFIG.credentialName}": {
-                    "clientId": "${CONFIG.clientId}",
-                    "clientSecret": "${CONFIG.clientSecret}",
-                    "tenant": "${CONFIG.tenant}",
-                    "eid": "${CONFIG.enterpriseId}"
-                }
-            }
-        }`;
+        const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
+            ? `{
+    "credentials": {
+        "${CONFIG.credentialName}": {
+            "clientId": "${CONFIG.clientId}",
+            "clientSecret": "${CONFIG.clientSecret}",
+            "tenant": "${CONFIG.tenant}",
+            "eid": "${CONFIG.enterpriseId}"
+        }
+    }
+}`
+            : `{
+    "${CONFIG.credentialName}": {
+        "client_id": "${CONFIG.clientId}",
+        "client_secret": "${CONFIG.clientSecret}",
+        "auth_url": "${
+            CONFIG.tenant.startsWith('https')
+                ? CONFIG.tenant
+                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
+        }",
+        "account_id": ${CONFIG.enterpriseId}
+    }
+}`;
         Log.progress('Provide authentication');
-        fs.writeFileSync('/tmp/.mcdev-auth.json', authJson);
+        fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
