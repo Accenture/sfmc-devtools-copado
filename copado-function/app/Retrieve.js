@@ -237,17 +237,17 @@ class Util {
         if (command && Array.isArray(command)) {
             command = command.join(' && ');
         }
-        Log.debug(command);
+        Log.debug('⚡ ' + command);
 
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (error) {
-            Log.error(error.status + ': ' + error.message);
+            Log.error('❌  ' + error.status + ': ' + error.message);
             throw new Error(error);
         }
 
         if (null != postMsg) {
-            Log.progress(postMsg);
+            Log.progress('✔️  ' + postMsg);
         }
     }
 
@@ -265,7 +265,7 @@ class Util {
         if (command && Array.isArray(command)) {
             command = command.join(' && ');
         }
-        Log.debug(command);
+        Log.debug('⚡ ' + command);
 
         let exitCode = null;
         try {
@@ -274,14 +274,15 @@ class Util {
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
         } catch (error) {
-            Log.warn(error.status + ': ' + error.message);
+            Log.warn('❌  ' + error.status + ': ' + error.message);
 
             // The command failed, take the exit code from the error
             exitCode = error.status;
+            return exitCode;
         }
 
         if (null != postMsg) {
-            Log.progress(postMsg);
+            Log.progress('✔️  ' + postMsg);
         }
 
         return exitCode;
