@@ -471,6 +471,10 @@ class Retrieve {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
         const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+        if (!CONFIG.debug) {
+            // disable any non-errors originating in mcdev from being printed into the main copado logfile
+            mcdev.setLoggingLevel({ silent: true });
+        }
 
         const customDefinition = {
             automation: {
