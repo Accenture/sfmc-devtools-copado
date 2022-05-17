@@ -1,26 +1,28 @@
+// Note: This class have been used as Dynamic Expression class for Marketing Cloud functions - Hence marked Global
+@SuppressWarnings('PMD.AvoidGlobalModifier')
 global with sharing class ChildEnvironmentVariables implements copado.ParameterExpressionCallable {
     // GLOBAL
 
     private Map<String, List<EnvironmentVariablesRecord>> envVariablesByEnvName = new Map<String, List<EnvironmentVariablesRecord>>();
 
     global String execute(Id environmentId) {
-        List<ChildEnvironmentVariablesRecord> result = new List<ChildEnvironmentVariablesRecord>();
+        List<Environment> result = new List<Environment>();
         for (copado__Environmental_Variable__c environmentVariable : getEnvironmentVariables(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
             if(envVariablesByEnvName.containsKey(environmentVariable.copado__Environment__r.name)) {
                environmentVariables = envVariablesByEnvName.get(environmentVariable.copado__Environment__r.name);
             }
             
-           environmentVariables.add(new EnvironmentVariablesRecord(environmentVariable.Name, environmentVariable.copado__Value__c, environmentVariable.copado__Scope__c));
+           environmentVariables.add(new EnvironmentVariablesRecord(environmentVariable));
            envVariablesByEnvName.put(environmentVariable.copado__Environment__r.name, environmentVariables);  
         }
 
-        for(copado__Environment__c environment: getChildEnvironments(environmentId)) {
+        for(copado__Environment__c eachEnvironment: getChildEnvironments(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
-            if(envVariablesByEnvName.containsKey(environment.Name)) {
-                environmentVariables = envVariablesByEnvName.get(environment.Name);
+            if(envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
+                environmentVariables = envVariablesByEnvName.get(eachEnvironment.Name);
             }
-            result.add(new ChildEnvironmentVariablesRecord(environment.Name, environmentVariables));
+            result.add(new Environment(eachEnvironment.Name, eachEnvironment.Id, environmentVariables));
         }
         return JSON.serialize(result);
     }
@@ -38,23 +40,27 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
     // WRAPPER
 
     public class EnvironmentVariablesRecord {
+        public String id { get; set; }
         public String name { get; set; }
         public String value { get; set; }
         public String scope { get; set; }
 
-        public EnvironmentVariablesRecord(String n, String v, String s) {
-            this.name = n;
-            this.value = v;
-            this.scope = s;
+        public EnvironmentVariablesRecord(copado__Environmental_Variable__c environmentVariable) {
+            this.id = environmentVariable.Id;
+            this.name = environmentVariable.Name;
+            this.value = environmentVariable.copado__Value__c;
+            this.scope = environmentVariable.copado__Scope__c;
         }
     }
     
-    public class ChildEnvironmentVariablesRecord {
-        public String environmentName { get; set; }
+    public class Environment {
+        public String name { get; set; }
+        public String id { get; set; }
         public List<EnvironmentVariablesRecord> environmentVariables { get; set; }
 
-        public ChildEnvironmentVariablesRecord(String environmentName, List<EnvironmentVariablesRecord> environmentVariables) {
-            this.environmentName = environmentName;
+        public Environment(String name, String id, List<EnvironmentVariablesRecord> environmentVariables) {
+            this.name = name;
+            this.id = id;
             this.environmentVariables = environmentVariables;
         }
     }
