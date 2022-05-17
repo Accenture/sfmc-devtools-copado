@@ -99,8 +99,13 @@ async function run() {
         Log.info('Get source BU');
         Log.info('=============');
         Log.info('');
-        sourceBU = Retrieve.getSourceBU();
+        sourceBU = Retrieve.getSourceBU(CONFIG.credentialName, CONFIG.envVariables.source.mid);
+    } catch (ex) {
+        Log.error('Getting Source BU failed: ' + ex.message);
+        throw ex;
+    }
 
+    try {
         Log.info('');
         Log.info('Retrieve components');
         Log.info('===================');
@@ -393,7 +398,13 @@ class Retrieve {
      * @param {string} mid -
      * @returns {string} retrieve folder
      */
-    static getBuName(credName, mid) {
+    static getSourceBU(credName, mid) {
+        if (!credName) {
+            throw new Error('System Property "credentialName" not set');
+        }
+        if (!mid) {
+            throw new Error('System Property "mid" not set');
+        }
         if (!fs.existsSync(CONFIG.configFilePath)) {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
@@ -405,82 +416,11 @@ class Retrieve {
             );
             if (myBuNameArr.length === 1) {
                 Log.debug('BU Name is: ' + myBuNameArr[0]);
-                return myBuNameArr[0];
+                return credName + '/' + myBuNameArr[0];
             } else {
                 throw new Error(`MID ${mid} not found for ${credName}`);
             }
         }
-    }
-
-    /**
-     * Determines the BU from MC Dev configuration (.mcdev.json)
-     * from which to retrieve components.
-     * TODO: replace by simply requiring the config file
-     * @returns {string} BU
-     */
-    static getSourceBU() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const options = config['options'];
-        if (null == options) {
-            throw new Error('Could not find options in ' + CONFIG.configFilePath);
-        }
-        const deployment = options['deployment'];
-        if (null == deployment) {
-            throw new Error('Could not find options/deployment in ' + CONFIG.configFilePath);
-        }
-        const sourceTargetMapping = deployment['sourceTargetMapping'];
-        if (null == sourceTargetMapping) {
-            throw new Error(
-                'Could not find options/deployment/sourceTargetMapping in ' + CONFIG.configFilePath
-            );
-        }
-        const sourceTargetMappingKeys = Object.keys(sourceTargetMapping);
-        if (null == sourceTargetMappingKeys || 1 != sourceTargetMappingKeys.length) {
-            throw new Error(
-                'Got unexpected number of keys in options/deployment/sourceTargetMapping in ' +
-                    CONFIG.configFilePath +
-                    '. Expected is only one entry'
-            );
-        }
-
-        const marketList = config['marketList'];
-        if (null == marketList) {
-            throw new Error('Could not find marketList in ' + CONFIG.configFilePath);
-        }
-        const deploymentSource = marketList[sourceTargetMappingKeys[0]];
-        if (null == deploymentSource) {
-            throw new Error(
-                'Could not find marketList/ ' +
-                    deploymentSourceKeys[0] +
-                    ' in ' +
-                    CONFIG.configFilePath
-            );
-        }
-        const deploymentSourceKeys = Object.keys(deploymentSource);
-        if (
-            null == deploymentSourceKeys ||
-            (1 != deploymentSourceKeys.length && 2 != deploymentSourceKeys.length)
-        ) {
-            throw new Error(
-                'Got unexpected number of keys in marketList/' +
-                    deploymentSource +
-                    ' in ' +
-                    CONFIG.configFilePath +
-                    '. Expected is one entry, or two in case there is a description entry.'
-            );
-        }
-        let sourceBU = null;
-        if ('description' != deploymentSourceKeys[0]) {
-            sourceBU = deploymentSourceKeys[0];
-        } else {
-            sourceBU = deploymentSourceKeys[1];
-        }
-
-        Log.debug('BU to retrieve is: ' + sourceBU);
-        return sourceBU;
     }
 
     /**
