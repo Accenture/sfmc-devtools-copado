@@ -387,6 +387,30 @@ class Retrieve {
         Log.debug('Retrieve folder is: ' + folder);
         return folder;
     }
+    /**
+     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     * @param {string} credName -
+     * @param {string} mid -
+     * @returns {string} retrieve folder
+     */
+    static getBuName(credName, mid) {
+        if (!fs.existsSync(CONFIG.configFilePath)) {
+            throw new Error('Could not find config file ' + CONFIG.configFilePath);
+        }
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+
+        if (config.credentials[credName] && config.credentials[credName].businessUnits) {
+            const myBuNameArr = Object.keys(config.credentials[credName].businessUnits).filter(
+                (buName) => config.credentials[credName].businessUnits[buName] == mid
+            );
+            if (myBuNameArr.length === 1) {
+                Log.debug('BU Name is: ' + myBuNameArr[0]);
+                return myBuNameArr[0];
+            } else {
+                throw new Error(`MID ${mid} not found for ${credName}`);
+            }
+        }
+    }
 
     /**
      * Determines the BU from MC Dev configuration (.mcdev.json)
