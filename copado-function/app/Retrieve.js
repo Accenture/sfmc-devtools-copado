@@ -9,6 +9,14 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
+ *
+ * @typedef {object} EnvVar
+ * @property {string} value variable value
+ * @property {string} scope ?
+ * @property {string} name variable name
+ * @typedef {object} EnvChildVar
+ * @property {EnvVar[]} environmentVariables list of environment variables
+ * @property {string} environmentName name of environment in Copado
  */
 
 const fs = require('fs');
@@ -31,6 +39,14 @@ const CONFIG = {
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
     tmpDirectory: '../tmp',
+    envVariables: {
+        // retrieve / commit
+        source: process.env.envVariablesSource,
+        sourceChildren: process.env.envVariablesSourceChildren,
+        // deploy
+        destination: process.env.envVariablesDestination,
+        destinationChildren: process.env.envVariablesDestinationChildren,
+    },
     // commit
     commitMessage: null,
     featureBranch: null,
@@ -54,6 +70,7 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('==========');
+    Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
     Log.debug('Environment');
@@ -363,6 +380,58 @@ class Util {
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
+    }
+    /**
+     * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     * @param {object} envVariables directly from config
+     * @returns {void}
+     */
+    static convertEnvVariables(envVariables) {
+        Object.keys(envVariables).map((key) => {
+            if (key.endsWith('Children')) {
+                envVariables[key] = Util._convertEnvChildVars(envVariables[key]);
+            } else {
+                envVariables[key] = Util._convertEnvVars(envVariables[key]);
+            }
+        });
+    }
+    /**
+     * helper that converts the copado-internal format for "environment variables" into an object
+     * @param {EnvVar[]} envVarArr -
+     * @returns {Object.<string,string>} proper object
+     */
+    static _convertEnvVars(envVarArr) {
+        console.log('_convertEnvVars', envVarArr);
+        if (!envVarArr) {
+            return envVarArr;
+        }
+        if (typeof envVarArr === 'string') {
+            envVarArr = JSON.parse(envVarArr);
+        }
+        const response = {};
+        for (const item of envVarArr) {
+            response[item.name] = item.value;
+        }
+        return response;
+    }
+    /**
+     * helper that converts the copado-internal format for "environment variables" into an object
+     * @param {EnvChildVar[]} envChildVarArr -
+     * @returns {Object.<string,string>} proper object
+     */
+    static _convertEnvChildVars(envChildVarArr) {
+        console.log('_convertEnvChildVars', envChildVarArr);
+        if (!envChildVarArr) {
+            return envChildVarArr;
+        }
+        if (typeof envChildVarArr === 'string') {
+            envChildVarArr = JSON.parse(envChildVarArr);
+        }
+        const response = {};
+        for (const item of envChildVarArr) {
+            response[item.environmentName] = this._convertEnvVars(item.environmentVariables);
+        }
+        return response;
     }
 }
 
