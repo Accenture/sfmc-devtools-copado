@@ -599,7 +599,7 @@ class Retrieve {
      * @returns {string} value of attribute
      */
     static _getAttrValue(obj, key) {
-        if (!key) {
+        if (!key || !obj) {
             return null;
         }
         if (key.includes('.')) {
