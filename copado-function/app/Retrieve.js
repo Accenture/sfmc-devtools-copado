@@ -60,6 +60,7 @@ const CONFIG = {
     promotionBranch: null, // The promotion branch of a PR
     toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
+
 /**
  * main method that combines runs this function
  * @returns {void}
@@ -68,12 +69,12 @@ async function run() {
     Log.info('Retrieve.js started');
     Log.debug('');
     Log.debug('Parameters');
-    Log.debug('==========');
+    Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
     Log.debug('Environment');
-    Log.debug('==========');
+    Log.debug('===================');
     Util.execCommand(null, 'npm --version', null);
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
@@ -84,7 +85,7 @@ async function run() {
     try {
         Log.info('');
         Log.info('Clone repository');
-        Log.info('================');
+        Log.info('===================');
         Log.info('');
         Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
@@ -95,13 +96,13 @@ async function run() {
     try {
         Log.info('');
         Log.info('Preparing');
-        Log.info('=========');
+        Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
 
         Log.info('');
         Log.info('Initialize project');
-        Log.info('==================');
+        Log.info('===================');
         Log.info('');
         Util.initProject();
     } catch (ex) {
@@ -113,7 +114,7 @@ async function run() {
     try {
         Log.info('');
         Log.info('Get source BU');
-        Log.info('=============');
+        Log.info('===================');
         Log.info('');
         sourceBU = Retrieve.getSourceBU(CONFIG.credentialName, CONFIG.envVariables.source.mid);
     } catch (ex) {
@@ -146,7 +147,7 @@ async function run() {
     try {
         Log.info('');
         Log.info('Attach JSON');
-        Log.info('===========');
+        Log.info('===================');
         Log.info('');
         Copado.attachJson(CONFIG.metadataFilePath);
     } catch (ex) {
@@ -155,7 +156,7 @@ async function run() {
     }
     Log.info('');
     Log.info('Finished');
-    Log.info('========');
+    Log.info('===================');
     Log.info('');
     Log.info('Retrieve.js done');
 
