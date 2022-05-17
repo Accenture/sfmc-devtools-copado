@@ -21,7 +21,6 @@ public with sharing class RunCopadoFunctionFromLWC {
 
             List<copado__User_Story__c> userStory;
             Id envId;
-
             try {
                 userStory = [
                     SELECT copado__Environment__c, copado__Project__c 

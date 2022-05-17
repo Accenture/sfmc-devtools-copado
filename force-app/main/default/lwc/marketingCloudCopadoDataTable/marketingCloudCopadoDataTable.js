@@ -78,11 +78,25 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   // Static definition of the columns
   columns = [
-    { label: "Name", fieldName: "n", type: "string", sortable: true },
-    { label: "Key", fieldName: "k", type: "string", sortable: true },
-    { label: "Type", fieldName: "t", type: "string", sortable: true },
+    { 
+      label: "Name", 
+      fieldName: "n", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Key", 
+      fieldName: "k", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Type", 
+      fieldName: "t", 
+      type: "string", 
+      sortable: true },
     {
-      label: "Last Modified By ID",
+      label: "Last Modified By",
       fieldName: "lb",
       type: "string",
       sortable: true
@@ -91,10 +105,34 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       label: "Last Modified Date",
       fieldName: "ld",
       type: "date",
+      typeAttributes: {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      },
       sortable: true
     },
-    { label: "Created By", fieldName: "cb", type: "string", sortable: true },
-    { label: "Created Date", fieldName: "cd", type: "date", sortable: true }
+    { 
+      label: "Created By", 
+      fieldName: "cb", 
+      type: "string", 
+      sortable: true 
+    },
+    { 
+      label: "Created Date", 
+      fieldName: "cd", 
+      type: "date",
+      typeAttributes: {
+        day: 'numeric',
+        month: 'short',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      }, 
+      sortable: true 
+    }
   ];
 
   // Row Selection
@@ -130,7 +168,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   async _handleCommitPageCommunicationMessage(message) {
-    console.log("Async _handleCommitPageCommunicationMessage starts now");
+    console.log("Async _handleCommitPageCommunicationMessage starts now:",message);
     try {
       console.log("_handleCommitPageCommunicationMessage(message): ", message);
       this.loadingState(true);
@@ -199,6 +237,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
   // Get Metadata from environment, Deactivate the Loading State
   connectedCallback() {
+    console.log('in connected call back');
     try {
       this._subscribeToMessageService();
     } catch (err) {
@@ -225,10 +264,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
     try {
-      console.log(
-        "Running Initial getMetadataFromEnvironment, this is the userStoryId: ",
-        this.userStoryId
-      );
+      console.log("Running Initial getMetadataFromEnvironment, this is the userStoryId: ",this.userStoryId);
       getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then(
         (result) => {
           const parsedResult = JSON.parse(result);
@@ -264,29 +300,24 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     /*
         const userStoryName = this.userStoryName;               // Will be passed into the Copado Function Script
         const envId = this.envId;                               // Will be passed into the Copado Function Script
-        */
-
+    */
     console.log("Passing the following parameter into the Retrieve function:");
     console.log("userStoryId: ", userStoryId);
 
     ExecuteRetrieveFromCopado({
       userStoryId
-    })
-      .then((jobExecutionId) => {
+    }).then((jobExecutionId) => {
         /* TODO: Make sure to only return the correct result... */
         console.log("This is the Job Execution ID: ", jobExecutionId);
         // The response tells whether the function has finished and was successful or not
         const messageCallback = function (response) {
+          console.log("in messagecallback function: ", response);
           const isFinished = response.data.payload.copado__IsFinished__c;
           const isSuccess = response.data.payload.copado__IsSuccess__c;
-          const progressStatus =
-            response.data.payload.copado__Progress_Status__c;
+          const progressStatus = response.data.payload.copado__Progress_Status__c;
 
           console.log("====================================");
-          console.log(
-            "[DEBUG] Logging the messageCallback response: ",
-            response
-          );
+          console.log("[DEBUG] Logging the messageCallback response: ",response);
           console.log("isFinished: ", isFinished);
           console.log("isSuccess: ", isSuccess);
           console.log("progressStatus: ", progressStatus);
@@ -348,6 +379,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
         // Invoke subscribe method of empApi. Pass reference to messageCallback
         try {
+          console.log("before subscribeEmp: ");
           subscribeEmp(this.channelName, -1, messageCallback).then(
             (response) => {
               // Response contains the subscription information on subscribe call
@@ -382,31 +414,34 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       });
   }
 
-  sortBy(field, reverse, primer) {
-    const key = primer
-      ? function (x) {
-          return primer(x[field]);
-        }
-      : function (x) {
-          return x[field];
-        };
-
-    return function (a, b) {
-      a = key(a);
-      b = key(b);
-      return reverse * ((a > b) - (b > a));
-    };
-  }
-
+ 
   onHandleSort(event) {
-    const { fieldName: sortedBy, sortDirection } = event.detail;
-    const cloneData = [...this.visibleData];
-
-    cloneData.sort(this.sortBy(sortedBy, sortDirection === "asc" ? 1 : -1));
-    this.visibleData = cloneData;
-    this.sortDirection = sortDirection;
-    this.sortedBy = sortedBy;
+    this.sortedBy = event.detail.fieldName;
+    this.sortDirection = event.detail.sortDirection;
+    this.sortData(this.sortedBy, this.sortDirection);
   }
+
+  sortData(fieldname, direction) {
+    
+    let parseData = JSON.parse(JSON.stringify( this.visibleData));
+    // Return the value stored in the field
+    let keyValue = (a) => {
+        return a[fieldname];
+    };
+    // cheking reverse direction
+    let isReverse = direction === 'asc' ? 1: -1;
+    // sorting data
+    
+    parseData.sort((next, prev) => {
+        // console.log('next:',keyValue(next));
+        // console.log('prev:',keyValue(prev));
+        next = keyValue(next) ? keyValue(next) : ''; // handling null values
+        prev = keyValue(prev) ? keyValue(prev) : '';
+        // sorting values based on direction
+        return isReverse * ((next > prev) - (prev > next));
+    });
+    this.visibleData = parseData;
+  }    
 
   // Registers a listener to errors that the server returns by the empApi module
   registerEmpErrorListener() {
@@ -424,11 +459,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   /**
    * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
    * TODO: It's not possible to remove a row, when the dataset is reduced (search)
-   */
+  */
   handleSearch(event) {
-    const visibleSelectedRowsBefore = this.template
-      .querySelector("lightning-datatable")
-      .getSelectedRows();
+    const visibleSelectedRowsBefore = this.template.querySelector("lightning-datatable").getSelectedRows();
 
     let ar = [
       ...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])
@@ -436,9 +469,10 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     this.allSelectedRows = ar;
 
     // Filter Rows
-    const regex = new RegExp(event.target.value, "gi");
-    this.visibleData = this.data.filter((row) => regex.test(row.n));
-
+    const regex = new RegExp(event.target.value, "gi");// global and case insensitive match
+    this.visibleData = this.data.filter((row) => regex.test(row.n) || regex.test(row.t) || regex.test(row.cd) || regex.test(row.cb)
+    || regex.test(row.ld) || regex.test(row.lb) || regex.test(row.k));
+    
     // Set selected Rows
     this.selectedRows = this.allSelectedRows.map(({ k }) => k);
   }
