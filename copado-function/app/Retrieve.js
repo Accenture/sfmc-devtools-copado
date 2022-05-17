@@ -478,7 +478,7 @@ class Retrieve {
                 (buName) => config.credentials[credName].businessUnits[buName] == mid
             );
             if (myBuNameArr.length === 1) {
-                Log.debug('BU Name is: ' + myBuNameArr[0]);
+                Log.debug('BU Name is: ' + credName + '/' + myBuNameArr[0]);
                 return credName + '/' + myBuNameArr[0];
             } else {
                 throw new Error(`MID ${mid} not found for ${credName}`);
@@ -579,8 +579,8 @@ class Retrieve {
     /**
      *
      * @private
-     * @param {object<string,string>} userList user-id > user-name map
-     * @param {object<string,string>} item single metadata item
+     * @param {Object.<string, string>} userList user-id > user-name map
+     * @param {Object.<string, string>} item single metadata item
      * @param {string} fieldname name of field containing the info
      * @returns {string} username or user id or 'n/a'
      */
