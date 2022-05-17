@@ -60,7 +60,6 @@ const CONFIG = {
     promotionBranch: null, // The promotion branch of a PR
     toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
-
 /**
  * main method that combines runs this function
  * @returns {void}
@@ -106,7 +105,7 @@ async function run() {
         Log.info('');
         Util.initProject();
     } catch (ex) {
-        Log.error('initializing failed:' + ex.message);
+        Log.error('initializing failed: ' + ex.message);
         throw ex;
     }
     let sourceBU;
@@ -129,8 +128,8 @@ async function run() {
         Log.info('');
         metadataJson = await Retrieve.retrieveChangelog(sourceBU);
     } catch (ex) {
-        Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
+        Log.error('Retrieving failed: ' + ex.message);
         throw ex;
     }
 
@@ -141,7 +140,7 @@ async function run() {
         Log.info('');
         Retrieve.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
-        Log.info('Saving metadata JSON failed:' + ex.message);
+        Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
     try {
@@ -151,7 +150,7 @@ async function run() {
         Log.info('');
         Copado.attachJson(CONFIG.metadataFilePath);
     } catch (ex) {
-        Log.info('Attaching JSON file failed:' + ex.message);
+        Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
     }
     Log.info('');
@@ -161,11 +160,6 @@ async function run() {
     Log.info('Retrieve.js done');
 
     Copado.uploadToolLogs();
-
-    // if (CONFIG.debug) {
-    //     Log.error('dont finish the job during debugging');
-    //     throw new Error();
-    // }
 }
 
 /**
@@ -204,7 +198,7 @@ class Log {
      * @returns {void}
      */
     static error(msg) {
-        Log.warn(msg);
+        Log.warn('❌  ' + msg);
         execSync(`copado --error-message "${msg}"`);
     }
     /**
@@ -264,7 +258,7 @@ class Util {
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (error) {
-            Log.error('❌  ' + error.status + ': ' + error.message);
+            Log.error(error.status + ': ' + error.message);
             throw new Error(error);
         }
 
