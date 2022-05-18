@@ -38,6 +38,7 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
+    source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     envVariables: {
         // retrieve / commit
@@ -116,7 +117,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Retrieve.getSourceBU(CONFIG.credentialName, CONFIG.envVariables.source.mid);
+        sourceBU = Retrieve.getSourceBU(CONFIG.credentialName, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
