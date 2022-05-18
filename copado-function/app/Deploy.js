@@ -54,6 +54,7 @@ const CONFIG = {
     fileSelectionSalesforceId: null,
     fileSelectionFileName: null,
     // deploy
+    target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     fromCommit: 'promotion/' + process.env.promotion, // The source branch of a PR, typically something like 'feature/...'
     git_depth: 100, // set a default git depth of 100 commits
@@ -140,19 +141,16 @@ async function run() {
         Log.info('===================');
         Log.info('');
         if (true == Deploy.createDeltaPackage(deployFolder)) {
-            const bus = Deploy.getDeployTargetBUs();
-
+            const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
             Log.info('Deploy BUs');
             Log.info('===================');
             let exitCode = 0;
-            bus.forEach((bu) => {
-                const ec = Deploy.deployBU(bu);
-                if (0 != ec) {
-                    if (0 == exitCode) {
-                        exitCode = ec;
-                    }
+            const ec = Deploy.deployBU(targetBU);
+            if (0 != ec) {
+                if (0 == exitCode) {
+                    exitCode = ec;
                 }
-            });
+            }
             if (0 != exitCode) {
                 throw new Error(
                     'Deployment of at least one BU failed. See previous output for details'
@@ -647,40 +645,6 @@ class Deploy {
         Log.debug('Config branch for branch ' + branch + ' is ' + configBranch);
         return configBranch;
     }
-
-    /**
-     * Determines the list of BUs from MC Dev configuration (.mcdev.json)
-     * to which changes should be deployed.
-     * @returns {string[]} List of BUs
-     */
-    static getDeployTargetBUs() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const configToBranch = Deploy._getConfigForToBranch(CONFIG.toBranch);
-        if (!config?.deployment?.targetBranchBuMapping) {
-            throw new Error(
-                'Could not find options/deployment/targetBranchBuMapping in ' +
-                    CONFIG.configFilePath
-            );
-        }
-        let bus = config?.deployment?.targetBranchBuMapping[configToBranch];
-        if (!bus) {
-            throw new Error(
-                'Could not find config branch ' +
-                    configToBranch +
-                    ' in options/deployment/targetBranchBuMapping in ' +
-                    CONFIG.configFilePath
-            );
-        }
-        if (bus instanceof String) {
-            bus = [bus];
-        }
-        Log.debug('BUs to deploy for config branch ' + configToBranch + ' are: ' + bus.join());
-        return bus;
-    }
-
     /**
      * Deploys one specific BU.
      * In case of errors, the deployment is not stopped.
