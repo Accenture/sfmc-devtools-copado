@@ -554,23 +554,14 @@ class Deploy {
         }
         const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
         const configToBranch = Deploy._getConfigForToBranch(CONFIG.toBranch);
-        const options = config['options'];
-        if (null == options) {
-            throw new Error('Could not find options in ' + CONFIG.configFilePath);
-        }
-        const deployment = options['deployment'];
-        if (null == deployment) {
-            throw new Error('Could not find options/deployment in ' + CONFIG.configFilePath);
-        }
-        const targetBranchBuMapping = deployment['targetBranchBuMapping'];
-        if (null == targetBranchBuMapping) {
+        if (!config?.deployment?.targetBranchBuMapping) {
             throw new Error(
                 'Could not find options/deployment/targetBranchBuMapping in ' +
                     CONFIG.configFilePath
             );
         }
-        let bus = targetBranchBuMapping[configToBranch];
-        if (null == bus) {
+        let bus = config?.deployment?.targetBranchBuMapping[configToBranch];
+        if (!bus) {
             throw new Error(
                 'Could not find config branch ' +
                     configToBranch +

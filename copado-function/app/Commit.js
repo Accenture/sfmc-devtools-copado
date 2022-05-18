@@ -146,7 +146,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Retrieve.getSourceBU(CONFIG.credentialName, CONFIG.source_mid);
+        sourceBU = Retrieve.getBuName(CONFIG.credentialName, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
@@ -492,7 +492,7 @@ class Retrieve {
      * @param {string} mid -
      * @returns {string} retrieve folder
      */
-    static getSourceBU(credName, mid) {
+    static getBuName(credName, mid) {
         if (!credName) {
             throw new Error('System Property "credentialName" not set');
         }
