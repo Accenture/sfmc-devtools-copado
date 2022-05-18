@@ -117,7 +117,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Retrieve.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
@@ -429,34 +429,6 @@ class Util {
         }
         return response;
     }
-}
-
-/**
- * handles downloading metadata
- */
-class Retrieve {
-    /**
-     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
-     * TODO: replace by simply requiring the config file
-     * @returns {string} retrieve folder
-     */
-    static getRetrieveFolder() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const directories = config['directories'];
-        if (null == directories) {
-            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
-        }
-        const folder = directories['retrieve'];
-        if (null == folder) {
-            throw new Error('Could not find directories/retrieve in ' + CONFIG.configFilePath);
-        }
-
-        Log.debug('Retrieve folder is: ' + folder);
-        return folder;
-    }
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
      * @param {string} credName -
@@ -486,6 +458,109 @@ class Retrieve {
                 throw new Error(`MID ${mid} not found for ${credName}`);
             }
         }
+    }
+}
+/**
+ * methods to handle interaction with the copado platform
+ */
+class Copado {
+    /**
+     * Finally, attach the resulting metadata JSON to the source environment
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachJson(metadataFilePath) {
+        Util.execCommand(
+            'Attach JSON ' + metadataFilePath,
+            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
+            'Completed attaching JSON'
+        );
+    }
+    /**
+     * Finally, attach the resulting metadata JSON.
+     * @param {string} metadataFilePath where we stored the temporary json file
+     * @returns {void}
+     */
+    static attachLog(metadataFilePath) {
+        Util.execCommand(
+            'Attach Custom Log ' + metadataFilePath,
+            `copado --uploadfile "${metadataFilePath}"`,
+            'Completed attaching JSON'
+        );
+    }
+
+    /**
+     * Checks out the source repository.
+     * if a feature branch is available creates
+     * the feature branch based on the main branch.
+     * @param {string} mainBranch ?
+     * @param {string} featureBranch can be null/undefined
+     * @returns {void}
+     */
+    static checkoutSrc(mainBranch, featureBranch) {
+        Util.execCommand(
+            'Cloning and checking out the main branch ' + mainBranch,
+            [
+                'git config --global --add safe.directory /tmp',
+                'copado-git-get "' + mainBranch + '"',
+            ],
+            'Completed cloning/checking out main branch'
+        );
+        if (featureBranch) {
+            Util.execCommand(
+                'Creating resp. checking out the feature branch ' + featureBranch,
+                [
+                    'git config --global --add safe.directory /tmp',
+                    'copado-git-get --create "' + featureBranch + '"',
+                ],
+                'Completed creating/checking out feature branch'
+            );
+        }
+    }
+
+    /**
+     * to be executed at the very end
+     * @returns {void}
+     */
+    static uploadToolLogs() {
+        Log.progress('Getting mcdev logs');
+
+        try {
+            fs.readdirSync('logs').forEach((file) => {
+                Log.debug('- ' + file);
+                Copado.attachLog('logs/' + file);
+            });
+            Log.progress('Attached mcdev logs');
+        } catch (error) {
+            Log.info('attaching mcdev logs failed:' + error.message);
+        }
+    }
+}
+/**
+ * handles downloading metadata
+ */
+class Retrieve {
+    /**
+     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     * TODO: replace by simply requiring the config file
+     * @returns {string} retrieve folder
+     */
+    static getRetrieveFolder() {
+        if (!fs.existsSync(CONFIG.configFilePath)) {
+            throw new Error('Could not find config file ' + CONFIG.configFilePath);
+        }
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+        const directories = config['directories'];
+        if (null == directories) {
+            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
+        }
+        const folder = directories['retrieve'];
+        if (null == folder) {
+            throw new Error('Could not find directories/retrieve in ' + CONFIG.configFilePath);
+        }
+
+        Log.debug('Retrieve folder is: ' + folder);
+        return folder;
     }
 
     /**
@@ -624,83 +699,6 @@ class Retrieve {
         const metadataString = JSON.stringify(metadataJson);
         // Log.debug('Metadata JSON is: ' + metadataString);
         fs.writeFileSync(metadataFilePath, metadataString);
-    }
-}
-
-/**
- * methods to handle interaction with the copado platform
- */
-class Copado {
-    /**
-     * Finally, attach the resulting metadata JSON to the source environment
-     * @param {string} metadataFilePath where we stored the temporary json file
-     * @returns {void}
-     */
-    static attachJson(metadataFilePath) {
-        Util.execCommand(
-            'Attach JSON ' + metadataFilePath,
-            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
-            'Completed attaching JSON'
-        );
-    }
-    /**
-     * Finally, attach the resulting metadata JSON.
-     * @param {string} metadataFilePath where we stored the temporary json file
-     * @returns {void}
-     */
-    static attachLog(metadataFilePath) {
-        Util.execCommand(
-            'Attach Custom Log ' + metadataFilePath,
-            `copado --uploadfile "${metadataFilePath}"`,
-            'Completed attaching JSON'
-        );
-    }
-
-    /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
-     * @returns {void}
-     */
-    static checkoutSrc(mainBranch, featureBranch) {
-        Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            [
-                'git config --global --add safe.directory /tmp',
-                'copado-git-get "' + mainBranch + '"',
-            ],
-            'Completed cloning/checking out main branch'
-        );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                [
-                    'git config --global --add safe.directory /tmp',
-                    'copado-git-get --create "' + featureBranch + '"',
-                ],
-                'Completed creating/checking out feature branch'
-            );
-        }
-    }
-
-    /**
-     * to be executed at the very end
-     * @returns {void}
-     */
-    static uploadToolLogs() {
-        Log.progress('Getting mcdev logs');
-
-        try {
-            fs.readdirSync('logs').forEach((file) => {
-                Log.debug('- ' + file);
-                Copado.attachLog('logs/' + file);
-            });
-            Log.progress('Attached mcdev logs');
-        } catch (error) {
-            Log.info('attaching mcdev logs failed:' + error.message);
-        }
     }
 }
 

@@ -146,7 +146,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Retrieve.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
@@ -458,34 +458,6 @@ class Util {
         }
         return response;
     }
-}
-
-/**
- * handles downloading metadata
- */
-class Retrieve {
-    /**
-     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
-     * TODO: replace by simply requiring the config file
-     * @returns {string} retrieve folder
-     */
-    static getRetrieveFolder() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const directories = config['directories'];
-        if (null == directories) {
-            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
-        }
-        const folder = directories['retrieve'];
-        if (null == folder) {
-            throw new Error('Could not find directories/retrieve in ' + CONFIG.configFilePath);
-        }
-
-        Log.debug('Retrieve folder is: ' + folder);
-        return folder;
-    }
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
      * @param {string} credName -
@@ -515,144 +487,6 @@ class Retrieve {
                 throw new Error(`MID ${mid} not found for ${credName}`);
             }
         }
-    }
-
-    /**
-     * Retrieve components into a clean retrieve folder.
-     * The retrieve folder is deleted before retrieving to make
-     * sure we have only components that really exist in the BU.
-     * @param {string} sourceBU specific subfolder for downloads
-     * @returns {object} changelog JSON
-     */
-    static async retrieveChangelog(sourceBU) {
-        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
-        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
-        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
-        if (!CONFIG.debug) {
-            // disable any non-errors originating in mcdev from being printed into the main copado logfile
-            mcdev.setLoggingLevel({ silent: true });
-        }
-
-        const customDefinition = {
-            automation: {
-                keyField: 'CustomerKey',
-                nameField: 'Name',
-                createdDateField: 'CreatedDate',
-                createdNameField: 'CreatedBy',
-                lastmodDateField: 'LastSaveDate',
-                lastmodNameField: 'LastSavedBy',
-            },
-        };
-        // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], true)).accountUser;
-        // reduce userList to simple id-name map
-        Object.keys(userList).forEach((key) => {
-            userList[userList[key].ID] = userList[key].Name;
-            delete userList[key];
-        });
-
-        // get changed metadata
-        const changelogList = await mcdev.retrieve(sourceBU, null, true);
-        const allMetadata = [];
-        Object.keys(changelogList).map((type) => {
-            if (changelogList[type]) {
-                const def = customDefinition[type] || Definition[type];
-                allMetadata.push(
-                    ...Object.keys(changelogList[type]).map((key) => {
-                        const item = changelogList[type][key];
-                        if (
-                            MetadataType[type].isFiltered(item, true) ||
-                            MetadataType[type].isFiltered(item, false)
-                        ) {
-                            return;
-                        }
-                        if (
-                            this._getAttrValue(item, def.nameField).startsWith(
-                                'QueryStudioResults at '
-                            )
-                        ) {
-                            return;
-                        }
-
-                        const listEntry = {
-                            n: this._getAttrValue(item, def.nameField),
-                            k: this._getAttrValue(item, def.keyField),
-                            t: type,
-                            cd: this._convertTimestamp(
-                                this._getAttrValue(item, def.createdDateField)
-                            ),
-                            cb: this._getUserName(userList, item, def.createdNameField),
-                            ld: this._convertTimestamp(
-                                this._getAttrValue(item, def.lastmodDateField)
-                            ),
-                            lb: this._getUserName(userList, item, def.lastmodNameField),
-                        };
-                        return listEntry;
-                    })
-                );
-            }
-        });
-        return allMetadata.filter((item) => undefined !== item);
-    }
-    /**
-     * converts timestamps provided by SFMCs API into a format that SF core understands
-     *
-     * @private
-     * @param {string} iso8601dateTime 2021-10-16T15:20:41.990
-     * @returns {string} 2021-10-16T15:20:41.990-06:00
-     * //@returns {string} apexDateTime 2021-10-1615:20:41
-     */
-    static _convertTimestamp(iso8601dateTime) {
-        return iso8601dateTime + '-06:00';
-        // return iso8601dateTime.replace('T', ' ').split('.')[0];
-    }
-    /**
-     *
-     * @private
-     * @param {Object.<string, string>} userList user-id > user-name map
-     * @param {Object.<string, string>} item single metadata item
-     * @param {string} fieldname name of field containing the info
-     * @returns {string} username or user id or 'n/a'
-     */
-    static _getUserName(userList, item, fieldname) {
-        return (
-            userList[this._getAttrValue(item, fieldname)] ||
-            this._getAttrValue(item, fieldname) ||
-            'n/a'
-        );
-    }
-    /**
-     * helps get the value of complex and simple field references alike
-     * @private
-     * @param {MetadataItem} obj one item
-     * @param {string} key field key
-     * @returns {string} value of attribute
-     */
-    static _getAttrValue(obj, key) {
-        if (!key || !obj) {
-            return null;
-        }
-        if (key.includes('.')) {
-            const keys = key.split('.');
-            const first = keys.shift();
-            return this._getAttrValue(obj[first], keys.join('.'));
-        } else {
-            return obj[key];
-        }
-    }
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     * @param {MetadataItem[]} metadataJson path where downloaded files are
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
-     * @returns {void}
-     */
-    static saveMetadataFile(metadataJson, metadataFilePath) {
-        const metadataString = JSON.stringify(metadataJson);
-        // Log.debug('Metadata JSON is: ' + metadataString);
-        fs.writeFileSync(metadataFilePath, metadataString);
     }
 }
 
