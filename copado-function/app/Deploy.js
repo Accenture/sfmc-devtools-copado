@@ -142,6 +142,7 @@ async function run() {
         Log.info('');
         if (true == Deploy.createDeltaPackage(deployFolder)) {
             const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+        if (true == await Deploy.createDeltaPackage(deployFolder)) {
             Log.info('Deploy BUs');
             Log.info('===================');
             let exitCode = 0;
@@ -589,15 +590,19 @@ class Deploy {
      * Create the delta package containing the changed components
      * return whether the delta package is empty or not
      * @param {string} deployFolder path
-     * @returns {boolean} true: files found, false: not
+     * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static createDeltaPackage(deployFolder) {
+    static async createDeltaPackage(deployFolder) {
         const versionRange = 'HEAD^..HEAD';
-        Util.execCommand(
-            'Create delta package using version range ' + versionRange,
-            [CONFIG.mcdev_exec + ' createDeltaPkg ' + versionRange + ' --skipInteraction'],
-            'Completed creating delta package'
-        );
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+
+        Log.debug('Create delta package using version range ' + versionRange);
+        const deltaPackageLog = await mcdev.createDeltaPkg({
+            range: versionRange,
+            skipInteraction: true,
+        });
+        Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
+        Log.debug('Completed creating delta package');
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
             Util.execCommand(
                 'Upload delta package results file',
