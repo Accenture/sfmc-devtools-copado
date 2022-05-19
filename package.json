@@ -28,17 +28,22 @@
     "@salesforce/sfdx-lwc-jest": "^0.13.0",
     "eslint": "^7.29.0",
     "eslint-config-prettier": "8.3.0",
+    "eslint-plugin-jsdoc": "39.2.9",
     "eslint-plugin-prettier": "4.0.0",
     "eslint-plugin-import": "^2.23.4",
     "eslint-plugin-jest": "^24.3.6",
     "husky": "^7.0.0",
     "lint-staged": "^11.0.0",
     "prettier": "^2.3.2",
+    "prettier-eslint": "14.0.2",
     "prettier-plugin-apex": "^1.10.0"
   },
   "lint-staged": {
-    "**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
+    "force-app/**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}": [
       "prettier --write"
+    ],
+    "copado-function/**/*.{js,json,md}": [
+      "eslint --fix"
     ],
     "**/{aura,lwc}/**": [
       "eslint"
