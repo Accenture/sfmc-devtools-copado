@@ -9,6 +9,14 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
+ *
+ * @typedef {object} EnvVar
+ * @property {string} value variable value
+ * @property {string} scope ?
+ * @property {string} name variable name
+ * @typedef {object} EnvChildVar
+ * @property {EnvVar[]} environmentVariables list of environment variables
+ * @property {string} environmentName name of environment in Copado
  */
 
 const fs = require('fs');
@@ -30,7 +38,16 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
+    source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
+    envVariables: {
+        // retrieve / commit
+        source: process.env.envVariablesSource,
+        sourceChildren: process.env.envVariablesSourceChildren,
+        // deploy
+        destination: process.env.envVariablesDestination,
+        destinationChildren: process.env.envVariablesDestinationChildren,
+    },
     // commit
     commitMessage: null,
     featureBranch: null,
@@ -53,11 +70,12 @@ async function run() {
     Log.info('Retrieve.js started');
     Log.debug('');
     Log.debug('Parameters');
-    Log.debug('==========');
+    Log.debug('===================');
+    Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
     Log.debug('Environment');
-    Log.debug('==========');
+    Log.debug('===================');
     Util.execCommand(null, 'npm --version', null);
     Util.execCommand(null, 'node --version', null);
     Util.execCommand(null, 'git version', null);
@@ -68,7 +86,7 @@ async function run() {
     try {
         Log.info('');
         Log.info('Clone repository');
-        Log.info('================');
+        Log.info('===================');
         Log.info('');
         Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
@@ -79,17 +97,17 @@ async function run() {
     try {
         Log.info('');
         Log.info('Preparing');
-        Log.info('=========');
+        Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
 
         Log.info('');
         Log.info('Initialize project');
-        Log.info('==================');
+        Log.info('===================');
         Log.info('');
         Util.initProject();
     } catch (ex) {
-        Log.error('initializing failed:' + ex.message);
+        Log.error('initializing failed: ' + ex.message);
         throw ex;
     }
     let sourceBU;
@@ -97,18 +115,23 @@ async function run() {
     try {
         Log.info('');
         Log.info('Get source BU');
-        Log.info('=============');
+        Log.info('===================');
         Log.info('');
-        sourceBU = Retrieve.getSourceBU();
+        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+    } catch (ex) {
+        Log.error('Getting Source BU failed: ' + ex.message);
+        throw ex;
+    }
 
+    try {
         Log.info('');
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
         metadataJson = await Retrieve.retrieveChangelog(sourceBU);
     } catch (ex) {
-        Log.info('Retrieving failed:' + ex.message);
         Copado.uploadToolLogs();
+        Log.error('Retrieving failed: ' + ex.message);
         throw ex;
     }
 
@@ -119,31 +142,26 @@ async function run() {
         Log.info('');
         Retrieve.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
-        Log.info('Saving metadata JSON failed:' + ex.message);
+        Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
     try {
         Log.info('');
         Log.info('Attach JSON');
-        Log.info('===========');
+        Log.info('===================');
         Log.info('');
         Copado.attachJson(CONFIG.metadataFilePath);
     } catch (ex) {
-        Log.info('Attaching JSON file failed:' + ex.message);
+        Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
     }
     Log.info('');
     Log.info('Finished');
-    Log.info('========');
+    Log.info('===================');
     Log.info('');
     Log.info('Retrieve.js done');
 
     Copado.uploadToolLogs();
-
-    // if (CONFIG.debug) {
-    //     Log.error('dont finish the job during debugging');
-    //     throw new Error();
-    // }
 }
 
 /**
@@ -182,7 +200,7 @@ class Log {
      * @returns {void}
      */
     static error(msg) {
-        Log.warn(msg);
+        Log.warn('❌  ' + msg);
         execSync(`copado --error-message "${msg}"`);
     }
     /**
@@ -237,7 +255,7 @@ class Util {
         if (command && Array.isArray(command)) {
             command = command.join(' && ');
         }
-        Log.debug(command);
+        Log.debug('⚡ ' + command);
 
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
@@ -247,7 +265,7 @@ class Util {
         }
 
         if (null != postMsg) {
-            Log.progress(postMsg);
+            Log.progress('✔️  ' + postMsg);
         }
     }
 
@@ -265,7 +283,7 @@ class Util {
         if (command && Array.isArray(command)) {
             command = command.join(' && ');
         }
-        Log.debug(command);
+        Log.debug('⚡ ' + command);
 
         let exitCode = null;
         try {
@@ -274,14 +292,15 @@ class Util {
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
         } catch (error) {
-            Log.warn(error.status + ': ' + error.message);
+            Log.warn('❌  ' + error.status + ': ' + error.message);
 
             // The command failed, take the exit code from the error
             exitCode = error.status;
+            return exitCode;
         }
 
         if (null != postMsg) {
-            Log.progress(postMsg);
+            Log.progress('✔️  ' + postMsg);
         }
 
         return exitCode;
@@ -318,25 +337,37 @@ class Util {
                 `npm install --save ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
-            'Completed installing MC Dev Tools'
+            'Completed installing SFMC DevTools'
         );
     }
-
     /**
      * Initializes MC project
      * @returns {void}
      */
     static initProject() {
-        const authJson = `{
-            "credentials": {
-                "${CONFIG.credentialName}": {
-                    "clientId": "${CONFIG.clientId}",
-                    "clientSecret": "${CONFIG.clientSecret}",
-                    "tenant": "${CONFIG.tenant}",
-                    "eid": "${CONFIG.enterpriseId}"
-                }
-            }
-        }`;
+        const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
+            ? `{
+    "credentials": {
+        "${CONFIG.credentialName}": {
+            "clientId": "${CONFIG.clientId}",
+            "clientSecret": "${CONFIG.clientSecret}",
+            "tenant": "${CONFIG.tenant}",
+            "eid": "${CONFIG.enterpriseId}"
+        }
+    }
+}`
+            : `{
+    "${CONFIG.credentialName}": {
+        "client_id": "${CONFIG.clientId}",
+        "client_secret": "${CONFIG.clientSecret}",
+        "auth_url": "${
+            CONFIG.tenant.startsWith('https')
+                ? CONFIG.tenant
+                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
+        }",
+        "account_id": ${CONFIG.enterpriseId}
+    }
+}`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -346,241 +377,89 @@ class Util {
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
     }
-}
-
-/**
- * handles downloading metadata
- */
-class Retrieve {
     /**
-     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
-     * TODO: replace by simply requiring the config file
-     * @returns {string} retrieve folder
-     */
-    static getRetrieveFolder() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const directories = config['directories'];
-        if (null == directories) {
-            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
-        }
-        const folder = directories['retrieve'];
-        if (null == folder) {
-            throw new Error('Could not find directories/retrieve in ' + CONFIG.configFilePath);
-        }
-
-        Log.debug('Retrieve folder is: ' + folder);
-        return folder;
-    }
-
-    /**
-     * Determines the BU from MC Dev configuration (.mcdev.json)
-     * from which to retrieve components.
-     * TODO: replace by simply requiring the config file
-     * @returns {string} BU
-     */
-    static getSourceBU() {
-        if (!fs.existsSync(CONFIG.configFilePath)) {
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
-        }
-        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const options = config['options'];
-        if (null == options) {
-            throw new Error('Could not find options in ' + CONFIG.configFilePath);
-        }
-        const deployment = options['deployment'];
-        if (null == deployment) {
-            throw new Error('Could not find options/deployment in ' + CONFIG.configFilePath);
-        }
-        const sourceTargetMapping = deployment['sourceTargetMapping'];
-        if (null == sourceTargetMapping) {
-            throw new Error(
-                'Could not find options/deployment/sourceTargetMapping in ' + CONFIG.configFilePath
-            );
-        }
-        const sourceTargetMappingKeys = Object.keys(sourceTargetMapping);
-        if (null == sourceTargetMappingKeys || 1 != sourceTargetMappingKeys.length) {
-            throw new Error(
-                'Got unexpected number of keys in options/deployment/sourceTargetMapping in ' +
-                    CONFIG.configFilePath +
-                    '. Expected is only one entry'
-            );
-        }
-
-        const marketList = config['marketList'];
-        if (null == marketList) {
-            throw new Error('Could not find marketList in ' + CONFIG.configFilePath);
-        }
-        const deploymentSource = marketList[sourceTargetMappingKeys[0]];
-        if (null == deploymentSource) {
-            throw new Error(
-                'Could not find marketList/ ' +
-                    deploymentSourceKeys[0] +
-                    ' in ' +
-                    CONFIG.configFilePath
-            );
-        }
-        const deploymentSourceKeys = Object.keys(deploymentSource);
-        if (
-            null == deploymentSourceKeys ||
-            (1 != deploymentSourceKeys.length && 2 != deploymentSourceKeys.length)
-        ) {
-            throw new Error(
-                'Got unexpected number of keys in marketList/' +
-                    deploymentSource +
-                    ' in ' +
-                    CONFIG.configFilePath +
-                    '. Expected is one entry, or two in case there is a description entry.'
-            );
-        }
-        let sourceBU = null;
-        if ('description' != deploymentSourceKeys[0]) {
-            sourceBU = deploymentSourceKeys[0];
-        } else {
-            sourceBU = deploymentSourceKeys[1];
-        }
-
-        Log.debug('BU to retrieve is: ' + sourceBU);
-        return sourceBU;
-    }
-
-    /**
-     * Retrieve components into a clean retrieve folder.
-     * The retrieve folder is deleted before retrieving to make
-     * sure we have only components that really exist in the BU.
-     * @param {string} sourceBU specific subfolder for downloads
-     * @returns {object} changelog JSON
-     */
-    static async retrieveChangelog(sourceBU) {
-        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
-        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
-        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
-
-        const customDefinition = {
-            automation: {
-                keyField: 'CustomerKey',
-                nameField: 'Name',
-                createdDateField: 'CreatedDate',
-                createdNameField: 'CreatedBy',
-                lastmodDateField: 'LastSaveDate',
-                lastmodNameField: 'LastSavedBy',
-            },
-        };
-        // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, 'accountUser', true)).accountUser;
-        // reduce userList to simple id-name map
-        Object.keys(userList).forEach((key) => {
-            userList[userList[key].ID] = userList[key].Name;
-            delete userList[key];
-        });
-
-        // get changed metadata
-        const changelogList = await mcdev.retrieve(sourceBU, null, true);
-        const allMetadata = [];
-        Object.keys(changelogList).map((type) => {
-            if (changelogList[type]) {
-                const def = customDefinition[type] || Definition[type];
-                allMetadata.push(
-                    ...Object.keys(changelogList[type]).map((key) => {
-                        const item = changelogList[type][key];
-                        if (
-                            MetadataType[type].isFiltered(item, true) ||
-                            MetadataType[type].isFiltered(item, false)
-                        ) {
-                            return;
-                        }
-                        if (
-                            this._getAttrValue(item, def.nameField).startsWith(
-                                'QueryStudioResults at '
-                            )
-                        ) {
-                            return;
-                        }
-
-                        const listEntry = {
-                            n: this._getAttrValue(item, def.nameField),
-                            k: this._getAttrValue(item, def.keyField),
-                            t: type,
-                            cd: this._convertTimestamp(
-                                this._getAttrValue(item, def.createdDateField)
-                            ),
-                            cb: this._getUserName(userList, item, def.createdNameField),
-                            ld: this._convertTimestamp(
-                                this._getAttrValue(item, def.lastmodDateField)
-                            ),
-                            lb: this._getUserName(userList, item, def.lastmodNameField),
-                        };
-                        return listEntry;
-                    })
-                );
-            }
-        });
-        return allMetadata.filter((item) => undefined !== item);
-    }
-    /**
-     * converts timestamps provided by SFMCs API into a format that SF core understands
-     *
-     * @private
-     * @param {string} iso8601dateTime 2021-10-16T15:20:41.990
-     * @returns {string} 2021-10-16T15:20:41.990-06:00
-     * //@returns {string} apexDateTime 2021-10-1615:20:41
-     */
-    static _convertTimestamp(iso8601dateTime) {
-        return iso8601dateTime + '-06:00';
-        // return iso8601dateTime.replace('T', ' ').split('.')[0];
-    }
-    /**
-     *
-     * @private
-     * @param {object<string,string>} userList user-id > user-name map
-     * @param {object<string,string>} item single metadata item
-     * @param {string} fieldname name of field containing the info
-     * @returns {string} username or user id or 'n/a'
-     */
-    static _getUserName(userList, item, fieldname) {
-        return (
-            userList[this._getAttrValue(item, fieldname)] ||
-            this._getAttrValue(item, fieldname) ||
-            'n/a'
-        );
-    }
-    /**
-     * helps get the value of complex and simple field references alike
-     * @private
-     * @param {MetadataItem} obj one item
-     * @param {string} key field key
-     * @returns {string} value of attribute
-     */
-    static _getAttrValue(obj, key) {
-        if (!key) {
-            return null;
-        }
-        if (key.includes('.')) {
-            const keys = key.split('.');
-            const first = keys.shift();
-            return this._getAttrValue(obj[first], keys.join('.'));
-        } else {
-            return obj[key];
-        }
-    }
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     * @param {MetadataItem[]} metadataJson path where downloaded files are
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     * @param {object} envVariables directly from config
      * @returns {void}
      */
-    static saveMetadataFile(metadataJson, metadataFilePath) {
-        const metadataString = JSON.stringify(metadataJson);
-        // Log.debug('Metadata JSON is: ' + metadataString);
-        fs.writeFileSync(metadataFilePath, metadataString);
+    static convertEnvVariables(envVariables) {
+        Object.keys(envVariables).map((key) => {
+            if (key.endsWith('Children')) {
+                envVariables[key] = Util._convertEnvChildVars(envVariables[key]);
+            } else {
+                envVariables[key] = Util._convertEnvVars(envVariables[key]);
+            }
+        });
+    }
+    /**
+     * helper that converts the copado-internal format for "environment variables" into an object
+     * @param {EnvVar[]} envVarArr -
+     * @returns {Object.<string,string>} proper object
+     */
+    static _convertEnvVars(envVarArr) {
+        console.log('_convertEnvVars', envVarArr);
+        if (!envVarArr) {
+            return envVarArr;
+        }
+        if (typeof envVarArr === 'string') {
+            envVarArr = JSON.parse(envVarArr);
+        }
+        const response = {};
+        for (const item of envVarArr) {
+            response[item.name] = item.value;
+        }
+        return response;
+    }
+    /**
+     * helper that converts the copado-internal format for "environment variables" into an object
+     * @param {EnvChildVar[]} envChildVarArr -
+     * @returns {Object.<string,string>} proper object
+     */
+    static _convertEnvChildVars(envChildVarArr) {
+        console.log('_convertEnvChildVars', envChildVarArr);
+        if (!envChildVarArr) {
+            return envChildVarArr;
+        }
+        if (typeof envChildVarArr === 'string') {
+            envChildVarArr = JSON.parse(envChildVarArr);
+        }
+        const response = {};
+        for (const item of envChildVarArr) {
+            response[item.environmentName] = this._convertEnvVars(item.environmentVariables);
+        }
+        return response;
+    }
+    /**
+     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     * @param {string} credName -
+     * @param {string} mid -
+     * @returns {string} retrieve folder
+     */
+    static getBuName(credName, mid) {
+        if (!credName) {
+            throw new Error('System Property "credentialName" not set');
+        }
+        if (!mid) {
+            throw new Error('System Property "mid" not set');
+        }
+        if (!fs.existsSync(CONFIG.configFilePath)) {
+            throw new Error('Could not find config file ' + CONFIG.configFilePath);
+        }
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+
+        if (config.credentials[credName] && config.credentials[credName].businessUnits) {
+            const myBuNameArr = Object.keys(config.credentials[credName].businessUnits).filter(
+                (buName) => config.credentials[credName].businessUnits[buName] == mid
+            );
+            if (myBuNameArr.length === 1) {
+                Log.debug('BU Name is: ' + credName + '/' + myBuNameArr[0]);
+                return credName + '/' + myBuNameArr[0];
+            } else {
+                throw new Error(`MID ${mid} not found for ${credName}`);
+            }
+        }
     }
 }
-
 /**
  * methods to handle interaction with the copado platform
  */
@@ -655,6 +534,171 @@ class Copado {
         } catch (error) {
             Log.info('attaching mcdev logs failed:' + error.message);
         }
+    }
+}
+/**
+ * handles downloading metadata
+ */
+class Retrieve {
+    /**
+     * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     * TODO: replace by simply requiring the config file
+     * @returns {string} retrieve folder
+     */
+    static getRetrieveFolder() {
+        if (!fs.existsSync(CONFIG.configFilePath)) {
+            throw new Error('Could not find config file ' + CONFIG.configFilePath);
+        }
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+        const directories = config['directories'];
+        if (null == directories) {
+            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
+        }
+        const folder = directories['retrieve'];
+        if (null == folder) {
+            throw new Error('Could not find directories/retrieve in ' + CONFIG.configFilePath);
+        }
+
+        Log.debug('Retrieve folder is: ' + folder);
+        return folder;
+    }
+
+    /**
+     * Retrieve components into a clean retrieve folder.
+     * The retrieve folder is deleted before retrieving to make
+     * sure we have only components that really exist in the BU.
+     * @param {string} sourceBU specific subfolder for downloads
+     * @returns {object} changelog JSON
+     */
+    static async retrieveChangelog(sourceBU) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
+        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+        if (!CONFIG.debug) {
+            // disable any non-errors originating in mcdev from being printed into the main copado logfile
+            mcdev.setLoggingLevel({ silent: true });
+        }
+
+        const customDefinition = {
+            automation: {
+                keyField: 'CustomerKey',
+                nameField: 'Name',
+                createdDateField: 'CreatedDate',
+                createdNameField: 'CreatedBy',
+                lastmodDateField: 'LastSaveDate',
+                lastmodNameField: 'LastSavedBy',
+            },
+        };
+        // get userid>name mapping
+        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], true)).accountUser;
+        // reduce userList to simple id-name map
+        Object.keys(userList).forEach((key) => {
+            userList[userList[key].ID] = userList[key].Name;
+            delete userList[key];
+        });
+
+        // get changed metadata
+        const changelogList = await mcdev.retrieve(sourceBU, null, true);
+        const allMetadata = [];
+        Object.keys(changelogList).map((type) => {
+            if (changelogList[type]) {
+                const def = customDefinition[type] || Definition[type];
+                allMetadata.push(
+                    ...Object.keys(changelogList[type]).map((key) => {
+                        const item = changelogList[type][key];
+                        if (
+                            MetadataType[type].isFiltered(item, true) ||
+                            MetadataType[type].isFiltered(item, false)
+                        ) {
+                            return;
+                        }
+                        if (
+                            this._getAttrValue(item, def.nameField).startsWith(
+                                'QueryStudioResults at '
+                            )
+                        ) {
+                            return;
+                        }
+
+                        const listEntry = {
+                            n: this._getAttrValue(item, def.nameField),
+                            k: this._getAttrValue(item, def.keyField),
+                            t: type,
+                            cd: this._convertTimestamp(
+                                this._getAttrValue(item, def.createdDateField)
+                            ),
+                            cb: this._getUserName(userList, item, def.createdNameField),
+                            ld: this._convertTimestamp(
+                                this._getAttrValue(item, def.lastmodDateField)
+                            ),
+                            lb: this._getUserName(userList, item, def.lastmodNameField),
+                        };
+                        return listEntry;
+                    })
+                );
+            }
+        });
+        return allMetadata.filter((item) => undefined !== item);
+    }
+    /**
+     * converts timestamps provided by SFMCs API into a format that SF core understands
+     *
+     * @private
+     * @param {string} iso8601dateTime 2021-10-16T15:20:41.990
+     * @returns {string} 2021-10-16T15:20:41.990-06:00
+     * //@returns {string} apexDateTime 2021-10-1615:20:41
+     */
+    static _convertTimestamp(iso8601dateTime) {
+        return iso8601dateTime + '-06:00';
+        // return iso8601dateTime.replace('T', ' ').split('.')[0];
+    }
+    /**
+     *
+     * @private
+     * @param {Object.<string, string>} userList user-id > user-name map
+     * @param {Object.<string, string>} item single metadata item
+     * @param {string} fieldname name of field containing the info
+     * @returns {string} username or user id or 'n/a'
+     */
+    static _getUserName(userList, item, fieldname) {
+        return (
+            userList[this._getAttrValue(item, fieldname)] ||
+            this._getAttrValue(item, fieldname) ||
+            'n/a'
+        );
+    }
+    /**
+     * helps get the value of complex and simple field references alike
+     * @private
+     * @param {MetadataItem} obj one item
+     * @param {string} key field key
+     * @returns {string} value of attribute
+     */
+    static _getAttrValue(obj, key) {
+        if (!key || !obj) {
+            return null;
+        }
+        if (key.includes('.')) {
+            const keys = key.split('.');
+            const first = keys.shift();
+            return this._getAttrValue(obj[first], keys.join('.'));
+        } else {
+            return obj[key];
+        }
+    }
+    /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     * @param {MetadataItem[]} metadataJson path where downloaded files are
+     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @returns {void}
+     */
+    static saveMetadataFile(metadataJson, metadataFilePath) {
+        const metadataString = JSON.stringify(metadataJson);
+        // Log.debug('Metadata JSON is: ' + metadataString);
+        fs.writeFileSync(metadataFilePath, metadataString);
     }
 }
 
