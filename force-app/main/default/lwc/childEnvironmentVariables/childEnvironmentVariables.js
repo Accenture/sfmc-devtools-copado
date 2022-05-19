@@ -19,8 +19,8 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
 
     handleSelect(event) {
         const environmentId = event.detail.name;
-        if(environmentId) {
-            this._navigateToPage({Id: environmentId}, 'view');
+        if (environmentId) {
+            this._navigateToPage({ Id: environmentId }, 'view');
         }
     }
 
@@ -40,18 +40,14 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
     }
 
     _processItems(allRows) {
-        const result = [];
-        let counter = 0;
-        allRows.forEach(environment => {
-            counter++;
+        const result = allRows.map((environment) => {
             const eachItem = this._prepareItem(environment.name, environment.id, '');
             const environmentVariables = [];
-            environment.environmentVariables.forEach(environmentVariable => {
-                counter++;
+            environment.environmentVariables.forEach((environmentVariable) => {
                 environmentVariables.push(this._prepareItem(environmentVariable.name + ': ' + environmentVariable.value, environmentVariable.id, ''));
             });
             eachItem.items = environmentVariables;
-            result.push(eachItem);
+            return eachItem;
         });
         this.items = result;
     }
@@ -74,8 +70,8 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
                 recordId: row.Id,
                 actionName: actionName
             }
-        }).then(url => {
-            window.open(url, "_blank");
+        }).then((url) => {
+            window.open(url, '_blank');
         });
     }
 
