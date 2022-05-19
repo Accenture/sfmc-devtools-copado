@@ -145,7 +145,7 @@ async function run() {
             Log.info('Deploy BUs');
             Log.info('===================');
             let exitCode = 0;
-            const ec = Deploy.deployBU(targetBU);
+            const ec = await Deploy.deployBU(targetBU);
             if (0 != ec) {
                 if (0 == exitCode) {
                     exitCode = ec;
@@ -576,13 +576,9 @@ class Deploy {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
         const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const directories = config['directories'];
-        if (null == directories) {
-            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
-        }
-        const folder = directories['deploy'];
-        if (null == folder) {
-            throw new Error('Could not find directories/deploy in ' + CONFIG.configFilePath);
+        const folder = !config?.directories?.deploy;
+        if (!folder) {
+            throw new Error('Could not find config.directories/deploy in ' + CONFIG.configFilePath);
         }
 
         Log.debug('Deploy folder is: ' + folder);
@@ -651,26 +647,22 @@ class Deploy {
      * @param {string} bu name of BU
      * @returns {number} exit code of the deployment
      */
-    static deployBU(bu) {
-        const ec = Util.execCommandReturnStatus(
-            'Deploy BU ' + bu,
-            [CONFIG.mcdev_exec + ' deploy ' + bu],
-            'Completed deploying BU'
-        );
-        if (0 != ec) {
+    static async deployBU(bu) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        await mcdev.deploy(bu);
+        if (process.exitCode === 1) {
             Log.warn(
                 'Deployment of BU ' +
                     bu +
-                    ' failed with exit code ' +
-                    ec +
-                    '. Other BUs will be deployed, but overall deployment will fail at the end.'
+                    ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
             );
             // logError("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
             // Log.info("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
             // console.log("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
         }
 
-        return ec;
+        return process.exitCode;
     }
     /**
      * Merge from branch into target branch
