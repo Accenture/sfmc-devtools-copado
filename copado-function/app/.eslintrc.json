@@ -1,10 +1,11 @@
 {
     "env": {
         "es6": true,
-        "node": true
+        "node": true,
+        "mocha": true
     },
-    "extends": ["eslint:recommended", "prettier"],
-    "plugins": ["prettier"],
+    "extends": ["eslint:recommended", "plugin:jsdoc/recommended", "plugin:prettier/recommended"],
+    "plugins": [],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
@@ -13,11 +14,28 @@
         "ecmaVersion": 2020,
         "sourceType": "module"
     },
+    "root": true,
+    "settings": {
+        "jsdoc": {
+            "mode": "jsdoc",
+            "preferredTypes": {
+                "Object": "object",
+                "object.<>": "Object.<>",
+                "object<>": "Object.<>",
+                "Object<>": "Object.<>",
+                "promise": "Promise",
+                "promise.<>": "Promise.<>",
+                "promise<>": "Promise.<>",
+                "Promise<>": "Promise.<>"
+            }
+        }
+    },
     "rules": {
         "arrow-body-style": ["error", "as-needed"],
         "curly": "error",
         "no-console": "off",
-        "require-jsdoc": [
+        "jsdoc/check-line-alignment": 2,
+        "jsdoc/require-jsdoc": [
             "warn",
             {
                 "require": {
@@ -29,7 +47,6 @@
                 }
             }
         ],
-        "valid-jsdoc": "error",
         "spaced-comment": ["warn", "always", { "block": { "exceptions": ["*"], "balanced": true } }]
     },
     "overrides": [
@@ -38,7 +55,17 @@
             "rules": {
                 "no-var": "error",
                 "prefer-const": "error",
-                "prettier/prettier": "warn"
+                "prettier/prettier": "warn",
+                "prefer-arrow-callback": "warn"
+            }
+        },
+        {
+            "files": ["test/*.js"],
+
+            "extends": ["plugin:mocha/recommended"],
+            "plugins": ["mocha"],
+            "rules": {
+                "mocha/no-mocha-arrows": "off"
             }
         }
     ]
