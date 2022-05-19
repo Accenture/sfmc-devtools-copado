@@ -1,8 +1,9 @@
 import { LightningElement, api } from 'lwc';
 import { ShowToastEvent } from 'lightning/platformShowToastEvent';
+import { NavigationMixin } from 'lightning/navigation';
 import getChildEnvironmentVariables from '@salesforce/apex/ChildEnvironmentVariableController.getChildEnvironmentVariables';
 
-export default class ChildEnvironmentVariables extends LightningElement {
+export default class ChildEnvironmentVariables extends NavigationMixin(LightningElement) {
     @api recordId;
     @api items = [];
     header = 'Child Environments & Variables';
@@ -14,6 +15,13 @@ export default class ChildEnvironmentVariables extends LightningElement {
 
     connectedCallback() {
         this._getVariables();
+    }
+
+    handleSelect(event) {
+        const environmentId = event.detail.name;
+        if (environmentId) {
+            this._navigateToPage({ Id: environmentId }, 'view');
+        }
     }
 
     // PRIVATE
@@ -32,19 +40,14 @@ export default class ChildEnvironmentVariables extends LightningElement {
     }
 
     _processItems(allRows) {
-        const result = [];
-        let counter = 0;
-        allRows.forEach(row => {
-            counter++;
-            const eachItem = this._prepareItem(row.environmentName, ''+counter, '');
-
-            const envVariables = [];
-            row.environmentVariables.forEach(eachEnvVariable => {
-                counter++;
-                envVariables.push(this._prepareItem(eachEnvVariable.name, ''+counter, eachEnvVariable.value));
+        const result = allRows.map((environment) => {
+            const eachItem = this._prepareItem(environment.name, environment.id, '');
+            const environmentVariables = [];
+            environment.environmentVariables.forEach((environmentVariable) => {
+                environmentVariables.push(this._prepareItem(environmentVariable.name + ': ' + environmentVariable.value, environmentVariable.id, ''));
             });
-            eachItem.items = envVariables;
-            result.push(eachItem);
+            eachItem.items = environmentVariables;
+            return eachItem;
         });
         this.items = result;
     }
@@ -58,6 +61,18 @@ export default class ChildEnvironmentVariables extends LightningElement {
             items: []
         };
         return result;
+    }
+
+    _navigateToPage(row, actionName) {
+        this[NavigationMixin.GenerateUrl]({
+            type: 'standard__recordPage',
+            attributes: {
+                recordId: row.Id,
+                actionName: actionName
+            }
+        }).then((url) => {
+            window.open(url, '_blank');
+        });
     }
 
     showToastMessage(title, message, variant, mode) {
