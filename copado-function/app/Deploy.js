@@ -140,9 +140,10 @@ async function run() {
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        if (true == Deploy.createDeltaPackage(deployFolder)) {
-            const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
-        if (true == await Deploy.createDeltaPackage(deployFolder)) {
+        const sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+        Deploy.updateMarketLists(sourceBU, targetBU, CONFIG.envVariables);
+        if (true == (await Deploy.createDeltaPackage(deployFolder))) {
             Log.info('Deploy BUs');
             Log.info('===================');
             let exitCode = 0;
@@ -577,15 +578,57 @@ class Deploy {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
         const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const folder = !config?.directories?.deploy;
+        const folder = config?.directories?.deploy;
         if (!folder) {
-            throw new Error('Could not find config.directories/deploy in ' + CONFIG.configFilePath);
+            throw new Error('Could not find config.directories.deploy in ' + CONFIG.configFilePath);
         }
 
         Log.debug('Deploy folder is: ' + folder);
         return folder;
     }
+    /**
+     *
+     * @param {string} sourceBU cred/buname of source BU
+     * @param {string} targetBU cred/buname of target BU
+     * @returns {void}
+     */
+    static updateMarketLists(sourceBU, targetBU, marketVariables) {
+        const deploySourceList = 'deployment-source';
+        const deployTargetList = 'deployment-target';
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+        // ensure the system knows what we name our market lists for deployment
+        config.options.deployment.sourceTargetMapping = {};
+        config.options.deployment.sourceTargetMapping[deploySourceList] = deployTargetList;
+        // remove potentially existing entries and ensure these 2 lists exist
+        config.marketList = {};
+        for (let listName of [deploySourceList, deployTargetList]) {
+            config.marketList[listName] = {};
+        }
+        // add marketList entries for the 2 bu-market combos
+        config.marketList[deploySourceList][sourceBU] = 'source';
+        config.marketList[deployTargetList][targetBU] = 'target';
+        // set up corresponding markets and remove other entries
+        config.markets = {};
+        config.markets['source'] = marketVariables.source;
+        config.markets['target'] = marketVariables.destination;
+        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
+        // TODO: deal with enterprise BU deployments (shared DEs)
 
+        console.log(
+            'config.options.deployment.sourceTargetMapping',
+            config.options.deployment.sourceTargetMapping
+        );
+        console.log('config.markets', config.markets);
+        console.log('config.marketList', JSON.stringify(config.marketList));
+        // * override config in git repo
+        try {
+            fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + '.BAK');
+            fs.writeFileSync(CONFIG.configFilePath, JSON.stringify(config), 'utf8');
+        } catch (ex) {
+            Log.error('Updating updateMarketLists failed: ' + ex.message);
+            throw ex;
+        }
+    }
     /**
      * Create the delta package containing the changed components
      * return whether the delta package is empty or not
@@ -675,6 +718,10 @@ class Deploy {
      * @returns {void}
      */
     static merge(fromCommit) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         // Merge and commit changes.
         Util.execCommand(
             'Merge commit ' + fromCommit,
@@ -688,6 +735,10 @@ class Deploy {
      * @returns {void}
      */
     static push(toBranch) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         Util.execCommand(
             'Push branch ' + toBranch,
             ['git push origin "' + toBranch + '"'],
@@ -702,6 +753,10 @@ class Deploy {
      * @returns {void}
      */
     static promote(toBranch) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         // Util.execCommand("Checking out the branch " + toBranch,
         //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch,
         //            "Completed cloning branch");

@@ -626,6 +626,11 @@ class Commit {
      * @returns {void}
      */
     static addSelectedComponents(gitAddArr) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+
         // Iterate all metadata components selected by user to commit
 
         for (const filePath of gitAddArr) {
@@ -654,6 +659,11 @@ class Commit {
         const stdout = execSync('git diff --staged --name-only');
         Log.debug('Git diff ended with the result: >' + stdout + '<');
         if (stdout && 0 < stdout.length) {
+            if (process.env.LOCAL_DEV) {
+                Log.debug('🔥 Skipping git action in local dev environment');
+                return;
+            }
+
             Util.execCommand(
                 'Commit',
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
