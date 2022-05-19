@@ -44,6 +44,8 @@ public with sharing class RunCopadoFunctionFromLWC {
 
                 Integer lastIndexCDI = cDI.size() - 1;
                 String contentDocumentId = cDI[lastIndexCDI].ContentDocumentId;
+
+                
                 List <ContentVersion> content = [
                     SELECT VersionData, ContentDocument.Title 
                     FROM ContentVersion 
@@ -56,6 +58,7 @@ public with sharing class RunCopadoFunctionFromLWC {
                 }
             }
             return data;
+            
         } catch (Exception e) {
             throw new AuraHandledException(e.getMessage());
         }

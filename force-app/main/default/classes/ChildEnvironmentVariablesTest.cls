@@ -26,23 +26,24 @@ private class ChildEnvironmentVariablesTest {
                 String result = '';
     
                 Test.startTest();
-                result = ChildEnvironmentVariableController.getChildEnvironmentVariables(parentEnvironment.Id);
+                ChildEnvironmentVariables cls = new ChildEnvironmentVariables();
+                result = cls.execute(parentEnvironment.Id);
                 Test.stopTest();
     
                 System.assertNotEquals(null, result, 'Environment Variables JSON is null');
     
-                List<ChildEnvironmentVariables.Environment> environments = (List<ChildEnvironmentVariables.Environment>) JSON.deserialize(
+                List<ChildEnvironmentVariables.ChildEnvironmentVariablesRecord> records = (List<ChildEnvironmentVariables.ChildEnvironmentVariablesRecord>) JSON.deserialize(
                     result,
-                    List<ChildEnvironmentVariables.Environment>.class
+                    List<ChildEnvironmentVariables.ChildEnvironmentVariablesRecord>.class
                 );
-                System.assertEquals(2, environments.size(), 'Environment list size is not equal');
-                ChildEnvironmentVariables.Environment childEnvData = environments[0].name == 'Child Bu1' ? environments[0] : environments[1];
+                System.assertEquals(2, records.size(), 'Environment list size is not equal');
+                ChildEnvironmentVariables.ChildEnvironmentVariablesRecord childEnvData = records[0].environmentName == 'Child Bu1' ? records[0] : records[1];
                 System.assertEquals(environmentVariables.size(), childEnvData.environmentVariables.size(), 'Environment Variables list size is not equal');
             }
     }
     
     private static User createStandardUser() {
-        return createUser('LastName', 'test.username@testdomain.com', 'alias2');
+        return createUser('LastName', 'test2@test2.com', 'test.username@testdomain.com', 'alias2');
     }
     
     private static List<PermissionSetAssignment> createRequiredPermissions(Id userId) {
@@ -51,12 +52,12 @@ private class ChildEnvironmentVariablesTest {
         return assignments;
     }
 
-    private static User createUser(String lastName, String email, String alias) {
+    private static User createUser(String lastName, String email, String username, String alias) {
         User standardUser = new User();
         standardUser.ProfileId = [SELECT Id FROM Profile WHERE Name = 'Standard User'].Id;
         standardUser.LastName = lastName;
         standardUser.Email = email;
-        standardUser.Username = email;
+        standardUser.Username = username;
         standardUser.Alias = alias;
         standardUser.TimeZoneSidKey = 'America/Los_Angeles';
         standardUser.EmailEncodingKey = 'UTF-8';
