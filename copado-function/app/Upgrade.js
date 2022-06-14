@@ -120,10 +120,12 @@ async function run() {
     }
     try {
         Log.info('');
-        Log.info('Adding updated .mcdevrc.json to git');
+        Log.info('Running mcdev upgrade');
         Log.info('===================');
         Log.info('');
-        Upgrade.runConfigUpgrade();
+        if (!(await Upgrade.runConfigUpgrade())) {
+            throw new Error();
+        }
     } catch (ex) {
         Copado.uploadToolLogs();
         Log.error('mcdev upgrade failed:' + ex.message);
@@ -131,11 +133,13 @@ async function run() {
     }
     try {
         Log.info('');
-        Log.info('Adding updated .mcdevrc.json to git');
+        Log.info('Adding updated config files to git');
         Log.info('===================');
         Log.info('');
         Upgrade.gitAddConfig();
     } catch (ex) {
+        Copado.uploadToolLogs();
+
         Log.error('git add failed:' + ex.message);
         throw ex;
     }
@@ -144,8 +148,10 @@ async function run() {
         Log.info('Commit and push');
         Log.info('===================');
         Log.info('');
-        Commit.commitAndPush(CONFIG.mainBranch);
+        Upgrade.commitAndPush(CONFIG.mainBranch);
     } catch (ex) {
+        Copado.uploadToolLogs();
+
         Log.error('git commit / push failed:' + ex.message);
         throw ex;
     }
@@ -559,17 +565,27 @@ class Upgrade {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
-
-        if (fs.existsSync(CONFIG.configFilePath)) {
-            // Add this component to the Git index.
-            Util.execCommand(
-                null,
-                ['git add "' + CONFIG.configFilePath + '"'],
-                'staged ' + CONFIG.configFilePath
-            );
-        } else {
-            Log.error('could not find ' + CONFIG.configFilePath);
-            throw new Error('Could not find config file ' + CONFIG.configFilePath);
+        const files = [
+            CONFIG.configFilePath,
+            '.gitignore',
+            '.editorconfig',
+            '.eslintignore',
+            '.eslintrc',
+            '.gitattributes',
+            '.prettierrc',
+            '.README.md',
+            '.vscode/extensions.json',
+            '.vscode/settings.json',
+            'package.json',
+        ];
+        for (const file of files) {
+            if (fs.existsSync(file)) {
+                // Add this component to the Git index.
+                Util.execCommand(null, ['git add "' + file + '"'], 'staged ' + file);
+            } else {
+                Log.error('could not find ' + file);
+                throw new Error('Could not find config file ' + file);
+            }
         }
     }
     /**
@@ -594,7 +610,7 @@ class Upgrade {
 
             Util.execCommand(
                 'Committing config',
-                ['git commit -m "Upgrading .mcdevrc.json via `mcdev upgrade`"'],
+                ['git commit -m "Upgrading project config files via `mcdev upgrade`"'],
                 'Completed committing'
             );
             const ec = Util.execCommandReturnStatus(
