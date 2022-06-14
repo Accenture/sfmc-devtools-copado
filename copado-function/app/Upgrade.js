@@ -201,7 +201,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg}"`);
+        execSync(`copado -e "${msg}"`);
     }
     /**
      * @param {string} msg your log message
@@ -209,7 +209,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg}"`);
+        execSync(`copado -p "${msg}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -566,6 +566,8 @@ class Upgrade {
             return;
         }
         const files = [
+            '.vscode/extensions.json',
+            '.vscode/settings.json',
             CONFIG.configFilePath,
             '.gitignore',
             '.editorconfig',
@@ -573,15 +575,13 @@ class Upgrade {
             '.eslintrc',
             '.gitattributes',
             '.prettierrc',
-            '.README.md',
-            '.vscode/extensions.json',
-            '.vscode/settings.json',
+            'README.md',
             'package.json',
         ];
         for (const file of files) {
             if (fs.existsSync(file)) {
                 // Add this component to the Git index.
-                Util.execCommand(null, ['git add "' + file + '"'], 'staged ' + file);
+                Util.execCommand(null, ['git add "' + file + '"'], null);
             } else {
                 Log.error('could not find ' + file);
                 throw new Error('Could not find config file ' + file);
