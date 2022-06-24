@@ -605,7 +605,7 @@ class Commit {
         // get unique list of types that need to be retrieved
         const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
         // download all types of which
-        await mcdev.retrieve(sourceBU, typeArr, false);
+        await mcdev.retrieve(sourceBU, typeArr, null, false);
         const fileArr = (
             await Promise.all(
                 typeArr.map((type) => {

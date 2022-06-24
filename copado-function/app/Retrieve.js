@@ -591,7 +591,7 @@ class Retrieve {
             },
         };
         // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], true)).accountUser;
+        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], null, true)).accountUser;
         // reduce userList to simple id-name map
         Object.keys(userList).forEach((key) => {
             userList[userList[key].ID] = userList[key].Name;
@@ -599,7 +599,7 @@ class Retrieve {
         });
 
         // get changed metadata
-        const changelogList = await mcdev.retrieve(sourceBU, null, true);
+        const changelogList = await mcdev.retrieve(sourceBU, null, null, true);
         const allMetadata = [];
         Object.keys(changelogList).map((type) => {
             if (changelogList[type]) {
