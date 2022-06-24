@@ -650,8 +650,14 @@ class Retrieve {
      * //@returns {string} apexDateTime 2021-10-1615:20:41
      */
     static _convertTimestamp(iso8601dateTime) {
+        if (!iso8601dateTime) {
+            return '-';
+        }
         // attach timezone unless already returned by API (asset api does return it!)
-        return iso8601dateTime + (iso8601dateTime.split('-').length === 2 ? '-06:00' : '');
+        if (iso8601dateTime.split('-').length === 3) {
+            iso8601dateTime += '-06:00';
+        }
+        return iso8601dateTime;
     }
     /**
      *
