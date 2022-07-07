@@ -84,9 +84,17 @@ async function run() {
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
     // prevent git errors down the road
-    Util.execCommand(null, [
-        'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
-    ]);
+    try {
+        Util.execCommand(null, ['git config --global --add safe.directory /tmp']);
+    } catch {
+        try {
+            Util.execCommand(null, [
+                'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+            ]);
+        } catch {
+            Log.error('Could not set tmp directoy as safe directory');
+        }
+    }
     // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());

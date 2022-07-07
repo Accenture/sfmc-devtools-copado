@@ -31,6 +31,7 @@
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
+const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // generic
@@ -92,6 +93,18 @@ async function run() {
     Util.execCommand(null, 'git version', null);
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    // prevent git errors down the road
+    try {
+        Util.execCommand(null, ['git config --global --add safe.directory /tmp']);
+    } catch {
+        try {
+            Util.execCommand(null, [
+                'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+            ]);
+        } catch {
+            Log.error('Could not set tmp directoy as safe directory');
+        }
+    }
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
     try {
@@ -516,19 +529,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            [
-                'git config --global --add safe.directory /tmp',
-                'copado-git-get "' + mainBranch + '"',
-            ],
+            ['copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                [
-                    'git config --global --add safe.directory /tmp',
-                    'copado-git-get --create "' + featureBranch + '"',
-                ],
+                ['copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
