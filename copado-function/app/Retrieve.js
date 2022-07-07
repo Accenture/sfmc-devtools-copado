@@ -21,6 +21,7 @@
 
 const fs = require('fs');
 const execSync = require('child_process').execSync;
+const resolve = require('path').resolve;
 
 const CONFIG = {
     // generic
@@ -81,6 +82,11 @@ async function run() {
     Util.execCommand(null, 'git version', null);
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    // prevent git errors down the road
+    Util.execCommand(null, [
+        'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+    ]);
+    // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
     try {
@@ -178,7 +184,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate(), msg);
+            console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
         }
     }
     /**
@@ -186,14 +192,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
@@ -500,19 +506,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            [
-                'git config --global --add safe.directory /tmp',
-                'copado-git-get "' + mainBranch + '"',
-            ],
+            ['copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                [
-                    'git config --global --add safe.directory /tmp',
-                    'copado-git-get --create "' + featureBranch + '"',
-                ],
+                ['copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
