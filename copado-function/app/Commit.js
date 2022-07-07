@@ -151,6 +151,7 @@ async function run() {
             CONFIG.fileSelectionSalesforceId,
             CONFIG.fileSelectionFileName
         );
+        console.log('commitSelectionArr', commitSelectionArr);
     } catch (ex) {
         Log.info('Getting Commit-selection file failed:' + ex.message);
         throw ex;
@@ -629,8 +630,13 @@ class Commit {
         commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
         // get unique list of types that need to be retrieved
         const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
+        const keyArrForAllTypes = [
+            ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
+        ];
+        console.log('typeArr', typeArr);
+        console.log('keyArrForAllTypes', keyArrForAllTypes);
         // download all types of which
-        await mcdev.retrieve(sourceBU, typeArr, null, false);
+        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
         const fileArr = (
             await Promise.all(
                 typeArr.map((type) => {
@@ -641,7 +647,7 @@ class Commit {
                 })
             )
         ).flat();
-        console.log(fileArr);
+        console.log('fileArr', fileArr);
         return fileArr;
     }
     /**
