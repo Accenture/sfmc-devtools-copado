@@ -640,9 +640,13 @@ class Commit {
         const fileArr = (
             await Promise.all(
                 typeArr.map((type) => {
-                    const keyArr = commitSelectionArr
-                        .filter((item) => item.t === type)
-                        .map((item) => JSON.parse(item.j).key);
+                    const keyArr = [
+                        ...new Set(
+                            commitSelectionArr
+                                .filter((item) => item.t === type)
+                                .map((item) => JSON.parse(item.j).key)
+                        ),
+                    ];
                     return mcdev.getFilesToCommit(sourceBU, type, keyArr);
                 })
             )
