@@ -18,6 +18,7 @@
     "cop_commit": "node copado-function/app/Commit.js",
     "cop_deploy": "node copado-function/app/Deploy.js",
     "cop_promote": "node copado-function/app/Promote.js"
+    "upgrade": "npm-check --update"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^1.0.1",
@@ -36,6 +37,7 @@
     "lint-staged": "^11.0.0",
     "prettier": "^2.3.2",
     "prettier-eslint": "14.0.2",
+    "npm-check": "5.9.2",
     "prettier-plugin-apex": "^1.10.0"
   },
   "lint-staged": {
