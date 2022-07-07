@@ -30,6 +30,14 @@
       "command": "node Deploy.js",
       "cwd": "${workspaceFolder}/copado-function/app",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Deploy.env",
+    },
+    {
+      "type": "node-terminal",
+      "name": "debug: cop_upgrade",
+      "request": "launch",
+      "command": "node Upgrade.js",
+      "cwd": "${workspaceFolder}/copado-function/app",
+      "envFile": "${workspaceFolder}/copado-function/app/environments/Upgrade.env",
     }
   ]
 }
