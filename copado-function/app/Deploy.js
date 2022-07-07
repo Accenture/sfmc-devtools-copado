@@ -148,15 +148,27 @@ async function run() {
         Log.error('getDeployFolder failed: ' + ex.message);
         throw ex;
     }
+    let sourceBU;
+    let targetBU;
 
     try {
         Log.info('');
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        const sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
-        const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+    } catch (ex) {
+        Log.error('Getting Source / Target BU failed: ' + ex.message);
+        throw ex;
+    }
+    try {
         Deploy.updateMarketLists(sourceBU, targetBU, CONFIG.envVariables);
+    } catch (ex) {
+        Log.error('Updateing Market List failed: ' + ex.message);
+        throw ex;
+    }
+    try {
         if (true == (await Deploy.createDeltaPackage(deployFolder))) {
             Log.info('Deploy BUs');
             Log.info('===================');
