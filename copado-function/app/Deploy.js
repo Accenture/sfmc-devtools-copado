@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @typedef {Object} MetadataItem
+ * @typedef {object} MetadataItem
  * @property {string} n Name
  * @property {string} k Key (Customer Key / External Key)
  * @property {string} t metadata type
@@ -9,7 +9,6 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
- *
  * @typedef {object} EnvVar
  * @property {string} value variable value
  * @property {string} scope ?
@@ -19,9 +18,9 @@
  * @property {string} environmentName name of environment in Copado
  */
 
-const fs = require('fs');
-const execSync = require('child_process').execSync;
-const resolve = require('path').resolve;
+const fs = require('node:fs');
+const execSync = require('node:child_process').execSync;
+const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // generic
@@ -66,6 +65,7 @@ const CONFIG = {
 
 /**
  * main method that combines runs this function
+ *
  * @returns {void}
  */
 async function run() {
@@ -154,10 +154,8 @@ async function run() {
             Log.info('===================');
             let exitCode = 0;
             const ec = await Deploy.deployBU(targetBU);
-            if (0 != ec) {
-                if (0 == exitCode) {
-                    exitCode = ec;
-                }
+            if (0 != ec && 0 == exitCode) {
+                exitCode = ec;
             }
             if (0 != exitCode) {
                 throw new Error(
@@ -213,7 +211,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate(), msg);
+            console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
         }
     }
     /**
@@ -221,14 +219,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
@@ -248,6 +246,7 @@ class Log {
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
+     *
      * @returns {string} readable timestamp
      */
     static _getFormattedDate() {
@@ -278,6 +277,7 @@ class Log {
 class Util {
     /**
      * Execute command
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
@@ -294,9 +294,9 @@ class Util {
 
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
-        } catch (error) {
-            Log.error(error.status + ': ' + error.message);
-            throw new Error(error);
+        } catch (ex) {
+            Log.error(ex.status + ': ' + ex.message);
+            throw new Error(ex);
         }
 
         if (null != postMsg) {
@@ -306,10 +306,11 @@ class Util {
 
     /**
      * Execute command but return the exit code
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
-     * @return {number} exit code
+     * @returns {number} exit code
      */
     static execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
@@ -326,11 +327,11 @@ class Util {
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
-        } catch (error) {
-            Log.warn('❌  ' + error.status + ': ' + error.message);
+        } catch (ex) {
+            Log.warn('❌  ' + ex.status + ': ' + ex.message);
 
             // The command failed, take the exit code from the error
-            exitCode = error.status;
+            exitCode = ex.status;
             return exitCode;
         }
 
@@ -344,6 +345,7 @@ class Util {
     /**
      * Installs MC Dev Tools and prints the version number
      * TODO: This will later be moved into an according Docker container.
+     *
      * @returns {void}
      */
     static provideMCDevTools() {
@@ -361,7 +363,7 @@ class Util {
             installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
         } else if (!CONFIG.mcdevVersion) {
             Log.error('Please specify mcdev_version in pipeline & environment settings');
-            throw new Error();
+            throw new Error('Please specify mcdev_version in pipeline & environment settings');
         } else {
             // default, install via npm at specified version
             installer = `mcdev@${CONFIG.mcdevVersion}`;
@@ -377,6 +379,7 @@ class Util {
     }
     /**
      * Initializes MC project
+     *
      * @returns {void}
      */
     static initProject() {
@@ -414,6 +417,7 @@ class Util {
     }
     /**
      * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     *
      * @param {object} envVariables directly from config
      * @returns {void}
      */
@@ -428,6 +432,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -447,6 +452,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -466,6 +472,7 @@ class Util {
     }
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     *
      * @param {string} credName -
      * @param {string} mid -
      * @returns {string} retrieve folder
@@ -501,6 +508,7 @@ class Util {
 class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -513,6 +521,7 @@ class Copado {
     }
     /**
      * Finally, attach the resulting metadata JSON.
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -528,6 +537,7 @@ class Copado {
      * Checks out the source repository.
      * if a feature branch is available creates
      * the feature branch based on the main branch.
+     *
      * @param {string} mainBranch ?
      * @param {string} featureBranch can be null/undefined
      * @returns {void}
@@ -549,19 +559,20 @@ class Copado {
 
     /**
      * to be executed at the very end
+     *
      * @returns {void}
      */
     static uploadToolLogs() {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync('logs').forEach((file) => {
+            for (const file of fs.readdirSync('logs')) {
                 Log.debug('- ' + file);
                 Copado.attachLog('logs/' + file);
-            });
+            }
             Log.progress('Attached mcdev logs');
-        } catch (error) {
-            Log.info('attaching mcdev logs failed:' + error.message);
+        } catch (ex) {
+            Log.info('attaching mcdev logs failed:' + ex.message);
         }
     }
 }
@@ -571,6 +582,7 @@ class Copado {
 class Deploy {
     /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
+     *
      * @returns {string} deploy folder
      */
     static getDeployFolder() {
@@ -590,6 +602,7 @@ class Deploy {
      *
      * @param {string} sourceBU cred/buname of source BU
      * @param {string} targetBU cred/buname of target BU
+     * @param {object} marketVariables straight from the (converted) environment variables
      * @returns {void}
      */
     static updateMarketLists(sourceBU, targetBU, marketVariables) {
@@ -601,7 +614,7 @@ class Deploy {
         config.options.deployment.sourceTargetMapping[deploySourceList] = deployTargetList;
         // remove potentially existing entries and ensure these 2 lists exist
         config.marketList = {};
-        for (let listName of [deploySourceList, deployTargetList]) {
+        for (const listName of [deploySourceList, deployTargetList]) {
             config.marketList[listName] = {};
         }
         // add marketList entries for the 2 bu-market combos
@@ -632,6 +645,7 @@ class Deploy {
     /**
      * Create the delta package containing the changed components
      * return whether the delta package is empty or not
+     *
      * @param {string} deployFolder path
      * @returns {Promise.<boolean>} true: files found, false: not
      */
@@ -675,6 +689,7 @@ class Deploy {
      * The branch is the normal PR to branch, except if the PR is for a release or hotfix.
      * Release- and hotfix branches have a detailed release or hotfix number in the branch name,
      * and rather than using these detailed names the configuration used only 'release' resp. 'hotfix'.
+     *
      * @param {string} branch value from copado config
      * @returns {string} toBranch value to look for in config
      */
@@ -692,6 +707,7 @@ class Deploy {
     /**
      * Deploys one specific BU.
      * In case of errors, the deployment is not stopped.
+     *
      * @param {string} bu name of BU
      * @returns {number} exit code of the deployment
      */
@@ -714,6 +730,7 @@ class Deploy {
     }
     /**
      * Merge from branch into target branch
+     *
      * @param {string} fromCommit commit id to merge
      * @returns {void}
      */
@@ -731,6 +748,7 @@ class Deploy {
     }
     /**
      * Pushes after a successfull deployment
+     *
      * @param {string} toBranch name of branch to push to
      * @returns {void}
      */
@@ -748,8 +766,8 @@ class Deploy {
 
     /**
      * Promote changes by merging into the promotion branch
+     *
      * @param {string} toBranch branch to merge into
-     * @param {string} promotionBranch target branch to merge into
      * @returns {void}
      */
     static promote(toBranch) {
@@ -780,6 +798,7 @@ class Deploy {
     }
     /**
      * Checks out the source repository and branch
+     *
      * @param {string} fromCommit commit id to merge
      * @param {string} toBranch branch name to merge into
      * @returns {void}
@@ -805,4 +824,4 @@ class Deploy {
     }
 }
 
-run();
+run(); // eslint-disable-line unicorn/prefer-top-level-await
