@@ -9,6 +9,8 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
+ */
+/**
  * @typedef {object} EnvVar
  * @property {string} value variable value
  * @property {string} scope ?
