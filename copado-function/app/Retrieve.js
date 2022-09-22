@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @typedef {Object} MetadataItem
+ * @typedef {object} MetadataItem
  * @property {string} n Name
  * @property {string} k Key (Customer Key / External Key)
  * @property {string} t metadata type
@@ -9,7 +9,8 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
- *
+ */
+/**
  * @typedef {object} EnvVar
  * @property {string} value variable value
  * @property {string} scope ?
@@ -19,8 +20,9 @@
  * @property {string} environmentName name of environment in Copado
  */
 
-const fs = require('fs');
-const execSync = require('child_process').execSync;
+const fs = require('node:fs');
+const execSync = require('node:child_process').execSync;
+const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // generic
@@ -64,6 +66,7 @@ const CONFIG = {
 
 /**
  * main method that combines runs this function
+ *
  * @returns {void}
  */
 async function run() {
@@ -81,6 +84,19 @@ async function run() {
     Util.execCommand(null, 'git version', null);
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    // prevent git errors down the road
+    try {
+        Util.execCommand(null, ['git config --global --add safe.directory /tmp']);
+    } catch {
+        try {
+            Util.execCommand(null, [
+                'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+            ]);
+        } catch {
+            Log.error('Could not set tmp directoy as safe directory');
+        }
+    }
+    // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
     try {
@@ -178,7 +194,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate(), msg);
+            console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
         }
     }
     /**
@@ -186,14 +202,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
@@ -213,6 +229,7 @@ class Log {
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
+     *
      * @returns {string} readable timestamp
      */
     static _getFormattedDate() {
@@ -243,6 +260,7 @@ class Log {
 class Util {
     /**
      * Execute command
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
@@ -259,9 +277,9 @@ class Util {
 
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
-        } catch (error) {
-            Log.error(error.status + ': ' + error.message);
-            throw new Error(error);
+        } catch (ex) {
+            Log.error(ex.status + ': ' + ex.message);
+            throw new Error(ex);
         }
 
         if (null != postMsg) {
@@ -271,10 +289,11 @@ class Util {
 
     /**
      * Execute command but return the exit code
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
-     * @return {number} exit code
+     * @returns {number} exit code
      */
     static execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
@@ -291,11 +310,11 @@ class Util {
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
-        } catch (error) {
-            Log.warn('❌  ' + error.status + ': ' + error.message);
+        } catch (ex) {
+            Log.warn('❌  ' + ex.status + ': ' + ex.message);
 
             // The command failed, take the exit code from the error
-            exitCode = error.status;
+            exitCode = ex.status;
             return exitCode;
         }
 
@@ -309,6 +328,7 @@ class Util {
     /**
      * Installs MC Dev Tools and prints the version number
      * TODO: This will later be moved into an according Docker container.
+     *
      * @returns {void}
      */
     static provideMCDevTools() {
@@ -326,7 +346,7 @@ class Util {
             installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
         } else if (!CONFIG.mcdevVersion) {
             Log.error('Please specify mcdev_version in pipeline & environment settings');
-            throw new Error();
+            throw new Error('Please specify mcdev_version in pipeline & environment settings');
         } else {
             // default, install via npm at specified version
             installer = `mcdev@${CONFIG.mcdevVersion}`;
@@ -342,6 +362,7 @@ class Util {
     }
     /**
      * Initializes MC project
+     *
      * @returns {void}
      */
     static initProject() {
@@ -379,6 +400,7 @@ class Util {
     }
     /**
      * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     *
      * @param {object} envVariables directly from config
      * @returns {void}
      */
@@ -393,6 +415,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -412,6 +435,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -431,6 +455,7 @@ class Util {
     }
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     *
      * @param {string} credName -
      * @param {string} mid -
      * @returns {string} retrieve folder
@@ -466,6 +491,7 @@ class Util {
 class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -478,6 +504,7 @@ class Copado {
     }
     /**
      * Finally, attach the resulting metadata JSON.
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -493,6 +520,7 @@ class Copado {
      * Checks out the source repository.
      * if a feature branch is available creates
      * the feature branch based on the main branch.
+     *
      * @param {string} mainBranch ?
      * @param {string} featureBranch can be null/undefined
      * @returns {void}
@@ -500,19 +528,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            [
-                'git config --global --add safe.directory /tmp',
-                'copado-git-get "' + mainBranch + '"',
-            ],
+            ['copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                [
-                    'git config --global --add safe.directory /tmp',
-                    'copado-git-get --create "' + featureBranch + '"',
-                ],
+                ['copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
@@ -520,19 +542,20 @@ class Copado {
 
     /**
      * to be executed at the very end
+     *
      * @returns {void}
      */
     static uploadToolLogs() {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync('logs').forEach((file) => {
+            for (const file of fs.readdirSync('logs')) {
                 Log.debug('- ' + file);
                 Copado.attachLog('logs/' + file);
-            });
+            }
             Log.progress('Attached mcdev logs');
-        } catch (error) {
-            Log.info('attaching mcdev logs failed:' + error.message);
+        } catch (ex) {
+            Log.info('attaching mcdev logs failed:' + ex.message);
         }
     }
 }
@@ -543,6 +566,7 @@ class Retrieve {
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
      * TODO: replace by simply requiring the config file
+     *
      * @returns {string} retrieve folder
      */
     static getRetrieveFolder() {
@@ -567,6 +591,7 @@ class Retrieve {
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
      * sure we have only components that really exist in the BU.
+     *
      * @param {string} sourceBU specific subfolder for downloads
      * @returns {object} changelog JSON
      */
@@ -591,15 +616,15 @@ class Retrieve {
             },
         };
         // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], true)).accountUser;
+        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], null, true)).accountUser;
         // reduce userList to simple id-name map
-        Object.keys(userList).forEach((key) => {
+        for (const key of Object.keys(userList)) {
             userList[userList[key].ID] = userList[key].Name;
             delete userList[key];
-        });
+        }
 
         // get changed metadata
-        const changelogList = await mcdev.retrieve(sourceBU, null, true);
+        const changelogList = await mcdev.retrieve(sourceBU, null, null, true);
         const allMetadata = [];
         Object.keys(changelogList).map((type) => {
             if (changelogList[type]) {
@@ -650,8 +675,14 @@ class Retrieve {
      * //@returns {string} apexDateTime 2021-10-1615:20:41
      */
     static _convertTimestamp(iso8601dateTime) {
-        return iso8601dateTime + '-06:00';
-        // return iso8601dateTime.replace('T', ' ').split('.')[0];
+        if (!iso8601dateTime) {
+            return '-';
+        }
+        // attach timezone unless already returned by API (asset api does return it!)
+        if (iso8601dateTime.split('-').length === 3) {
+            iso8601dateTime += '-06:00';
+        }
+        return iso8601dateTime;
     }
     /**
      *
@@ -670,6 +701,7 @@ class Retrieve {
     }
     /**
      * helps get the value of complex and simple field references alike
+     *
      * @private
      * @param {MetadataItem} obj one item
      * @param {string} key field key
@@ -691,6 +723,7 @@ class Retrieve {
      * After components have been retrieved,
      * find all retrieved components and build a json containing as much
      * metadata as possible.
+     *
      * @param {MetadataItem[]} metadataJson path where downloaded files are
      * @param {string} metadataFilePath filename & path to where we store the final json for copado
      * @returns {void}
@@ -702,4 +735,4 @@ class Retrieve {
     }
 }
 
-run();
+run(); // eslint-disable-line unicorn/prefer-top-level-await

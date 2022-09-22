@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /**
- * @typedef {Object} MetadataItem
+ * @typedef {object} MetadataItem
  * @property {string} n Name
  * @property {string} k Key (Customer Key / External Key)
  * @property {string} t metadata type
@@ -9,7 +9,6 @@
  * @property {string} [cb] created by name
  * @property {string} [ld] last modified date
  * @property {string} [lb] last modified by name
- *
  * @typedef {object} EnvVar
  * @property {string} value variable value
  * @property {string} scope ?
@@ -19,8 +18,9 @@
  * @property {string} environmentName name of environment in Copado
  */
 
-const fs = require('fs');
-const execSync = require('child_process').execSync;
+const fs = require('node:fs');
+const execSync = require('node:child_process').execSync;
+const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // generic
@@ -65,6 +65,7 @@ const CONFIG = {
 
 /**
  * main method that combines runs this function
+ *
  * @returns {void}
  */
 async function run() {
@@ -82,6 +83,19 @@ async function run() {
     Util.execCommand(null, 'git version', null);
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
+    // prevent git errors down the road
+    try {
+        Util.execCommand(null, ['git config --global --add safe.directory /tmp']);
+    } catch {
+        try {
+            Util.execCommand(null, [
+                'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+            ]);
+        } catch {
+            Log.error('Could not set tmp directoy as safe directory');
+        }
+    }
+    // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
     try {
@@ -134,22 +148,34 @@ async function run() {
         Log.error('getDeployFolder failed: ' + ex.message);
         throw ex;
     }
+    let sourceBU;
+    let targetBU;
 
     try {
         Log.info('');
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        if (true == Deploy.createDeltaPackage(deployFolder)) {
-            const targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+    } catch (ex) {
+        Log.error('Getting Source / Target BU failed: ' + ex.message);
+        throw ex;
+    }
+    try {
+        Deploy.updateMarketLists(sourceBU, targetBU, CONFIG.envVariables);
+    } catch (ex) {
+        Log.error('Updateing Market List failed: ' + ex.message);
+        throw ex;
+    }
+    try {
+        if (true == (await Deploy.createDeltaPackage(deployFolder))) {
             Log.info('Deploy BUs');
             Log.info('===================');
             let exitCode = 0;
-            const ec = Deploy.deployBU(targetBU);
-            if (0 != ec) {
-                if (0 == exitCode) {
-                    exitCode = ec;
-                }
+            const ec = await Deploy.deployBU(targetBU);
+            if (0 != ec && 0 == exitCode) {
+                exitCode = ec;
             }
             if (0 != exitCode) {
                 throw new Error(
@@ -205,7 +231,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate(), msg);
+            console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
         }
     }
     /**
@@ -213,14 +239,14 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate(), msg);
+        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
@@ -240,6 +266,7 @@ class Log {
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
+     *
      * @returns {string} readable timestamp
      */
     static _getFormattedDate() {
@@ -270,6 +297,7 @@ class Log {
 class Util {
     /**
      * Execute command
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
@@ -286,9 +314,9 @@ class Util {
 
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
-        } catch (error) {
-            Log.error(error.status + ': ' + error.message);
-            throw new Error(error);
+        } catch (ex) {
+            Log.error(ex.status + ': ' + ex.message);
+            throw new Error(ex);
         }
 
         if (null != postMsg) {
@@ -298,10 +326,11 @@ class Util {
 
     /**
      * Execute command but return the exit code
+     *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
      * @param {string|string[]} command the cli command to execute synchronously
      * @param {string} [postMsg] the message displayed to the user in copado after execution
-     * @return {number} exit code
+     * @returns {number} exit code
      */
     static execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
@@ -318,11 +347,11 @@ class Util {
 
             // Seems command finished successfully, so change exit code from null to 0
             exitCode = 0;
-        } catch (error) {
-            Log.warn('❌  ' + error.status + ': ' + error.message);
+        } catch (ex) {
+            Log.warn('❌  ' + ex.status + ': ' + ex.message);
 
             // The command failed, take the exit code from the error
-            exitCode = error.status;
+            exitCode = ex.status;
             return exitCode;
         }
 
@@ -336,6 +365,7 @@ class Util {
     /**
      * Installs MC Dev Tools and prints the version number
      * TODO: This will later be moved into an according Docker container.
+     *
      * @returns {void}
      */
     static provideMCDevTools() {
@@ -353,7 +383,7 @@ class Util {
             installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
         } else if (!CONFIG.mcdevVersion) {
             Log.error('Please specify mcdev_version in pipeline & environment settings');
-            throw new Error();
+            throw new Error('Please specify mcdev_version in pipeline & environment settings');
         } else {
             // default, install via npm at specified version
             installer = `mcdev@${CONFIG.mcdevVersion}`;
@@ -369,6 +399,7 @@ class Util {
     }
     /**
      * Initializes MC project
+     *
      * @returns {void}
      */
     static initProject() {
@@ -406,6 +437,7 @@ class Util {
     }
     /**
      * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     *
      * @param {object} envVariables directly from config
      * @returns {void}
      */
@@ -420,6 +452,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -439,6 +472,7 @@ class Util {
     }
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
+     *
      * @param {EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
@@ -458,6 +492,7 @@ class Util {
     }
     /**
      * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
+     *
      * @param {string} credName -
      * @param {string} mid -
      * @returns {string} retrieve folder
@@ -493,6 +528,7 @@ class Util {
 class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -505,6 +541,7 @@ class Copado {
     }
     /**
      * Finally, attach the resulting metadata JSON.
+     *
      * @param {string} metadataFilePath where we stored the temporary json file
      * @returns {void}
      */
@@ -520,6 +557,7 @@ class Copado {
      * Checks out the source repository.
      * if a feature branch is available creates
      * the feature branch based on the main branch.
+     *
      * @param {string} mainBranch ?
      * @param {string} featureBranch can be null/undefined
      * @returns {void}
@@ -527,19 +565,13 @@ class Copado {
     static checkoutSrc(mainBranch, featureBranch) {
         Util.execCommand(
             'Cloning and checking out the main branch ' + mainBranch,
-            [
-                'git config --global --add safe.directory /tmp',
-                'copado-git-get "' + mainBranch + '"',
-            ],
+            ['copado-git-get "' + mainBranch + '"'],
             'Completed cloning/checking out main branch'
         );
         if (featureBranch) {
             Util.execCommand(
                 'Creating resp. checking out the feature branch ' + featureBranch,
-                [
-                    'git config --global --add safe.directory /tmp',
-                    'copado-git-get --create "' + featureBranch + '"',
-                ],
+                ['copado-git-get --create "' + featureBranch + '"'],
                 'Completed creating/checking out feature branch'
             );
         }
@@ -547,19 +579,20 @@ class Copado {
 
     /**
      * to be executed at the very end
+     *
      * @returns {void}
      */
     static uploadToolLogs() {
         Log.progress('Getting mcdev logs');
 
         try {
-            fs.readdirSync('logs').forEach((file) => {
+            for (const file of fs.readdirSync('logs')) {
                 Log.debug('- ' + file);
                 Copado.attachLog('logs/' + file);
-            });
+            }
             Log.progress('Attached mcdev logs');
-        } catch (error) {
-            Log.info('attaching mcdev logs failed:' + error.message);
+        } catch (ex) {
+            Log.info('attaching mcdev logs failed:' + ex.message);
         }
     }
 }
@@ -569,6 +602,7 @@ class Copado {
 class Deploy {
     /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
+     *
      * @returns {string} deploy folder
      */
     static getDeployFolder() {
@@ -576,32 +610,76 @@ class Deploy {
             throw new Error('Could not find config file ' + CONFIG.configFilePath);
         }
         const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
-        const directories = config['directories'];
-        if (null == directories) {
-            throw new Error('Could not find directories in ' + CONFIG.configFilePath);
-        }
-        const folder = directories['deploy'];
-        if (null == folder) {
-            throw new Error('Could not find directories/deploy in ' + CONFIG.configFilePath);
+        const folder = config?.directories?.deploy;
+        if (!folder) {
+            throw new Error('Could not find config.directories.deploy in ' + CONFIG.configFilePath);
         }
 
         Log.debug('Deploy folder is: ' + folder);
         return folder;
     }
+    /**
+     *
+     * @param {string} sourceBU cred/buname of source BU
+     * @param {string} targetBU cred/buname of target BU
+     * @param {object} marketVariables straight from the (converted) environment variables
+     * @returns {void}
+     */
+    static updateMarketLists(sourceBU, targetBU, marketVariables) {
+        const deploySourceList = 'deployment-source';
+        const deployTargetList = 'deployment-target';
+        const config = JSON.parse(fs.readFileSync(CONFIG.configFilePath, 'utf8'));
+        // ensure the system knows what we name our market lists for deployment
+        config.options.deployment.sourceTargetMapping = {};
+        config.options.deployment.sourceTargetMapping[deploySourceList] = deployTargetList;
+        // remove potentially existing entries and ensure these 2 lists exist
+        config.marketList = {};
+        for (const listName of [deploySourceList, deployTargetList]) {
+            config.marketList[listName] = {};
+        }
+        // add marketList entries for the 2 bu-market combos
+        config.marketList[deploySourceList][sourceBU] = 'source';
+        config.marketList[deployTargetList][targetBU] = 'target';
+        // set up corresponding markets and remove other entries
+        config.markets = {};
+        config.markets['source'] = marketVariables.source;
+        config.markets['target'] = marketVariables.destination;
+        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
+        // TODO: deal with enterprise BU deployments (shared DEs)
 
+        console.log(
+            'config.options.deployment.sourceTargetMapping',
+            config.options.deployment.sourceTargetMapping
+        );
+        console.log('config.markets', config.markets);
+        console.log('config.marketList', JSON.stringify(config.marketList));
+        // * override config in git repo
+        try {
+            fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + '.BAK');
+            fs.writeFileSync(CONFIG.configFilePath, JSON.stringify(config), 'utf8');
+        } catch (ex) {
+            Log.error('Updating updateMarketLists failed: ' + ex.message);
+            throw ex;
+        }
+    }
     /**
      * Create the delta package containing the changed components
      * return whether the delta package is empty or not
+     *
      * @param {string} deployFolder path
-     * @returns {boolean} true: files found, false: not
+     * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static createDeltaPackage(deployFolder) {
+    static async createDeltaPackage(deployFolder) {
         const versionRange = 'HEAD^..HEAD';
-        Util.execCommand(
-            'Create delta package using version range ' + versionRange,
-            [CONFIG.mcdev_exec + ' createDeltaPkg ' + versionRange + ' --skipInteraction'],
-            'Completed creating delta package'
-        );
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+
+        Log.debug('Create delta package using version range ' + versionRange);
+        const deltaPackageLog = await mcdev.createDeltaPkg({
+            range: versionRange,
+            skipInteraction: true,
+        });
+        Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
+        Log.debug('Completed creating delta package');
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
             Util.execCommand(
                 'Upload delta package results file',
@@ -631,6 +709,7 @@ class Deploy {
      * The branch is the normal PR to branch, except if the PR is for a release or hotfix.
      * Release- and hotfix branches have a detailed release or hotfix number in the branch name,
      * and rather than using these detailed names the configuration used only 'release' resp. 'hotfix'.
+     *
      * @param {string} branch value from copado config
      * @returns {string} toBranch value to look for in config
      */
@@ -648,36 +727,38 @@ class Deploy {
     /**
      * Deploys one specific BU.
      * In case of errors, the deployment is not stopped.
+     *
      * @param {string} bu name of BU
      * @returns {number} exit code of the deployment
      */
-    static deployBU(bu) {
-        const ec = Util.execCommandReturnStatus(
-            'Deploy BU ' + bu,
-            [CONFIG.mcdev_exec + ' deploy ' + bu],
-            'Completed deploying BU'
-        );
-        if (0 != ec) {
+    static async deployBU(bu) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        await mcdev.deploy(bu);
+        if (process.exitCode === 1) {
             Log.warn(
                 'Deployment of BU ' +
                     bu +
-                    ' failed with exit code ' +
-                    ec +
-                    '. Other BUs will be deployed, but overall deployment will fail at the end.'
+                    ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
             );
             // logError("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
             // Log.info("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
             // console.log("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
         }
 
-        return ec;
+        return process.exitCode;
     }
     /**
      * Merge from branch into target branch
+     *
      * @param {string} fromCommit commit id to merge
      * @returns {void}
      */
     static merge(fromCommit) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         // Merge and commit changes.
         Util.execCommand(
             'Merge commit ' + fromCommit,
@@ -687,10 +768,15 @@ class Deploy {
     }
     /**
      * Pushes after a successfull deployment
+     *
      * @param {string} toBranch name of branch to push to
      * @returns {void}
      */
     static push(toBranch) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         Util.execCommand(
             'Push branch ' + toBranch,
             ['git push origin "' + toBranch + '"'],
@@ -700,11 +786,15 @@ class Deploy {
 
     /**
      * Promote changes by merging into the promotion branch
+     *
      * @param {string} toBranch branch to merge into
-     * @param {string} promotionBranch target branch to merge into
      * @returns {void}
      */
     static promote(toBranch) {
+        if (process.env.LOCAL_DEV) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
         // Util.execCommand("Checking out the branch " + toBranch,
         //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch,
         //            "Completed cloning branch");
@@ -728,6 +818,7 @@ class Deploy {
     }
     /**
      * Checks out the source repository and branch
+     *
      * @param {string} fromCommit commit id to merge
      * @param {string} toBranch branch name to merge into
      * @returns {void}
@@ -753,4 +844,4 @@ class Deploy {
     }
 }
 
-run();
+run(); // eslint-disable-line unicorn/prefer-top-level-await

@@ -40,7 +40,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
-    envId: process.env.envId,
+    envId: null,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
     mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
@@ -49,21 +49,21 @@ const CONFIG = {
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     tenant: process.env.tenant,
-    source_mid: process.env.source_mid,
+    source_mid: null,
     tmpDirectory: '../tmp',
     envVariables: {
         // retrieve / commit
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
+        source: null,
+        sourceChildren: null,
         // deploy
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
+        destination: null,
+        destinationChildren: null,
     },
     // commit
-    commitMessage: process.env.commit_message,
-    featureBranch: process.env.feature_branch,
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
+    commitMessage: null,
+    featureBranch: null,
+    fileSelectionSalesforceId: null,
+    fileSelectionFileName: null,
     // deploy
     deltaPackageLog: null,
     fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
@@ -105,7 +105,6 @@ async function run() {
             Log.error('Could not set tmp directoy as safe directory');
         }
     }
-    // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
     try {
@@ -113,7 +112,7 @@ async function run() {
         Log.info('Clone repository');
         Log.info('===================');
         Log.info('');
-        Copado.checkoutSrc(CONFIG.mainBranch, CONFIG.featureBranch);
+        Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -135,60 +134,28 @@ async function run() {
         Log.error('initializing failed: ' + ex.message);
         throw ex;
     }
-
-    /**
-     * @type {CommitSelection[]}
-     */
-    let commitSelectionArr;
     try {
         Log.info('');
-        Log.info(
-            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
-        );
+        Log.info('Running mcdev upgrade');
         Log.info('===================');
         Log.info('');
-        commitSelectionArr = Commit.getCommitList(
-            CONFIG.fileSelectionSalesforceId,
-            CONFIG.fileSelectionFileName
-        );
-        console.log('commitSelectionArr', commitSelectionArr);
-    } catch (ex) {
-        Log.info('Getting Commit-selection file failed:' + ex.message);
-        throw ex;
-    }
-
-    let sourceBU;
-    let gitAddArr;
-    try {
-        Log.info('');
-        Log.info('Get source BU');
-        Log.info('===================');
-        Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
-    } catch (ex) {
-        Log.error('Getting Source BU failed: ' + ex.message);
-        throw ex;
-    }
-
-    try {
-        Log.info('');
-        Log.info('Retrieve components');
-        Log.info('===================');
-        Log.info('');
-        gitAddArr = await Commit.retrieveCommitSelection(sourceBU, commitSelectionArr);
+        if (!(await Upgrade.runConfigUpgrade())) {
+            throw new Error('please check mcdev logs');
+        }
     } catch (ex) {
         Copado.uploadToolLogs();
-        Log.error('Retrieving failed: ' + ex.message);
+        Log.error('mcdev upgrade failed:' + ex.message);
         throw ex;
     }
-
     try {
         Log.info('');
-        Log.info('Add components in metadata JSON to Git history');
+        Log.info('Adding updated config files to git');
         Log.info('===================');
         Log.info('');
-        Commit.addSelectedComponents(gitAddArr);
+        Upgrade.gitAddConfig();
     } catch (ex) {
+        Copado.uploadToolLogs();
+
         Log.error('git add failed:' + ex.message);
         throw ex;
     }
@@ -197,8 +164,10 @@ async function run() {
         Log.info('Commit and push');
         Log.info('===================');
         Log.info('');
-        Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+        Upgrade.commitAndPush(CONFIG.mainBranch);
     } catch (ex) {
+        Copado.uploadToolLogs();
+
         Log.error('git commit / push failed:' + ex.message);
         throw ex;
     }
@@ -248,7 +217,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg}"`);
+        execSync(`copado -e "${msg}"`);
     }
     /**
      * @param {string} msg your log message
@@ -256,7 +225,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg}"`);
+        execSync(`copado -p "${msg}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -399,27 +368,27 @@ class Util {
     static initProject() {
         const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
             ? `{
-    "credentials": {
-        "${CONFIG.credentialName}": {
-            "clientId": "${CONFIG.clientId}",
-            "clientSecret": "${CONFIG.clientSecret}",
-            "tenant": "${CONFIG.tenant}",
-            "eid": "${CONFIG.enterpriseId}"
-        }
-    }
-}`
+     "credentials": {
+         "${CONFIG.credentialName}": {
+             "clientId": "${CONFIG.clientId}",
+             "clientSecret": "${CONFIG.clientSecret}",
+             "tenant": "${CONFIG.tenant}",
+             "eid": "${CONFIG.enterpriseId}"
+         }
+     }
+ }`
             : `{
-    "${CONFIG.credentialName}": {
-        "client_id": "${CONFIG.clientId}",
-        "client_secret": "${CONFIG.clientSecret}",
-        "auth_url": "${
-            CONFIG.tenant.startsWith('https')
-                ? CONFIG.tenant
-                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
-        }",
-        "account_id": ${CONFIG.enterpriseId}
-    }
-}`;
+     "${CONFIG.credentialName}": {
+         "client_id": "${CONFIG.clientId}",
+         "client_secret": "${CONFIG.clientSecret}",
+         "auth_url": "${
+             CONFIG.tenant.startsWith('https')
+                 ? CONFIG.tenant
+                 : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
+         }",
+         "account_id": ${CONFIG.enterpriseId}
+     }
+ }`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -595,86 +564,52 @@ class Copado {
 /**
  * methods to handle interaction with the copado platform
  */
-class Commit {
+class Upgrade {
     /**
-     * @param {string} fileSelectionSalesforceId -
-     * @param {string} fileSelectionFileName -
-     * @returns {CommitSelection[]} commitSelectionArr
-     */
-    static getCommitList(fileSelectionSalesforceId, fileSelectionFileName) {
-        if (fileSelectionSalesforceId) {
-            Util.execCommand(
-                `Download ${fileSelectionSalesforceId}.`,
-                `copado --downloadfiles "${fileSelectionSalesforceId}"`,
-                'Completed download'
-            );
-
-            return JSON.parse(fs.readFileSync(fileSelectionFileName, 'utf8'));
-        } else {
-            throw new Error('fileSelectionSalesforceId is not set');
-        }
-    }
-    /**
-     * Retrieve components into a clean retrieve folder.
-     * The retrieve folder is deleted before retrieving to make
-     * sure we have only components that really exist in the BU.
+     * ensure project config is using most recent standards
      *
-     * @param {string} sourceBU specific subfolder for downloads
-     * @param {CommitSelection[]} commitSelectionArr list of items to be added
-     * @returns {Promise.<string[]>} list of files to git add & commit
+     * @returns {void} changelog JSON
      */
-    static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
+    static async runConfigUpgrade() {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
-        // limit to files that git believes need to be added
-        commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
-        // get unique list of types that need to be retrieved
-        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
-        const keyArrForAllTypes = [
-            ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
-        ];
-        console.log('typeArr', typeArr);
-        console.log('keyArrForAllTypes', keyArrForAllTypes);
-        // download all types of which
-        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
-        const fileArr = (
-            await Promise.all(
-                typeArr.map((type) => {
-                    const keyArr = [
-                        ...new Set(
-                            commitSelectionArr
-                                .filter((item) => item.t === type)
-                                .map((item) => JSON.parse(item.j).key)
-                        ),
-                    ];
-                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
-                })
-            )
-        ).flat();
-        console.log('fileArr', fileArr);
-        return fileArr;
+        if (!CONFIG.debug) {
+            // disable any non-errors originating in mcdev from being printed into the main copado logfile
+            mcdev.setLoggingLevel({ silent: true });
+        }
+        return mcdev.upgrade(true);
     }
     /**
      * After components have been retrieved,
      * adds selected components to the Git history.
      *
-     * @param {string[]} gitAddArr list of items to be added
      * @returns {void}
      */
-    static addSelectedComponents(gitAddArr) {
+    static gitAddConfig() {
         if (process.env.LOCAL_DEV) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
-
-        // Iterate all metadata components selected by user to commit
-
-        for (const filePath of gitAddArr) {
-            if (fs.existsSync(filePath)) {
+        const files = [
+            '.vscode/extensions.json',
+            '.vscode/settings.json',
+            CONFIG.configFilePath,
+            '.gitignore',
+            '.editorconfig',
+            '.eslintignore',
+            '.eslintrc',
+            '.gitattributes',
+            '.prettierrc',
+            'README.md',
+            'package.json',
+        ];
+        for (const file of files) {
+            if (fs.existsSync(file)) {
                 // Add this component to the Git index.
-                Util.execCommand(null, ['git add "' + filePath + '"'], 'staged ' + filePath);
+                Util.execCommand(null, ['git add "' + file + '"'], null);
             } else {
-                Log.warn('❌  could not find ' + filePath);
+                Log.error('could not find ' + file);
+                throw new Error('Could not find config file ' + file);
             }
         }
     }
@@ -682,17 +617,15 @@ class Commit {
      * Commits and pushes after adding selected components
      *
      * @param {string} mainBranch name of master branch
-     * @param {string} featureBranch can be null/undefined
      * @returns {void}
      */
-    static commitAndPush(mainBranch, featureBranch) {
+    static commitAndPush(mainBranch) {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
         // from the org and selected by the user
         // and what is already in Git, so commit and push
         // can be skipped.
-        const branch = featureBranch || mainBranch;
         const stdout = execSync('git diff --staged --name-only');
         Log.debug('Git diff ended with the result: >' + stdout + '<');
         if (stdout && 0 < stdout.length) {
@@ -702,19 +635,19 @@ class Commit {
             }
 
             Util.execCommand(
-                'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                'Committing config',
+                ['git commit -m "Upgrading project config files via `mcdev upgrade`"'],
                 'Completed committing'
             );
             const ec = Util.execCommandReturnStatus(
-                'Push branch ' + branch,
-                ['git push origin "' + branch + '" --atomic'],
+                'Push branch ' + mainBranch,
+                ['git push origin "' + mainBranch + '" --atomic'],
                 'Completed pushing branch'
             );
             if (0 != ec) {
                 throw (
                     'Could not push changes to feature branch ' +
-                    branch +
+                    mainBranch +
                     '. Exit code is ' +
                     ec +
                     '. Please check logs for further details.'
