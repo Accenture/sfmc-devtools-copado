@@ -20,7 +20,7 @@
 "outline.showVariables": false,
 "breadcrumbs.showVariables": false,
 "breadcrumbs.showProperties": false,
-"githubIssues.issueBranchTitle": "feature/${issueNumber}-${sanitizedIssueTitle}",
+"githubIssues.issueBranchTitle": "${issueNumber}-${sanitizedIssueTitle}",
 "githubIssues.queries": [
     {
         "label": "My Issues",
