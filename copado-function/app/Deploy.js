@@ -182,6 +182,8 @@ async function run() {
                     'Deployment of at least one BU failed. See previous output for details'
                 );
             }
+        } else {
+            throw new Error('No changes found. Nothing to deploy');
         }
     } catch (ex) {
         Copado.uploadToolLogs();
@@ -679,6 +681,11 @@ class Deploy {
             skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
+        if (!deltaPackageLog?.length) {
+            Log.error('No changes found for deployment');
+            return false;
+        }
+
         Log.debug('Completed creating delta package');
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
             Util.execCommand(
