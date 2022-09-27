@@ -270,6 +270,21 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
           const parsedResult = JSON.parse(result);
           this.data = parsedResult;
           this.visibleData = parsedResult;
+          // 03 result platform event even after the function result completed->unsubscribeEmp
+          try {
+            unsubscribeEmp(self.empSubscription, (response2) => {
+              console.log(" After Data load-> unsubscribe() response: ", response2);
+            });
+          } catch (err) {
+            console.error("Error while unsubscribing from Emp API: ", err);
+            self.showToastEvent(
+              `${err.name}: An error occurred while unsubscribing from Emp API`,
+              `${err.message}`,
+              "error",
+              "sticky"
+            );
+          }
+
         }
       );
     } catch (err) {
