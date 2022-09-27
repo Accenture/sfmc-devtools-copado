@@ -269,7 +269,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         (result) => {
           const parsedResult = JSON.parse(result);
           this.data = parsedResult;
-          this.visibleData = parsedResult;
+         // 68 sort the data then assign table variable
+          this.sortData(this.sortedBy, this.sortDirection);
+          //  self.visibleData = parsedResult;
         }
       );
     } catch (err) {
@@ -421,10 +423,16 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     this.sortData(this.sortedBy, this.sortDirection);
   }
 
-  sortData(fieldname, direction) {
-    
-    let parseData = JSON.parse(JSON.stringify( this.visibleData));
-    // Return the value stored in the field
+  sortData(fieldname, direction) { 
+    let parseData='';
+    // 68 sort the data 
+    if(this.data){
+      parseData = JSON.parse(JSON.stringify(this.data));
+      this.data=null;
+    }else{
+      parseData = JSON.parse(JSON.stringify(this.visibleData));
+    }
+ // Return the value stored in the field
     let keyValue = (a) => {
         return a[fieldname];
     };
