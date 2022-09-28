@@ -24,11 +24,11 @@
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^1.0.1",
     "@prettier/plugin-xml": "^0.13.1",
-    "@salesforce/eslint-config-lwc": "^2.0.0",
+    "@salesforce/eslint-config-lwc": "^3.3.3",
     "@salesforce/eslint-plugin-aura": "^2.0.0",
     "@salesforce/eslint-plugin-lightning": "^0.1.1",
     "@salesforce/sfdx-lwc-jest": "^0.13.0",
-    "eslint": "8.19.0",
+    "eslint": "8.24.0",
     "eslint-config-prettier": "8.5.0",
     "eslint-config-ssjs": "1.1.11",
     "eslint-plugin-jsdoc": "39.3.3",
