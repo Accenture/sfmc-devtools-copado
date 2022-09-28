@@ -31,6 +31,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
+    localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
@@ -217,7 +218,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
     }
     /**
      * @param {string} msg your log message
@@ -225,7 +226,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg}"`);
+        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -338,7 +339,7 @@ class Util {
             Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
         }
         let installer;
-        if (process.env.LOCAL_DEV) {
+        if (CONFIG.localDev) {
             installer = CONFIG.mcdevVersion;
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
