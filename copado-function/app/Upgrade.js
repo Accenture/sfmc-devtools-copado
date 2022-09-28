@@ -354,7 +354,7 @@ class Util {
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
             [
-                `npm install --save ${installer} --foreground-scripts`,
+                `npm install ${installer} --foreground-scripts`,
                 CONFIG.mcdev_exec + ' --version',
             ],
             'Completed installing SFMC DevTools'
