@@ -173,22 +173,13 @@ async function run() {
         if (true == (await Deploy.createDeltaPackage(deployFolder))) {
             Log.info('Deploy BUs');
             Log.info('===================');
-            let exitCode = 0;
-            const ec = await Deploy.deployBU(targetBU);
-            if (0 != ec && 0 == exitCode) {
-                exitCode = ec;
-            }
-            if (0 != exitCode) {
-                throw new Error(
-                    'Deployment of at least one BU failed. See previous output for details'
-                );
-            }
+            await Deploy.deployBU(targetBU);
         } else {
             throw new Error('No changes found. Nothing to deploy');
         }
     } catch (ex) {
-        Copado.uploadToolLogs();
         Log.error('Deploy failed: ' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
 
@@ -737,14 +728,14 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
-     * @returns {number} exit code of the deployment
+     * @returns {void} 
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         await mcdev.deploy(bu);
         if (process.exitCode === 1) {
-            Log.warn(
+            throw new Error(
                 'Deployment of BU ' +
                     bu +
                     ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
@@ -753,8 +744,6 @@ class Deploy {
             // Log.info("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
             // console.log("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
         }
-
-        return process.exitCode;
     }
     /**
      * Merge from branch into target branch
