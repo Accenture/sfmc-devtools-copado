@@ -722,11 +722,11 @@ class Retrieve {
     }
 
     /**
-     * helps get the value of complex and simple field references alike
+     * used to check the date value, if equal to 0001-01-01T00:00:00-06:00 return "-", if not return the date
      *
      * @private
      * @param {String} date one item
-     * @returns {string} return "-" if date is equal to 0001-01-01T00:00:00-06:00, if not, return the date
+     * @returns {string} return "-" or date
      */
     static _checkDate(date){
         return date=="0001-01-01T00:00:00-06:00"?"-":date;
