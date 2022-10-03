@@ -756,10 +756,10 @@ class Deploy {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
-        // Merge and commit changes.
+        // Git fetch, git checkout master and Merge changes.
         Util.execCommand(
             'Merge commit ' + fromCommit,
-            ['git merge "' + fromCommit + '"'],
+            ['git fetch', 'git checkout master','git merge "' + fromCommit + '"', 'git checkout "' + fromCommit + '"'],
             'Completed merging commit'
         );
     }
