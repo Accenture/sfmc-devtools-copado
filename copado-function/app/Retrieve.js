@@ -147,8 +147,8 @@ async function run() {
         Log.info('');
         metadataJson = await Retrieve.retrieveChangelog(sourceBU);
     } catch (ex) {
-        Copado.uploadToolLogs();
         Log.error('Retrieving failed: ' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
 
@@ -651,12 +651,12 @@ class Retrieve {
                             n: this._getAttrValue(item, def.nameField),
                             k: this._getAttrValue(item, def.keyField),
                             t: type,
-                            cd: this._convertTimestamp(
-                                this._getAttrValue(item, def.createdDateField)
+                            cd: this._checkDate(this._convertTimestamp(
+                                this._getAttrValue(item, def.createdDateField))
                             ),
                             cb: this._getUserName(userList, item, def.createdNameField),
-                            ld: this._convertTimestamp(
-                                this._getAttrValue(item, def.lastmodDateField)
+                            ld: this._checkDate(this._convertTimestamp(
+                                this._getAttrValue(item, def.lastmodDateField))
                             ),
                             lb: this._getUserName(userList, item, def.lastmodNameField),
                         };
@@ -719,6 +719,17 @@ class Retrieve {
         } else {
             return obj[key];
         }
+    }
+
+    /**
+     * helps get the value of complex and simple field references alike
+     *
+     * @private
+     * @param {String} date one item
+     * @returns {string} return "-" if date is equal to 0001-01-01T00:00:00-06:00, if not, return the date
+     */
+    static _checkDate(date){
+        return date=="0001-01-01T00:00:00-06:00"?"-":date;
     }
     /**
      * After components have been retrieved,
