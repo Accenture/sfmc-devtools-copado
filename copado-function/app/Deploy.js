@@ -738,7 +738,7 @@ class Deploy {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
-        // Git fetch, git checkout master and Merge changes.
+        // Merge and commit changes.
         Util.execCommand(
             'Merge commit ' + promotionBranch,
             ['git merge "' + promotionBranch + '"'],
