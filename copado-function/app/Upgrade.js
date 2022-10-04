@@ -578,6 +578,8 @@ class Upgrade {
             // disable any non-errors originating in mcdev from being printed into the main copado logfile
             mcdev.setLoggingLevel({ silent: true });
         }
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
         return mcdev.upgrade(true);
     }
     /**

@@ -385,10 +385,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -627,6 +624,9 @@ class Commit {
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
+
         // limit to files that git believes need to be added
         commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
         // get unique list of types that need to be retrieved

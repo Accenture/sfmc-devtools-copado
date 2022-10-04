@@ -393,10 +393,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -675,6 +672,8 @@ class Deploy {
     static async createDeltaPackage(deployFolder) {
         const versionRange = 'HEAD^..HEAD';
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
 
         Log.debug('Create delta package using version range ' + versionRange);
         const deltaPackageLog = await mcdev.createDeltaPkg({
@@ -742,6 +741,8 @@ class Deploy {
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
         await mcdev.deploy(bu);
         if (process.exitCode === 1) {
             Log.warn(
