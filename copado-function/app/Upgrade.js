@@ -34,7 +34,7 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
-    //credentials
+    // credentials
     credentials: {
         source: {
             clientId: process.env.clientId,
@@ -47,7 +47,7 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
@@ -156,7 +156,7 @@ async function run() {
     } catch (ex) {
         Log.error('mcdev upgrade failed:' + ex.message);
         Copado.uploadToolLogs();
-        
+
         throw ex;
     }
     try {
@@ -165,7 +165,7 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Upgrade.gitAddConfig();
-    } catch (ex) {        
+    } catch (ex) {
         Log.error('git add failed:' + ex.message);
         Copado.uploadToolLogs();
         throw ex;
@@ -363,10 +363,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }

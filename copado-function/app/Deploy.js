@@ -36,7 +36,7 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
@@ -403,10 +403,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
