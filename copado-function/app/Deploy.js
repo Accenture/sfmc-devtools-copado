@@ -45,9 +45,7 @@ const CONFIG = {
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
-    mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
-        ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
-        : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
+    mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
@@ -413,24 +411,7 @@ class Util {
      * @returns {void}
      */
     static initProject() {
-        const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
-            ? `{
-                    "credentials": {
-                        "${CONFIG.credentials.source.credentialName}": {
-                            "clientId": "${CONFIG.credentials.source.clientId}",
-                            "clientSecret": "${CONFIG.credentials.source.clientSecret}",
-                            "tenant": "${CONFIG.credentials.source.tenant}",
-                            "eid": "${CONFIG.enterpriseId}"
-                        },
-                        "${CONFIG.credentials.target.credentialName}": {
-                            "clientId": "${CONFIG.credentials.target.clientId}",
-                            "clientSecret": "${CONFIG.credentials.target.clientSecret}",
-                            "tenant": "${CONFIG.credentials.target.tenant}",
-                            "eid": "${CONFIG.enterpriseId}"
-                        }
-                    }
-                }`
-            : `{
+        const authJson = `{
                     "${CONFIG.credentials.source.credentialName}": {
                         "client_id": "${CONFIG.credentials.source.clientId}",
                         "client_secret": "${CONFIG.credentials.source.clientSecret}",
