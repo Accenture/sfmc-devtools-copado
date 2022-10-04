@@ -78,8 +78,8 @@ const CONFIG = {
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    sourceBranch: null, // The promotion branch of a PR
-    mainBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionBranch: null, // The promotion branch of a PR
+    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -372,17 +372,17 @@ class Util {
      */
     static initProject() {
         const authJson = `{
-     "${CONFIG.credentials.source.credentialName}": {
-         "client_id": "${CONFIG.credentials.source.clientId}",
-         "client_secret": "${CONFIG.credentials.source.clientSecret}",
-         "auth_url": "${
-             CONFIG.credentials.source.tenant.startsWith('https')
-                 ? CONFIG.credentials.source.tenant
-                 : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
-         }",
-         "account_id": ${CONFIG.enterpriseId}
-     }
- }`;
+    "${CONFIG.credentials.source.credentialName}": {
+        "client_id": "${CONFIG.credentials.source.clientId}",
+        "client_secret": "${CONFIG.credentials.source.clientSecret}",
+        "auth_url": "${
+            CONFIG.credentials.source.tenant.startsWith('https')
+                ? CONFIG.credentials.source.tenant
+                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
+        }",
+        "account_id": ${CONFIG.enterpriseId}
+    }
+}`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -512,27 +512,19 @@ class Copado {
     }
 
     /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
+     * Executes git fetch, followed by checking out the given branch
+     * newly created branches are based on the previously checked out branch!
      *
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
+     * @param {string} workingBranch main, feature/..., promotion/...
+     * @param {boolean} [createBranch] creates workingBranch if needed
      * @returns {void}
      */
-    static checkoutSrc(mainBranch, featureBranch) {
+    static checkoutSrc(workingBranch, createBranch) {
         Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            ['copado-git-get "' + mainBranch + '"'],
-            'Completed cloning/checking out main branch'
+            'Create / checkout branch ' + workingBranch,
+            [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
+            'Completed creating/checking out branch'
         );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                ['copado-git-get --create "' + featureBranch + '"'],
-                'Completed creating/checking out feature branch'
-            );
-        }
     }
 
     /**

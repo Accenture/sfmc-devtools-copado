@@ -561,28 +561,20 @@ class Copado {
     }
 
     /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
+     * Executes git fetch, followed by checking out the given branch
+     * newly created branches are based on the previously checked out branch!
      *
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
+     * @param {string} workingBranch main, feature/..., promotion/...
+     * @param {boolean} [createBranch=false] creates workingBranch if needed
      * @returns {void}
      */
-    static checkoutSrc(mainBranch, featureBranch) {
-        Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            ['copado-git-get "' + mainBranch + '"'],
-            'Completed cloning/checking out main branch'
-        );
-        if (featureBranch) {
+    static checkoutSrc(workingBranch, createBranch = false) {
             Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                ['copado-git-get --create "' + featureBranch + '"'],
-                'Completed creating/checking out feature branch'
+            'Create / checkout branch ' + workingBranch,
+            [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
+            'Completed creating/checking out branch'
             );
         }
-    }
 
     /**
      * to be executed at the very end
