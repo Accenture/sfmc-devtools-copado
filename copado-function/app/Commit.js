@@ -33,12 +33,24 @@ const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
-const CONFIG = {
+const CONFIG = {    
+    //credentials
+    credentials: {
+        source: {
+            clientId: process.env.clientId,
+            clientSecret: process.env.clientSecret,
+            credentialName: process.env.credentialName,
+            tenant: process.env.tenant,
+        },
+        target: {
+            clientId: process.env.clientId,
+            clientSecret: process.env.clientSecret,
+            credentialName: process.env.credentialName,
+            tenant: process.env.tenant,
+        }
+    },
     // generic
-    clientId: process.env.clientId,
-    clientSecret: process.env.clientSecret,
     configFilePath: '.mcdevrc.json',
-    credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
@@ -49,7 +61,6 @@ const CONFIG = {
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
-    tenant: process.env.tenant,
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     envVariables: {
@@ -67,11 +78,10 @@ const CONFIG = {
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
     // deploy
     deltaPackageLog: null,
-    fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    promotionBranch: null, // The promotion branch of a PR
-    toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    sourceBranch: null, // The promotion branch of a PR
+    mainBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -165,7 +175,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
@@ -401,22 +411,22 @@ class Util {
         const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
             ? `{
     "credentials": {
-        "${CONFIG.credentialName}": {
-            "clientId": "${CONFIG.clientId}",
-            "clientSecret": "${CONFIG.clientSecret}",
-            "tenant": "${CONFIG.tenant}",
+        "${CONFIG.credentials.source.credentialName}": {
+            "clientId": "${CONFIG.credentials.source.clientId}",
+            "clientSecret": "${CONFIG.credentials.source.clientSecret}",
+            "tenant": "${CONFIG.credentials.source.tenant}",
             "eid": "${CONFIG.enterpriseId}"
         }
     }
 }`
             : `{
-    "${CONFIG.credentialName}": {
-        "client_id": "${CONFIG.clientId}",
-        "client_secret": "${CONFIG.clientSecret}",
+    "${CONFIG.credentials.source.credentialName}": {
+        "client_id": "${CONFIG.credentials.source.clientId}",
+        "client_secret": "${CONFIG.credentials.source.clientSecret}",
         "auth_url": "${
-            CONFIG.tenant.startsWith('https')
-                ? CONFIG.tenant
-                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
+            CONFIG.credentials.source.tenant.startsWith('https')
+                ? CONFIG.credentials.source.tenant
+                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
         }",
         "account_id": ${CONFIG.enterpriseId}
     }

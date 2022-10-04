@@ -23,11 +23,23 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
+    //credentials
+    credentials: {
+        source: {
+            clientId: process.env.clientId,
+            clientSecret: process.env.clientSecret,
+            credentialName: process.env.credentialName,
+            tenant: process.env.tenant,
+        },
+        target: {
+            clientId: process.env.clientId,
+            clientSecret: process.env.clientSecret,
+            credentialName: process.env.credentialName,
+            tenant: process.env.tenant,
+        }
+    },
     // generic
-    clientId: process.env.clientId,
-    clientSecret: process.env.clientSecret,
     configFilePath: '.mcdevrc.json',
-    credentialName: process.env.credentialName,
     debug: process.env.debug === 'false' ? false : true,
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
@@ -38,7 +50,6 @@ const CONFIG = {
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
-    tenant: process.env.tenant,
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     envVariables: {
@@ -57,11 +68,10 @@ const CONFIG = {
     // deploy
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
-    fromCommit: 'promotion/' + process.env.promotion, // The source branch of a PR, typically something like 'feature/...'
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
-    promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
-    toBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    sourceBranch: process.env.promotionBranch, // The promotion branch of a PR
+    mainBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -104,7 +114,7 @@ async function run() {
         Log.info('Clone repository');
         Log.info('===================');
         Log.info('');
-        Deploy.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
+        Deploy.checkoutSrcDeploy(CONFIG.sourceBranch, CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -115,7 +125,7 @@ async function run() {
         Log.info('Merge branch');
         Log.info('===================');
         Log.info('');
-        Deploy.merge(CONFIG.fromCommit);
+        Deploy.merge(CONFIG.sourceBranch);
     } catch (ex) {
         Log.error('Merge failed: ' + ex.message);
         throw ex;
@@ -157,8 +167,8 @@ async function run() {
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentialName, CONFIG.source_mid);
-        targetBU = Util.getBuName(CONFIG.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentials.target.credentialName, CONFIG.target_mid);
     } catch (ex) {
         Log.error('Getting Source / Target BU failed: ' + ex.message);
         throw ex;
@@ -186,7 +196,7 @@ async function run() {
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.toBranch);
+        Deploy.push(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -196,7 +206,7 @@ async function run() {
         Log.info('Merge into promotion branch');
         Log.info('===================');
         Log.info('');
-        Deploy.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+        Deploy.promote(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('promote failed: ' + ex.message);
         throw ex;
@@ -399,27 +409,43 @@ class Util {
     static initProject() {
         const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
             ? `{
-    "credentials": {
-        "${CONFIG.credentialName}": {
-            "clientId": "${CONFIG.clientId}",
-            "clientSecret": "${CONFIG.clientSecret}",
-            "tenant": "${CONFIG.tenant}",
-            "eid": "${CONFIG.enterpriseId}"
-        }
-    }
-}`
+                    "credentials": {
+                        "${CONFIG.credentials.source.credentialName}": {
+                            "clientId": "${CONFIG.credentials.source.clientId}",
+                            "clientSecret": "${CONFIG.credentials.source.clientSecret}",
+                            "tenant": "${CONFIG.credentials.source.tenant}",
+                            "eid": "${CONFIG.enterpriseId}"
+                        },
+                        "${CONFIG.credentials.target.credentialName}": {
+                            "clientId": "${CONFIG.credentials.target.clientId}",
+                            "clientSecret": "${CONFIG.credentials.target.clientSecret}",
+                            "tenant": "${CONFIG.credentials.target.tenant}",
+                            "eid": "${CONFIG.enterpriseId}"
+                        }
+                    }
+                }`
             : `{
-    "${CONFIG.credentialName}": {
-        "client_id": "${CONFIG.clientId}",
-        "client_secret": "${CONFIG.clientSecret}",
-        "auth_url": "${
-            CONFIG.tenant.startsWith('https')
-                ? CONFIG.tenant
-                : `https://${CONFIG.tenant}.auth.marketingcloudapis.com/`
-        }",
-        "account_id": ${CONFIG.enterpriseId}
-    }
-}`;
+                    "${CONFIG.credentials.source.credentialName}": {
+                        "client_id": "${CONFIG.credentials.source.clientId}",
+                        "client_secret": "${CONFIG.credentials.source.clientSecret}",
+                        "auth_url": "${
+                            CONFIG.credentials.source.tenant.startsWith('https')
+                                ? CONFIG.credentials.source.tenant
+                                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
+                        }",
+                        "account_id": ${CONFIG.enterpriseId}
+                    },
+                    "${CONFIG.credentials.target.credentialName}": {
+                        "client_id": "${CONFIG.credentials.target.clientId}",
+                        "client_secret": "${CONFIG.credentials.target.clientSecret}",
+                        "auth_url": "${
+                            CONFIG.credentials.target.tenant.startsWith('https')
+                                ? CONFIG.credentials.target.tenant
+                                : `https://${CONFIG.credentials.target.tenant}.auth.marketingcloudapis.com/`
+                        }",
+                        "account_id": ${CONFIG.enterpriseId}
+                    }
+                }`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
@@ -710,7 +736,7 @@ class Deploy {
      * and rather than using these detailed names the configuration used only 'release' resp. 'hotfix'.
      *
      * @param {string} branch value from copado config
-     * @returns {string} toBranch value to look for in config
+     * @returns {string} configBranch value to look for in config
      */
     static _getConfigForToBranch(branch) {
         let configBranch = branch;
@@ -748,35 +774,35 @@ class Deploy {
     /**
      * Merge from branch into target branch
      *
-     * @param {string} fromCommit commit id to merge
+     * @param {string} sourceBranch commit id to merge
      * @returns {void}
      */
-    static merge(fromCommit) {
+    static merge(sourceBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         // Git fetch, git checkout master and Merge changes.
         Util.execCommand(
-            'Merge commit ' + fromCommit,
-            ['git fetch', 'git checkout master','git merge "' + fromCommit + '"', 'git checkout "' + fromCommit + '"'],
+            'Merge commit ' + sourceBranch,
+            ['git fetch', 'git checkout master','git merge "' + sourceBranch + '"', 'git checkout "' + sourceBranch + '"'],
             'Completed merging commit'
         );
     }
     /**
      * Pushes after a successfull deployment
      *
-     * @param {string} toBranch name of branch to push to
+     * @param {string} mainBranch name of branch to push to
      * @returns {void}
      */
-    static push(toBranch) {
+    static push(mainBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         Util.execCommand(
-            'Push branch ' + toBranch,
-            ['git push origin "' + toBranch + '"'],
+            'Push branch ' + mainBranch,
+            ['git push origin "' + mainBranch + '"'],
             'Completed pushing branch'
         );
     }
@@ -784,10 +810,10 @@ class Deploy {
     /**
      * Promote changes by merging into the promotion branch
      *
-     * @param {string} toBranch branch to merge into
+     * @param {string} mainBranch branch to merge into
      * @returns {void}
      */
-    static promote(toBranch) {
+    static promote(mainBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
@@ -796,35 +822,35 @@ class Deploy {
         //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch,
         //            "Completed cloning branch");
         Util.execCommand(
-            'Checking out the branch ' + CONFIG.promotionBranch,
-            ['copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.promotionBranch],
+            'Checking out the branch ' + CONFIG.sourceBranch,
+            ['copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.sourceBranch],
             'Completed cloning branch'
         );
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
         Util.execCommand(
-            'Merge commit ' + toBranch,
-            ['git merge ' + mergeOption + '-m "Auto merge ' + toBranch + '" "' + toBranch + '"'],
+            'Merge commit ' + mainBranch,
+            ['git merge ' + mergeOption + '-m "Auto merge ' + mainBranch + '" "' + mainBranch + '"'],
             'Completed merging'
         );
 
         Util.execCommand(
-            'Push branch ' + CONFIG.promotionBranch,
-            ['git push origin "' + CONFIG.promotionBranch + '"'],
+            'Push branch ' + CONFIG.sourceBranch,
+            ['git push origin "' + CONFIG.sourceBranch + '"'],
             'Completed pushing branch'
         );
     }
     /**
      * Checks out the source repository and branch
      *
-     * @param {string} fromCommit commit id to merge
-     * @param {string} toBranch branch name to merge into
+     * @param {string} sourceBranch commit id to merge
+     * @param {string} mainBranch branch name to merge into
      * @returns {void}
      */
-    static checkoutSrcDeploy(fromCommit, toBranch) {
+    static checkoutSrcDeploy(sourceBranch, mainBranch) {
         // First make sure that the from branch is available
         Util.execCommand(
-            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
-            ['copado-git-get -d . ' + fromCommit],
+            'Cloning resp. checking out the repository commit/branch ' + sourceBranch,
+            ['copado-git-get -d . ' + sourceBranch],
             'Completed cloning commit/branch'
         );
 
@@ -834,8 +860,8 @@ class Deploy {
         // has been merged into this branch. So basically the version range to deploy
         // is HEAD^..HEAD.
         Util.execCommand(
-            'Cloning resp. checking out the repository branch ' + toBranch,
-            ['copado-git-get -d . ' + toBranch],
+            'Cloning resp. checking out the repository branch ' + mainBranch,
+            ['copado-git-get -d . ' + mainBranch],
             'Completed cloning branch'
         );
     }
