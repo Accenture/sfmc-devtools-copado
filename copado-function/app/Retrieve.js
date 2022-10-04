@@ -651,12 +651,12 @@ class Retrieve {
                             n: this._getAttrValue(item, def.nameField),
                             k: this._getAttrValue(item, def.keyField),
                             t: type,
-                            cd: this._checkDate(this._convertTimestamp(
-                                this._getAttrValue(item, def.createdDateField))
+                            cd: this._convertTimestamp(
+                                this._getAttrValue(item, def.createdDateField)
                             ),
                             cb: this._getUserName(userList, item, def.createdNameField),
-                            ld: this._checkDate(this._convertTimestamp(
-                                this._getAttrValue(item, def.lastmodDateField))
+                            ld: this._convertTimestamp(
+                                this._getAttrValue(item, def.lastmodDateField)
                             ),
                             lb: this._getUserName(userList, item, def.lastmodNameField),
                         };
@@ -676,7 +676,7 @@ class Retrieve {
      * //@returns {string} apexDateTime 2021-10-1615:20:41
      */
     static _convertTimestamp(iso8601dateTime) {
-        if (!iso8601dateTime) {
+        if (!iso8601dateTime || iso8601dateTime.includes("0001-01-01T00:00:00")) {
             return '-';
         }
         // attach timezone unless already returned by API (asset api does return it!)
@@ -721,16 +721,6 @@ class Retrieve {
         }
     }
 
-    /**
-     * used to check the date value, if equal to 0001-01-01T00:00:00-06:00 return "-", if not return the date
-     *
-     * @private
-     * @param {String} date one item
-     * @returns {string} return "-" or date
-     */
-    static _checkDate(date){
-        return date=="0001-01-01T00:00:00-06:00"?"-":date;
-    }
     /**
      * After components have been retrieved,
      * find all retrieved components and build a json containing as much
