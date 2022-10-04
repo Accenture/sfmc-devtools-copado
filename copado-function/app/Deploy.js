@@ -26,9 +26,9 @@ const CONFIG = {
     //credentials
     credentials: {
         source: {
-    clientId: process.env.clientId,
-    clientSecret: process.env.clientSecret,
-    credentialName: process.env.credentialName,
+            clientId: process.env.clientId,
+            clientSecret: process.env.clientSecret,
+            credentialName: process.env.credentialName,
             tenant: process.env.tenant,
         },
         target: {
