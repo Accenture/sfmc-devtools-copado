@@ -169,7 +169,7 @@ async function run() {
         Log.info('===================');
         Log.info('');
         sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
-        targetBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.target_mid);
+        targetBU = Util.getBuName(CONFIG.credentials.target.credentialName, CONFIG.target_mid);
     } catch (ex) {
         Log.error('Getting Source / Target BU failed: ' + ex.message);
         throw ex;
