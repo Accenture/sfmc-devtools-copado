@@ -676,7 +676,6 @@ class Retrieve {
      * //@returns {string} apexDateTime 2021-10-1615:20:41
      */
     static _convertTimestamp(iso8601dateTime) {
-        console.log(iso8601dateTime);
         if (!iso8601dateTime || iso8601dateTime === '0001-01-01T00:00:00') {
             return '-';
         }
