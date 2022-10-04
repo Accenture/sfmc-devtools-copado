@@ -144,8 +144,9 @@ async function run() {
             throw new Error('please check mcdev logs');
         }
     } catch (ex) {
-        Copado.uploadToolLogs();
         Log.error('mcdev upgrade failed:' + ex.message);
+        Copado.uploadToolLogs();
+        
         throw ex;
     }
     try {
@@ -154,10 +155,9 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Upgrade.gitAddConfig();
-    } catch (ex) {
-        Copado.uploadToolLogs();
-
+    } catch (ex) {        
         Log.error('git add failed:' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
     try {
@@ -167,9 +167,8 @@ async function run() {
         Log.info('');
         Upgrade.commitAndPush(CONFIG.mainBranch);
     } catch (ex) {
-        Copado.uploadToolLogs();
-
         Log.error('git commit / push failed:' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
     Log.info('');

@@ -178,8 +178,8 @@ async function run() {
         Log.info('');
         gitAddArr = await Commit.retrieveCommitSelection(sourceBU, commitSelectionArr);
     } catch (ex) {
-        Copado.uploadToolLogs();
         Log.error('Retrieving failed: ' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
 
