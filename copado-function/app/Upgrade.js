@@ -34,31 +34,30 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
-    //credentials
+    // credentials
     credentials: {
         source: {
             clientId: process.env.clientId,
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
+            enterpriseId: process.env.enterprise_id,
         },
         target: {
             clientId: process.env.clientId,
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+            enterpriseId: process.env.enterprise_id,
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'false' ? false : true,
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: null,
-    enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
-    mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
-        ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
-        : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
+    mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: null,
@@ -80,8 +79,8 @@ const CONFIG = {
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    sourceBranch: null, // The promotion branch of a PR
-    mainBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionBranch: null, // The promotion branch of a PR
+    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -140,7 +139,7 @@ async function run() {
         Log.info('Initialize project');
         Log.info('===================');
         Log.info('');
-        Util.initProject();
+        Util.provideMCDevCredentials(CONFIG.credentials);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
         throw ex;
@@ -156,7 +155,7 @@ async function run() {
     } catch (ex) {
         Log.error('mcdev upgrade failed:' + ex.message);
         Copado.uploadToolLogs();
-        
+
         throw ex;
     }
     try {
@@ -165,7 +164,7 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Upgrade.gitAddConfig();
-    } catch (ex) {        
+    } catch (ex) {
         Log.error('git add failed:' + ex.message);
         Copado.uploadToolLogs();
         throw ex;
@@ -227,7 +226,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
     }
     /**
      * @param {string} msg your log message
@@ -235,7 +234,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --progress "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -363,44 +362,30 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
     /**
-     * Initializes MC project
+     * creates credentials file .mcdev-auth.json based on provided credentials
      *
+     * @param {object} credentials contains source and target credentials
      * @returns {void}
      */
-    static initProject() {
-        const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
-            ? `{
-     "credentials": {
-         "${CONFIG.credentials.source.credentialName}": {
-             "clientId": "${CONFIG.credentials.source.clientId}",
-             "clientSecret": "${CONFIG.credentials.source.clientSecret}",
-             "tenant": "${CONFIG.credentials.source.tenant}",
-             "eid": "${CONFIG.enterpriseId}"
-         }
-     }
- }`
-            : `{
-     "${CONFIG.credentials.source.credentialName}": {
-         "client_id": "${CONFIG.credentials.source.clientId}",
-         "client_secret": "${CONFIG.credentials.source.clientSecret}",
-         "auth_url": "${
-             CONFIG.credentials.source.tenant.startsWith('https')
-                 ? CONFIG.credentials.source.tenant
-                 : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
-         }",
-         "account_id": ${CONFIG.enterpriseId}
-     }
- }`;
+    static provideMCDevCredentials(credentials) {
+        const authObj = {};
+        for (const type of Object.keys(credentials)) {
+            authObj[credentials[type].credentialName] = {
+                client_id: credentials[type].clientId,
+                client_secret: credentials[type].clientSecret,
+                auth_url: credentials[type].tenant.startsWith('https')
+                    ? credentials[type].tenant
+                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
+                account_id: credentials[type].enterpriseId,
+            };
+        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', authJson);
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -528,27 +513,19 @@ class Copado {
     }
 
     /**
-     * Checks out the source repository.
-     * if a feature branch is available creates
-     * the feature branch based on the main branch.
+     * Executes git fetch, followed by checking out the given branch
+     * newly created branches are based on the previously checked out branch!
      *
-     * @param {string} mainBranch ?
-     * @param {string} featureBranch can be null/undefined
+     * @param {string} workingBranch main, feature/..., promotion/...
+     * @param {boolean} [createBranch] creates workingBranch if needed
      * @returns {void}
      */
-    static checkoutSrc(mainBranch, featureBranch) {
+    static checkoutSrc(workingBranch, createBranch) {
         Util.execCommand(
-            'Cloning and checking out the main branch ' + mainBranch,
-            ['copado-git-get "' + mainBranch + '"'],
-            'Completed cloning/checking out main branch'
+            'Create / checkout branch ' + workingBranch,
+            [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
+            'Completed creating/checking out branch'
         );
-        if (featureBranch) {
-            Util.execCommand(
-                'Creating resp. checking out the feature branch ' + featureBranch,
-                ['copado-git-get --create "' + featureBranch + '"'],
-                'Completed creating/checking out feature branch'
-            );
-        }
     }
 
     /**

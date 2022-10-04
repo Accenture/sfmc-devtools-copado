@@ -67,7 +67,7 @@
         "unicorn/unicorn/no-lonely-if": "off",
         "arrow-body-style": ["error", "as-needed"],
         "curly": "error",
-        "no-console": "error",
+        "no-console": "warn",
         "jsdoc/check-line-alignment": 2,
         "jsdoc/require-jsdoc": [
             "warn",
