@@ -44,7 +44,7 @@ const CONFIG = {
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
-    mainBranch: process.env.main_branch,
+    mainBranch: null,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
@@ -68,8 +68,8 @@ const CONFIG = {
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
-    sourceBranch: process.env.promotionBranch, // The promotion branch of a PR
-    mainBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
+    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -112,7 +112,10 @@ async function run() {
         Log.info('Clone repository');
         Log.info('===================');
         Log.info('');
-        Deploy.checkoutSrcDeploy(CONFIG.sourceBranch, CONFIG.mainBranch);
+        // test if source branch (promotion branch) exists (otherwise this would cause an error)
+        Copado.checkoutSrc(CONFIG.promotionBranch);
+        // checkout destination branch
+        Copado.checkoutSrc(CONFIG.destinationBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -123,8 +126,9 @@ async function run() {
         Log.info('Merge branch');
         Log.info('===================');
         Log.info('');
-        Deploy.merge(CONFIG.sourceBranch);
+        Deploy.merge(CONFIG.promotionBranch);
     } catch (ex) {
+        // if confict with other deployment this would have failed
         Log.error('Merge failed: ' + ex.message);
         throw ex;
     }
@@ -203,7 +207,7 @@ async function run() {
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.mainBranch);
+        Deploy.push(CONFIG.destinationBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -745,9 +749,6 @@ class Deploy {
                     bu +
                     ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
             );
-            // logError("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
-            // Log.info("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
-            // console.log("Deployment of BU " + bu + " failed with exit code " + ec + ". Other BUs will be deployed, but overall deployment will fail at the end.");
         }
 
         return process.exitCode;
@@ -755,35 +756,35 @@ class Deploy {
     /**
      * Merge from branch into target branch
      *
-     * @param {string} sourceBranch commit id to merge
+     * @param {string} promotionBranch commit id to merge
      * @returns {void}
      */
-    static merge(sourceBranch) {
+    static merge(promotionBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         // Merge and commit changes.
         Util.execCommand(
-            'Merge commit ' + sourceBranch,
-            ['git merge "' + sourceBranch + '"'],
+            'Merge commit ' + promotionBranch,
+            ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
         );
     }
     /**
      * Pushes after a successfull deployment
      *
-     * @param {string} mainBranch name of branch to push to
+     * @param {string} destinationBranch name of branch to push to
      * @returns {void}
      */
-    static push(mainBranch) {
+    static push(destinationBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         Util.execCommand(
-            'Push branch ' + mainBranch,
-            ['git push origin "' + mainBranch + '"'],
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
         );
     }
@@ -818,32 +819,6 @@ class Deploy {
             'Push branch ' + CONFIG.sourceBranch,
             ['git push origin "' + CONFIG.sourceBranch + '"'],
             'Completed pushing branch'
-        );
-    }
-    /**
-     * Checks out the source repository and branch
-     *
-     * @param {string} sourceBranch commit id to merge
-     * @param {string} mainBranch branch name to merge into
-     * @returns {void}
-     */
-    static checkoutSrcDeploy(sourceBranch, mainBranch) {
-        // First make sure that the from branch is available
-        Util.execCommand(
-            'Cloning resp. checking out the repository commit/branch ' + sourceBranch,
-            ['copado-git-get -d . ' + sourceBranch],
-            'Completed cloning commit/branch'
-        );
-
-        // Now checkout the target branch.
-        // That branch/commit that contains changed files should be checked out.
-        // When working with PRs, this is the target branch, after the source branch
-        // has been merged into this branch. So basically the version range to deploy
-        // is HEAD^..HEAD.
-        Util.execCommand(
-            'Cloning resp. checking out the repository branch ' + mainBranch,
-            ['copado-git-get -d . ' + mainBranch],
-            'Completed cloning branch'
         );
     }
 }
