@@ -41,12 +41,14 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
+            enterpriseId: process.env.enterprise_id,
         },
         target: {
             clientId: process.env.clientId,
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
+            enterpriseId: process.env.enterprise_id,
         },
     },
     // generic
@@ -54,7 +56,6 @@ const CONFIG = {
     debug: process.env.debug === 'false' ? false : true,
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: null,
-    enterpriseId: process.env.enterprise_id,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
@@ -138,7 +139,7 @@ async function run() {
         Log.info('Initialize project');
         Log.info('===================');
         Log.info('');
-        Util.initProject();
+        Util.provideMCDevCredentials(CONFIG.credentials);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
         throw ex;
@@ -366,25 +367,25 @@ class Util {
         );
     }
     /**
-     * Initializes MC project
+     * creates credentials file .mcdev-auth.json based on provided credentials
      *
+     * @param {object} credentials contains source and target credentials
      * @returns {void}
      */
-    static initProject() {
-        const authJson = `{
-    "${CONFIG.credentials.source.credentialName}": {
-        "client_id": "${CONFIG.credentials.source.clientId}",
-        "client_secret": "${CONFIG.credentials.source.clientSecret}",
-        "auth_url": "${
-            CONFIG.credentials.source.tenant.startsWith('https')
-                ? CONFIG.credentials.source.tenant
-                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
-        }",
-        "account_id": ${CONFIG.enterpriseId}
-    }
-}`;
+    static provideMCDevCredentials(credentials) {
+        const authObj = {};
+        for (const type of Object.keys(credentials)) {
+            authObj[credentials[type].credentialName] = {
+                client_id: credentials[type].clientId,
+                client_secret: credentials[type].clientSecret,
+                auth_url: credentials[type].tenant.startsWith('https')
+                    ? credentials[type].tenant
+                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
+                account_id: credentials[type].enterpriseId,
+            };
+        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', authJson);
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
         Log.progress('Completed providing authentication');
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
