@@ -197,8 +197,8 @@ async function run() {
             throw new Error('No changes found. Nothing to deploy');
         }
     } catch (ex) {
-        Copado.uploadToolLogs();
         Log.error('Deploy failed: ' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
 
