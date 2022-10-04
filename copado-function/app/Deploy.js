@@ -419,27 +419,43 @@ class Util {
     static initProject() {
         const authJson = ['3.0.0', '3.0.1', '3.0.2', '3.0.3', '3.1.3'].includes(CONFIG.mcdevVersion)
             ? `{
-    "credentials": {
-        "${CONFIG.credentials.source.credentialName}": {
-            "clientId": "${CONFIG.credentials.source.clientId}",
-            "clientSecret": "${CONFIG.credentials.source.clientSecret}",
-            "tenant": "${CONFIG.credentials.source.tenant}",
-            "eid": "${CONFIG.enterpriseId}"
-        }
-    }
-}`
+                    "credentials": {
+                        "${CONFIG.credentials.source.credentialName}": {
+                            "clientId": "${CONFIG.credentials.source.clientId}",
+                            "clientSecret": "${CONFIG.credentials.source.clientSecret}",
+                            "tenant": "${CONFIG.credentials.source.tenant}",
+                            "eid": "${CONFIG.enterpriseId}"
+                        },
+                        "${CONFIG.credentials.target.credentialName}": {
+                            "clientId": "${CONFIG.credentials.target.clientId}",
+                            "clientSecret": "${CONFIG.credentials.target.clientSecret}",
+                            "tenant": "${CONFIG.credentials.target.tenant}",
+                            "eid": "${CONFIG.enterpriseId}"
+                        }
+                    }
+                }`
             : `{
-    "${CONFIG.credentials.source.credentialName}": {
-        "client_id": "${CONFIG.credentials.source.clientId}",
-        "client_secret": "${CONFIG.credentials.source.clientSecret}",
-        "auth_url": "${
-            CONFIG.credentials.source.tenant.startsWith('https')
-                ? CONFIG.credentials.source.tenant
-                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
-        }",
-        "account_id": ${CONFIG.enterpriseId}
-    }
-}`;
+                    "${CONFIG.credentials.source.credentialName}": {
+                        "client_id": "${CONFIG.credentials.source.clientId}",
+                        "client_secret": "${CONFIG.credentials.source.clientSecret}",
+                        "auth_url": "${
+                            CONFIG.credentials.source.tenant.startsWith('https')
+                                ? CONFIG.credentials.source.tenant
+                                : `https://${CONFIG.credentials.source.tenant}.auth.marketingcloudapis.com/`
+                        }",
+                        "account_id": ${CONFIG.enterpriseId}
+                    },
+                    "${CONFIG.credentials.target.credentialName}": {
+                        "client_id": "${CONFIG.credentials.target.clientId}",
+                        "client_secret": "${CONFIG.credentials.target.clientSecret}",
+                        "auth_url": "${
+                            CONFIG.credentials.target.tenant.startsWith('https')
+                                ? CONFIG.credentials.target.tenant
+                                : `https://${CONFIG.credentials.target.tenant}.auth.marketingcloudapis.com/`
+                        }",
+                        "account_id": ${CONFIG.enterpriseId}
+                    }
+                }`;
         Log.progress('Provide authentication');
         fs.writeFileSync('.mcdev-auth.json', authJson);
         Log.progress('Completed providing authentication');
