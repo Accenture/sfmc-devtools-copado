@@ -23,7 +23,7 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
-    //credentials
+    // credentials
     credentials: {
         source: {
             clientId: process.env.clientId,
@@ -36,7 +36,7 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
@@ -258,7 +258,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * @param {string} msg your log message
@@ -266,7 +266,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --progress "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -394,10 +394,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -754,7 +751,7 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
-     * @returns {void} 
+     * @returns {void}
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
@@ -785,7 +782,12 @@ class Deploy {
         // Git fetch, git checkout master and Merge changes.
         Util.execCommand(
             'Merge commit ' + sourceBranch,
-            ['git fetch', 'git checkout master','git merge "' + sourceBranch + '"', 'git checkout "' + sourceBranch + '"'],
+            [
+                'git fetch',
+                'git checkout master',
+                'git merge "' + sourceBranch + '"',
+                'git checkout "' + sourceBranch + '"',
+            ],
             'Completed merging commit'
         );
     }
@@ -829,7 +831,15 @@ class Deploy {
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
         Util.execCommand(
             'Merge commit ' + mainBranch,
-            ['git merge ' + mergeOption + '-m "Auto merge ' + mainBranch + '" "' + mainBranch + '"'],
+            [
+                'git merge ' +
+                    mergeOption +
+                    '-m "Auto merge ' +
+                    mainBranch +
+                    '" "' +
+                    mainBranch +
+                    '"',
+            ],
             'Completed merging'
         );
 
