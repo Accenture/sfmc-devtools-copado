@@ -78,11 +78,10 @@ const CONFIG = {
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
     // deploy
     deltaPackageLog: null,
-    fromCommit: null, // The source branch of a PR, typically something like 'feature/...'
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    promotionBranch: null, // The promotion branch of a PR
-    toBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    sourceBranch: null, // The promotion branch of a PR
+    mainBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
