@@ -259,7 +259,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
     }
     /**
      * @param {string} msg your log message
@@ -267,7 +267,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --progress "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
