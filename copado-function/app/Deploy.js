@@ -213,16 +213,6 @@ async function run() {
         throw ex;
     }
 
-    try {
-        Log.info('Merge into promotion branch');
-        Log.info('===================');
-        Log.info('');
-        Deploy.promote(CONFIG.mainBranch);
-    } catch (ex) {
-        Log.info('promote failed: ' + ex.message);
-        throw ex;
-    }
-
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
@@ -785,39 +775,6 @@ class Deploy {
         Util.execCommand(
             'Push branch ' + destinationBranch,
             ['git push origin "' + destinationBranch + '"'],
-            'Completed pushing branch'
-        );
-    }
-
-    /**
-     * Promote changes by merging into the promotion branch
-     *
-     * @param {string} mainBranch branch to merge into
-     * @returns {void}
-     */
-    static promote(mainBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
-        // Util.execCommand("Checking out the branch " + toBranch,
-        //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch,
-        //            "Completed cloning branch");
-        Util.execCommand(
-            'Checking out the branch ' + CONFIG.sourceBranch,
-            ['copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.sourceBranch],
-            'Completed cloning branch'
-        );
-        const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
-        Util.execCommand(
-            'Merge commit ' + mainBranch,
-            ['git merge ' + mergeOption + '-m "Auto merge ' + mainBranch + '" "' + mainBranch + '"'],
-            'Completed merging'
-        );
-
-        Util.execCommand(
-            'Push branch ' + CONFIG.sourceBranch,
-            ['git push origin "' + CONFIG.sourceBranch + '"'],
             'Completed pushing branch'
         );
     }
