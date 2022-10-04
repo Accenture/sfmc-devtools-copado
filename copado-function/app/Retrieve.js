@@ -25,7 +25,7 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
-    //credentials
+    // credentials
     credentials: {
         source: {
             clientId: process.env.clientId,
@@ -38,7 +38,7 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
@@ -72,7 +72,6 @@ const CONFIG = {
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
     sourceBranch: null, // The promotion branch of a PR
-    mainBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -228,7 +227,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * @param {string} msg your log message
@@ -236,7 +235,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --progress "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -364,10 +363,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }

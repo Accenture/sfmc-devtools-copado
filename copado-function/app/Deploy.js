@@ -23,7 +23,7 @@ const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
-    //credentials
+    // credentials
     credentials: {
         source: {
             clientId: process.env.clientId,
@@ -36,7 +36,7 @@ const CONFIG = {
             clientSecret: process.env.clientSecret,
             credentialName: process.env.credentialName,
             tenant: process.env.tenant,
-        }
+        },
     },
     // generic
     configFilePath: '.mcdevrc.json',
@@ -44,7 +44,6 @@ const CONFIG = {
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
     enterpriseId: process.env.enterprise_id,
-    mainBranch: process.env.main_branch,
     mcdev_exec: ['3.0.0', '3.0.1', '3.0.2', '3.0.3'].includes(process.env.mcdev_version)
         ? 'node ./node_modules/mcdev/lib/index.js' // !works only after changing the working directory!
         : 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -267,7 +266,7 @@ class Log {
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --error-message "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * @param {string} msg your log message
@@ -275,7 +274,7 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g,'\"')}"`);
+        execSync(`copado --progress "${msg.replace(/"/g, '"')}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
@@ -403,10 +402,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -840,7 +836,15 @@ class Deploy {
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
         Util.execCommand(
             'Merge commit ' + mainBranch,
-            ['git merge ' + mergeOption + '-m "Auto merge ' + mainBranch + '" "' + mainBranch + '"'],
+            [
+                'git merge ' +
+                    mergeOption +
+                    '-m "Auto merge ' +
+                    mainBranch +
+                    '" "' +
+                    mainBranch +
+                    '"',
+            ],
             'Completed merging'
         );
 
