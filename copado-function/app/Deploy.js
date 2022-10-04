@@ -57,11 +57,10 @@ const CONFIG = {
     // deploy
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
-    fromCommit: 'promotion/' + process.env.promotion, // The source branch of a PR, typically something like 'feature/...'
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
-    promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
-    toBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    sourceBranch: process.env.promotionBranch, // The promotion branch of a PR
+    mainBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
 /**
@@ -104,7 +103,7 @@ async function run() {
         Log.info('Clone repository');
         Log.info('===================');
         Log.info('');
-        Deploy.checkoutSrcDeploy(CONFIG.fromCommit, CONFIG.toBranch);
+        Deploy.checkoutSrcDeploy(CONFIG.sourceBranch, CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -115,7 +114,7 @@ async function run() {
         Log.info('Merge branch');
         Log.info('===================');
         Log.info('');
-        Deploy.merge(CONFIG.fromCommit);
+        Deploy.merge(CONFIG.sourceBranch);
     } catch (ex) {
         Log.error('Merge failed: ' + ex.message);
         throw ex;
@@ -195,7 +194,7 @@ async function run() {
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.toBranch);
+        Deploy.push(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -205,7 +204,7 @@ async function run() {
         Log.info('Merge into promotion branch');
         Log.info('===================');
         Log.info('');
-        Deploy.promote(CONFIG.toBranch, CONFIG.promotionBranch);
+        Deploy.promote(CONFIG.mainBranch, CONFIG.sourceBranch);
     } catch (ex) {
         Log.info('promote failed: ' + ex.message);
         throw ex;
@@ -807,8 +806,8 @@ class Deploy {
         //            "cd /tmp && copado-git-get --depth " + git_depth + ' ' + toBranch,
         //            "Completed cloning branch");
         Util.execCommand(
-            'Checking out the branch ' + CONFIG.promotionBranch,
-            ['copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.promotionBranch],
+            'Checking out the branch ' + CONFIG.sourceBranch,
+            ['copado-git-get --depth ' + CONFIG.git_depth + ' ' + CONFIG.sourceBranch],
             'Completed cloning branch'
         );
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
@@ -819,8 +818,8 @@ class Deploy {
         );
 
         Util.execCommand(
-            'Push branch ' + CONFIG.promotionBranch,
-            ['git push origin "' + CONFIG.promotionBranch + '"'],
+            'Push branch ' + CONFIG.sourceBranch,
+            ['git push origin "' + CONFIG.sourceBranch + '"'],
             'Completed pushing branch'
         );
     }
