@@ -204,7 +204,7 @@ async function run() {
         Log.info('Merge into promotion branch');
         Log.info('===================');
         Log.info('');
-        Deploy.promote(CONFIG.mainBranch, CONFIG.sourceBranch);
+        Deploy.promote(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('promote failed: ' + ex.message);
         throw ex;
@@ -718,7 +718,7 @@ class Deploy {
      * and rather than using these detailed names the configuration used only 'release' resp. 'hotfix'.
      *
      * @param {string} branch value from copado config
-     * @returns {string} toBranch value to look for in config
+     * @returns {string} configBranch value to look for in config
      */
     static _getConfigForToBranch(branch) {
         let configBranch = branch;
@@ -758,35 +758,35 @@ class Deploy {
     /**
      * Merge from branch into target branch
      *
-     * @param {string} fromCommit commit id to merge
+     * @param {string} sourceBranch commit id to merge
      * @returns {void}
      */
-    static merge(fromCommit) {
+    static merge(sourceBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         // Merge and commit changes.
         Util.execCommand(
-            'Merge commit ' + fromCommit,
-            ['git merge "' + fromCommit + '"'],
+            'Merge commit ' + sourceBranch,
+            ['git merge "' + sourceBranch + '"'],
             'Completed merging commit'
         );
     }
     /**
      * Pushes after a successfull deployment
      *
-     * @param {string} toBranch name of branch to push to
+     * @param {string} mainBranch name of branch to push to
      * @returns {void}
      */
-    static push(toBranch) {
+    static push(mainBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
         }
         Util.execCommand(
-            'Push branch ' + toBranch,
-            ['git push origin "' + toBranch + '"'],
+            'Push branch ' + mainBranch,
+            ['git push origin "' + mainBranch + '"'],
             'Completed pushing branch'
         );
     }
@@ -794,10 +794,10 @@ class Deploy {
     /**
      * Promote changes by merging into the promotion branch
      *
-     * @param {string} toBranch branch to merge into
+     * @param {string} mainBranch branch to merge into
      * @returns {void}
      */
-    static promote(toBranch) {
+    static promote(mainBranch) {
         if (CONFIG.localDev) {
             Log.debug('🔥 Skipping git action in local dev environment');
             return;
@@ -812,8 +812,8 @@ class Deploy {
         );
         const mergeOption = CONFIG.merge_strategy ? '-X ' + CONFIG.merge_strategy + ' ' : '';
         Util.execCommand(
-            'Merge commit ' + toBranch,
-            ['git merge ' + mergeOption + '-m "Auto merge ' + toBranch + '" "' + toBranch + '"'],
+            'Merge commit ' + mainBranch,
+            ['git merge ' + mergeOption + '-m "Auto merge ' + mainBranch + '" "' + mainBranch + '"'],
             'Completed merging'
         );
 
@@ -826,15 +826,15 @@ class Deploy {
     /**
      * Checks out the source repository and branch
      *
-     * @param {string} fromCommit commit id to merge
-     * @param {string} toBranch branch name to merge into
+     * @param {string} sourceBranch commit id to merge
+     * @param {string} mainBranch branch name to merge into
      * @returns {void}
      */
-    static checkoutSrcDeploy(fromCommit, toBranch) {
+    static checkoutSrcDeploy(sourceBranch, mainBranch) {
         // First make sure that the from branch is available
         Util.execCommand(
-            'Cloning resp. checking out the repository commit/branch ' + fromCommit,
-            ['copado-git-get -d . ' + fromCommit],
+            'Cloning resp. checking out the repository commit/branch ' + sourceBranch,
+            ['copado-git-get -d . ' + sourceBranch],
             'Completed cloning commit/branch'
         );
 
@@ -844,8 +844,8 @@ class Deploy {
         // has been merged into this branch. So basically the version range to deploy
         // is HEAD^..HEAD.
         Util.execCommand(
-            'Cloning resp. checking out the repository branch ' + toBranch,
-            ['copado-git-get -d . ' + toBranch],
+            'Cloning resp. checking out the repository branch ' + mainBranch,
+            ['copado-git-get -d . ' + mainBranch],
             'Completed cloning branch'
         );
     }
