@@ -364,10 +364,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                CONFIG.mcdev_exec + ' --version',
-            ],
+            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -615,6 +612,8 @@ class Retrieve {
             // disable any non-errors originating in mcdev from being printed into the main copado logfile
             mcdev.setLoggingLevel({ silent: true });
         }
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
 
         const customDefinition = {
             automation: {
@@ -627,7 +626,11 @@ class Retrieve {
             },
         };
         // get userid>name mapping
-        const userList = (await mcdev.retrieve(sourceBU, ['accountUser'], null, true)).accountUser;
+        const retrieve = await mcdev.retrieve(sourceBU, ['accountUser'], null, true);
+        if (!retrieve) {
+            throw new Error('Could not retrieve User List');
+        }
+        const userList = retrieve.accountUser;
         // reduce userList to simple id-name map
         for (const key of Object.keys(userList)) {
             userList[userList[key].ID] = userList[key].Name;
