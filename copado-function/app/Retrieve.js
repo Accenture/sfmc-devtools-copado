@@ -223,12 +223,18 @@ class Log {
         console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
     }
     /**
+     * update job execution / result record error fields & show progress
+     *
      * @param {string} msg your log message
      * @returns {void}
      */
     static error(msg) {
         Log.warn('❌  ' + msg);
-        execSync(`copado --error-message "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
+
+        // note: --error-message requires the --progress flag to update the result / job execution record
+        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
+        execSync(`copado --error-message "${msg}" --progress "${msg}"`);
+    }
     }
     /**
      * @param {string} msg your log message
@@ -236,7 +242,9 @@ class Log {
      */
     static progress(msg) {
         Log.debug(msg);
-        execSync(`copado --progress "${msg.replace(/"/g, `\"`)}"`); // eslint-disable-line no-useless-escape
+
+        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
+        execSync(`copado --progress "${msg}"`);
     }
     /**
      * used to overcome bad timestmaps created by copado that seem to be created asynchronously
