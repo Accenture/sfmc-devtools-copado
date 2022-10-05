@@ -78,23 +78,24 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   // Static definition of the columns
   columns = [
-    { 
-      label: "Name", 
-      fieldName: "n", 
-      type: "string", 
-      sortable: true 
+    {
+      label: "Name",
+      fieldName: "n",
+      type: "string",
+      sortable: true
     },
-    { 
-      label: "Key", 
-      fieldName: "k", 
-      type: "string", 
-      sortable: true 
+    {
+      label: "Key",
+      fieldName: "k",
+      type: "string",
+      sortable: true
     },
-    { 
-      label: "Type", 
-      fieldName: "t", 
-      type: "string", 
-      sortable: true },
+    {
+      label: "Type",
+      fieldName: "t",
+      type: "string",
+      sortable: true
+    },
     {
       label: "Last Modified By",
       fieldName: "lb",
@@ -106,32 +107,32 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       fieldName: "ld",
       type: "date",
       typeAttributes: {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
       },
       sortable: true
     },
-    { 
-      label: "Created By", 
-      fieldName: "cb", 
-      type: "string", 
-      sortable: true 
+    {
+      label: "Created By",
+      fieldName: "cb",
+      type: "string",
+      sortable: true
     },
-    { 
-      label: "Created Date", 
-      fieldName: "cd", 
+    {
+      label: "Created Date",
+      fieldName: "cd",
       type: "date",
       typeAttributes: {
-        day: 'numeric',
-        month: 'short',
-        year: 'numeric',
-        hour: '2-digit',
-        minute: '2-digit'
-      }, 
-      sortable: true 
+        day: "numeric",
+        month: "short",
+        year: "numeric",
+        hour: "2-digit",
+        minute: "2-digit"
+      },
+      sortable: true
     }
   ];
 
@@ -157,7 +158,9 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   // Subscription related variables
   empSubscription = {};
-  channelName = "/event/copado__MC_Result__e";
+  //channelName = "/event/copado__MC_Result__e";
+
+  channelName = "/event/copado__Event__e";
 
   _subscribeToMessageService() {
     subscribeMessageService(
@@ -168,7 +171,10 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   async _handleCommitPageCommunicationMessage(message) {
-    console.log("Async _handleCommitPageCommunicationMessage starts now:",message);
+    console.log(
+      "Async _handleCommitPageCommunicationMessage starts now:",
+      message
+    );
     try {
       console.log("_handleCommitPageCommunicationMessage(message): ", message);
       this.loadingState(true);
@@ -237,7 +243,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
   // Get Metadata from environment, Deactivate the Loading State
   connectedCallback() {
-    console.log('in connected call back');
+    console.log("in connected call back");
     try {
       this._subscribeToMessageService();
     } catch (err) {
@@ -264,27 +270,17 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
     try {
-      console.log("Running Initial getMetadataFromEnvironment, this is the userStoryId: ",this.userStoryId);
+      console.log(
+        "Running Initial getMetadataFromEnvironment, this is the userStoryId: ",
+        this.userStoryId
+      );
       getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then(
         (result) => {
           const parsedResult = JSON.parse(result);
           this.data = parsedResult;
-          this.visibleData = parsedResult;
-          // 03 result platform event even after the function result completed->unsubscribeEmp
-          try {
-            unsubscribeEmp(self.empSubscription, (response2) => {
-              console.log(" After Data load-> unsubscribe() response: ", response2);
-            });
-          } catch (err) {
-            console.error("Error while unsubscribing from Emp API: ", err);
-            self.showToastEvent(
-              `${err.name}: An error occurred while unsubscribing from Emp API`,
-              `${err.message}`,
-              "error",
-              "sticky"
-            );
-          }
-
+          // 68 sort the data then assign table variable
+          this.sortData(this.sortedBy, this.sortDirection);
+          //  self.visibleData = parsedResult;
         }
       );
     } catch (err) {
@@ -321,25 +317,30 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
     ExecuteRetrieveFromCopado({
       userStoryId
-    }).then((jobExecutionId) => {
+    })
+      .then((jobExecutionId) => {
         /* TODO: Make sure to only return the correct result... */
         console.log("This is the Job Execution ID: ", jobExecutionId);
         // The response tells whether the function has finished and was successful or not
+
         const messageCallback = function (response) {
-          console.log("in messagecallback function: ", response);
-          const isFinished = response.data.payload.copado__IsFinished__c;
-          const isSuccess = response.data.payload.copado__IsSuccess__c;
-          const progressStatus = response.data.payload.copado__Progress_Status__c;
+          console.log(
+            "in messagecallback function: ",
+            JSON.parse(JSON.stringify(response))
+          );
 
           console.log("====================================");
-          console.log("[DEBUG] Logging the messageCallback response: ",response);
-          console.log("isFinished: ", isFinished);
-          console.log("isSuccess: ", isSuccess);
-          console.log("progressStatus: ", progressStatus);
-          console.log("====================================");
-          if (isFinished === false) {
-            self.progressStatus = progressStatus;
-          } else if (isFinished === true) {
+
+          const jobExecution = JSON.parse(
+            response.data.payload.copado__Payload__c
+          );
+          if (
+            response.data.payload.copado__Topic_Uri__c ===
+              `/execution-completed/${jobExecutionId}` &&
+            jobExecution.copado__Status__c === "Successful"
+          ) {
+            // hide spinner
+
             try {
               unsubscribeEmp(self.empSubscription, (response2) => {
                 console.log("unsubscribe() response: ", response2);
@@ -354,63 +355,28 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
               );
             }
 
-            if (isSuccess === true) {
-              try {
-                getMetadataFromEnvironment({ userStoryId }).then((result) => {
-                  console.log("Metadata fetched from Environment: ", result);
-                  const parsedResult = JSON.parse(result);
-                  self.data = parsedResult;
-                  self.visibleData = parsedResult;
-                });
-              } catch (err) {
-                console.error(
-                  "Error fetching the Metadata from File after the Retrievement: ",
-                  err
-                );
-                self.showToastEvent(
-                  `${err.name}: Error fetching the Metadata from File after the Retrievement`,
-                  `${err.message}`,
-                  "error",
-                  "sticky"
-                );
-              }
-            } else if (isSuccess === false) {
-              console.log(
-                `Running The Retrieve Function Failed! 
-                            Please Check the Job Execution with the ID "${jobExecutionId}" 
-                            in the Execution History of the Retrieve Function.`
+            try {
+              getMetadataFromEnvironment({ userStoryId }).then((result) => {
+                console.log("Metadata fetched from Environment: ", result);
+                const parsedResult = JSON.parse(result);
+                self.data = parsedResult;
+                self.visibleData = parsedResult;
+                this.loadingState(false);
+              });
+            } catch (err) {
+              console.error(
+                "Error fetching the Metadata from File after the Retrievement: ",
+                err
               );
               self.showToastEvent(
-                "Executing Retrieve failed!",
-                `Please Check the Job Execution with the ID "${jobExecutionId}"
-                            in the Execution History of the Copado Retrieve Function.`,
+                `${err.name}: Error fetching the Metadata from File after the Retrievement`,
+                `${err.message}`,
                 "error",
                 "sticky"
               );
             }
-            self.loadingState(false);
           }
         };
-
-        // Invoke subscribe method of empApi. Pass reference to messageCallback
-        try {
-          console.log("before subscribeEmp: ");
-          subscribeEmp(this.channelName, -1, messageCallback).then(
-            (response) => {
-              // Response contains the subscription information on subscribe call
-              console.log("Subscribed to ", response.channel);
-              this.empSubscription = response;
-            }
-          );
-        } catch (err) {
-          console.error("Error while subscribing to Emp API: ", err);
-          self.showToastEvent(
-            `${err.name}: An error occurred while subscribing to Emp API`,
-            `${err.message}`,
-            "error",
-            "sticky"
-          );
-        }
       })
       .catch((err) => {
         console.error("Error while running Retrieve: ", err);
@@ -429,7 +395,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       });
   }
 
- 
   onHandleSort(event) {
     this.sortedBy = event.detail.fieldName;
     this.sortDirection = event.detail.sortDirection;
@@ -437,26 +402,33 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   sortData(fieldname, direction) {
-    
-    let parseData = JSON.parse(JSON.stringify( this.visibleData));
+    let parseData = "";
+    // 68 sort the data
+    //if(this.data){
+    //parseData = JSON.parse(JSON.stringify(this.data));
+    //this.data=null;
+    //}else{
+    //parseData = JSON.parse(JSON.stringify(this.visibleData));
+    // }
+    parseData = JSON.parse(JSON.stringify(this.data));
     // Return the value stored in the field
     let keyValue = (a) => {
-        return a[fieldname];
+      return a[fieldname];
     };
     // cheking reverse direction
-    let isReverse = direction === 'asc' ? 1: -1;
+    let isReverse = direction === "asc" ? 1 : -1;
     // sorting data
-    
+
     parseData.sort((next, prev) => {
-        // console.log('next:',keyValue(next));
-        // console.log('prev:',keyValue(prev));
-        next = keyValue(next) ? keyValue(next) : ''; // handling null values
-        prev = keyValue(prev) ? keyValue(prev) : '';
-        // sorting values based on direction
-        return isReverse * ((next > prev) - (prev > next));
+      // console.log('next:',keyValue(next));
+      // console.log('prev:',keyValue(prev));
+      next = keyValue(next) ? keyValue(next) : ""; // handling null values
+      prev = keyValue(prev) ? keyValue(prev) : "";
+      // sorting values based on direction
+      return isReverse * ((next > prev) - (prev > next));
     });
     this.visibleData = parseData;
-  }    
+  }
 
   // Registers a listener to errors that the server returns by the empApi module
   registerEmpErrorListener() {
@@ -474,9 +446,11 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   /**
    * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
    * TODO: It's not possible to remove a row, when the dataset is reduced (search)
-  */
+   */
   handleSearch(event) {
-    const visibleSelectedRowsBefore = this.template.querySelector("lightning-datatable").getSelectedRows();
+    const visibleSelectedRowsBefore = this.template
+      .querySelector("lightning-datatable")
+      .getSelectedRows();
 
     let ar = [
       ...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])
@@ -484,10 +458,18 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     this.allSelectedRows = ar;
 
     // Filter Rows
-    const regex = new RegExp(event.target.value, "gi");// global and case insensitive match
-    this.visibleData = this.data.filter((row) => regex.test(row.n) || regex.test(row.t) || regex.test(row.cd) || regex.test(row.cb)
-    || regex.test(row.ld) || regex.test(row.lb) || regex.test(row.k));
-    
+    const regex = new RegExp(event.target.value, "gi"); // global and case insensitive match
+    this.visibleData = this.data.filter(
+      (row) =>
+        regex.test(row.n) ||
+        regex.test(row.t) ||
+        regex.test(row.cd) ||
+        regex.test(row.cb) ||
+        regex.test(row.ld) ||
+        regex.test(row.lb) ||
+        regex.test(row.k)
+    );
+
     // Set selected Rows
     this.selectedRows = this.allSelectedRows.map(({ k }) => k);
   }
