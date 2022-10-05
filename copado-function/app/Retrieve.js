@@ -205,7 +205,7 @@ class Log {
      */
     static debug(msg) {
         if (true == CONFIG.debug) {
-            console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
+            console.log('DEBUG:', msg); // eslint-disable-line no-console
         }
     }
     /**
@@ -213,40 +213,48 @@ class Log {
      * @returns {void}
      */
     static warn(msg) {
-        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
+        console.log('⚠', msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
     static info(msg) {
-        console.log(Log._getFormattedDate(), msg); // eslint-disable-line no-console
+        console.log(msg); // eslint-disable-line no-console
     }
     /**
      * update job execution / result record error fields & show progress
      *
-     * @param {string} msg your log message
+     * @param {string} error your error details
+     * @param {string} [msg] optional progress message
      * @returns {void}
      */
-    static error(msg) {
-        Log.warn('❌  ' + msg);
+    static error(error, msg = 'Error') {
+        console.log('❌', error); // eslint-disable-line no-console
 
-        // note: --error-message requires the --progress flag to update the result / job execution record
-        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
-        execSync(`copado --error-message "${msg}" --progress "${msg}"`);
+        // running JSON.stringify escapes potentially existing double quotes in msg
+        error = JSON.stringify(error);
+        msg = JSON.stringify(msg);
+        // note: --error-message requires --progress to be also given - they can have different values
+        execSync(`copado --error-message ${error} --progress ${msg}`);
     }
     /**
      * update job execution / result record result fields & show progress
      *
-     * @param {string} msg your log message
+     * @param {string|object} json results of your execution
+     * @param {string} [msg] optional progress message
      * @returns {void}
      */
-    static finalResult(msg) {
-        Log.warn('✔️  ' + msg);
-
-        // note: --result-message requires the --progress flag to update the result / job execution record
-        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
-        execSync(`copado --result-message "${msg}" --progress "${msg}"`);
+    static result(json, msg = 'Result attached') {
+        if (typeof json !== 'string') {
+            json = JSON.stringify(json);
+        }
+        console.log('✅', json); // eslint-disable-line no-console
+        // running JSON.stringify escapes potentially existing double quotes in msg
+        json = JSON.stringify(json);
+        msg = JSON.stringify(msg);
+        // note: --result-data requires --progress to be also given - they can have different values
+        execSync(`copado --result-data ${json} --progress ${msg}`);
     }
     /**
      * @param {string} msg your log message
@@ -255,33 +263,8 @@ class Log {
     static progress(msg) {
         Log.debug(msg);
 
-        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
-        execSync(`copado --progress "${msg}"`);
-    }
-    /**
-     * used to overcome bad timestmaps created by copado that seem to be created asynchronously
-     *
-     * @returns {string} readable timestamp
-     */
-    static _getFormattedDate() {
-        const date = new Date();
-
-        // let month = date.getMonth() + 1;
-        // let day = date.getDate();
-        let hour = date.getHours();
-        let min = date.getMinutes();
-        let sec = date.getSeconds();
-
-        // month = (month < 10 ? '0' : '') + month;
-        // day = (day < 10 ? '0' : '') + day;
-        hour = (hour < 10 ? '0' : '') + hour;
-        min = (min < 10 ? '0' : '') + min;
-        sec = (sec < 10 ? '0' : '') + sec;
-
-        // const str = `(${date.getFullYear()}-${month}-${day} ${hour}:${min}:${sec}) `;
-        const str = `(${hour}:${min}:${sec}) `;
-
-        return str;
+        msg = JSON.stringify(msg);
+        execSync(`copado --progress ${msg}`);
     }
 }
 
