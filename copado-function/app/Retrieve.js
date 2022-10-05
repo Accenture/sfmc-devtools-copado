@@ -235,6 +235,18 @@ class Log {
         msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
         execSync(`copado --error-message "${msg}" --progress "${msg}"`);
     }
+    /**
+     * update job execution / result record result fields & show progress
+     *
+     * @param {string} msg your log message
+     * @returns {void}
+     */
+    static finalResult(msg) {
+        Log.warn('✔️  ' + msg);
+
+        // note: --result-message requires the --progress flag to update the result / job execution record
+        msg = msg.replace(/"/g, `\"`); // eslint-disable-line no-useless-escape
+        execSync(`copado --result-message "${msg}" --progress "${msg}"`);
     }
     /**
      * @param {string} msg your log message
