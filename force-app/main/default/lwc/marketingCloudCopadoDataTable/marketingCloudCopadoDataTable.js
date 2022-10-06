@@ -263,9 +263,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         (result) => {
           const parsedResult = JSON.parse(result);
           this.data = parsedResult;
-          // 68 sort the data then assign table variable
           this.sortData(this.sortedBy, this.sortDirection);
-          //  self.visibleData = parsedResult;
         }
       );
     } catch (err) {
@@ -305,8 +303,10 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       console.log('Event callback: ', JSON.parse(JSON.stringify(response)));
 
       if (response.data.payload.copado__Topic_Uri__c === `/execution-completed/${jobExecutionId}`) {
+        // retrieve is done: refresh table with new data
         this.updateMetadataGrid(response);
       } else if (response.data.payload.copado__Topic_Uri__c.startsWith('/events/copado/v1/step-monitor/')) {
+        // show progress on screen
         const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
         this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
       }
@@ -351,13 +351,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   sortData(fieldname, direction) {
     let parseData = "";
-    // 68 sort the data
-    //if(this.data){
-    //parseData = JSON.parse(JSON.stringify(this.data));
-    //this.data=null;
-    //}else{
-    //parseData = JSON.parse(JSON.stringify(this.visibleData));
-    // }
     parseData = JSON.parse(JSON.stringify(this.data));
     // Return the value stored in the field
     let keyValue = (a) => {
