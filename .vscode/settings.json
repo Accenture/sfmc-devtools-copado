@@ -11,10 +11,10 @@
 "editor.formatOnSave": true,
 "files.eol": "\n",
 "[javascript]": {
-  "editor.defaultFormatter": "vscode.typescript-language-features"
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 },
 "[json]": {
-  "editor.defaultFormatter": "vscode.json-language-features"
+  "editor.defaultFormatter": "esbenp.prettier-vscode"
 },
 "outline.showProperties": false,
 "outline.showVariables": false,
