@@ -21,6 +21,7 @@ public with sharing class RunCopadoFunctionFromLWC {
 
             List<copado__User_Story__c> userStory;
             Id envId;
+
             try {
                 userStory = [
                     SELECT copado__Environment__c, copado__Project__c 
@@ -124,16 +125,15 @@ public with sharing class RunCopadoFunctionFromLWC {
 
             try {                
                 String templateName = 'MC_Retrieve_Action_1';
-
                 copado.CreateExecution.Request request = new copado.CreateExecution.Request();
                 request.parentId = userStoryId; 
                 request.templateName = templateName; 
                 request.pipelineId = pipelineId;
-                request.sourceId = envId; 
+                request.sourceId = envId;            
                 request.runAfterInstantiation = true; 
-
+               // RetriveCompletion is Class used as copada Callback
+                request.callback = 'RetriveCompletion';
                 List<copado__JobExecution__c> jobExecution = copado.CreateExecution.execute(new List<copado.CreateExecution.Request>{ request });
-                
                 Id jobExecutionId = jobExecution[0].Id;
                 return jobExecutionId;
 
