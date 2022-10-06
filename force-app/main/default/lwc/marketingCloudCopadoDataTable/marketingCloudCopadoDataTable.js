@@ -337,7 +337,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         this.showError(`${err.name}: Error fetching the Metadata from File after the Retrieve`, err.message);
       }
     } else {
-      debugger;
       this.showError(`Error while doing metadata retrieve: `, jobExecution.copado__ErrorMessage__c);
       this.loadingState(false);
     }
