@@ -1,8 +1,8 @@
 /**
  *
- * This Lightning Web Component contains a table that displays deployable Marketing Cloud metaetdata
- * that can be selected to be commited from one Business Unit to another.
- * Commited metadata will be included in the version control system and then deployed.
+ * This Lightning Web Component contains a table that displays deployable Marketing Cloud metadata
+ * that can be selected to be committed from one Business Unit to another.
+ * Committed metadata will be included in the version control system and then deployed.
  *
  * This component should be placed on the Commit Changes (copado__User_Story_Commit) Tab.
  *
@@ -22,7 +22,7 @@ import {
   onError as onEmpError
 } from "lightning/empApi";
 
-// Apex Methods for retrieving and commiting metadata (And Communication with the Copado Package)
+// Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
 import ExecuteRetrieveFromCopado from "@salesforce/apex/RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
 
@@ -51,13 +51,12 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     try {
       if (currentPageReference) {
         const userStoryId = currentPageReference.state.copado__recordId;
-        console.log("userStoryId", userStoryId);
         this.userStoryId = userStoryId;
       }
     } catch (err) {
       console.error(`${err.name}: ${err.message}: `, err);
       this.showToastEvent(
-        `${err.name}: An Error occured while reading the Record ID from CurrentPageReference inside LWC`,
+        `${err.name}: An Error occurred while reading the Record ID from CurrentPageReference inside LWC`,
         `${err.message}`,
         "error",
         "sticky"
@@ -158,8 +157,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   // Subscription related variables
   empSubscription = {};
-  //channelName = "/event/copado__MC_Result__e";
-
   channelName = "/event/copado__Event__e";
 
   _subscribeToMessageService() {
@@ -171,10 +168,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
   }
 
   async _handleCommitPageCommunicationMessage(message) {
-    console.log(
-      "Async _handleCommitPageCommunicationMessage starts now:",
-      message
-    );
     try {
       console.log("_handleCommitPageCommunicationMessage(message): ", message);
       this.loadingState(true);
@@ -185,14 +178,13 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         // extension"
         case "retrievedChanges":
         case "pulledChanges":
-          /* await this._handleChangesMessage(message); */
           break;
         default:
       }
     } catch (err) {
       console.error(`${err.name}: ${err.message}: `, err);
       this.showToastEvent(
-        `${err.name}: An Error occured while handling the Commit Page Communication Message:`,
+        `${err.name}: An Error occurred while handling the Commit Page Communication Message:`,
         `${err.message}`,
         "error",
         "sticky"
@@ -234,22 +226,15 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     );
   }
 
-  /*     async _handleChangesMessage(message) {
-        console.log('_handleChangesMessage runs now');
-        const metadatas = message.value;
-        const metadataRows = prepareRows(this.recordId, metadatas, this.keyField);
-    } */
-
-  // Suscribes initially to Message Service, Register the Error Listener for the Emp Api
+  // Subscribes initially to Message Service, Register the Error Listener for the Emp Api
   // Get Metadata from environment, Deactivate the Loading State
   connectedCallback() {
-    console.log("in connected call back");
     try {
       this._subscribeToMessageService();
     } catch (err) {
       console.error(`${err.name}: ${err.message}: `, err);
       this.showToastEvent(
-        `${err.name}: An Error occured while subscribing to the message service:`,
+        `${err.name}: An Error occurred while subscribing to the message service:`,
         `${err.message}`,
         "error",
         "sticky"
@@ -296,103 +281,66 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     }
   }
 
-  // Function to get the newest Commitable Metadata, and save it in the environment
-  retrieve() {
-    // Activate Loading State
+  // Function to get the newest Committable Metadata, and save it in the environment
+  async retrieve() {
     this.loadingState(true);
 
-    //recordId = ((new URL(window.location.href)).searchParams.get("copado__recordId"));
-    const userStoryId = this.userStoryId;
-    console.log("userStoryId: ", userStoryId);
+    try {
+      const jobExecutionId = await ExecuteRetrieveFromCopado({ userStoryId: this.userStoryId });
+      this.subscribeToCompletionEvent(jobExecutionId);
+    } catch (error) {
+      this.showError(`${err.name}: An error occurred during the execution of the retrieve`, err.message);
+      this.loadingState(false);
 
-    // Set a reference to this, so that it can be called inside the messageCallback
-    const self = this;
-    console.log(self);
-    /*
-        const userStoryName = this.userStoryName;               // Will be passed into the Copado Function Script
-        const envId = this.envId;                               // Will be passed into the Copado Function Script
-    */
-    console.log("Passing the following parameter into the Retrieve function:");
-    console.log("userStoryId: ", userStoryId);
+      // if previously Rows have been selected, set them as selected again
+      if (self.selectedRows.length > 0) {
+        self.selectedRows = self.selectedRows.map(({ k }) => k);
+      }
+    }
+  }
 
-    ExecuteRetrieveFromCopado({
-      userStoryId
-    })
-      .then((jobExecutionId) => {
-        /* TODO: Make sure to only return the correct result... */
-        console.log("This is the Job Execution ID: ", jobExecutionId);
-        // The response tells whether the function has finished and was successful or not
+  async subscribeToCompletionEvent(jobExecutionId) {
+    const messageCallback = async (response) => {
+      console.log('Event callback: ', JSON.parse(JSON.stringify(response)));
 
-        const messageCallback = function (response) {
-          console.log(
-            "in messagecallback function: ",
-            JSON.parse(JSON.stringify(response))
-          );
+      if (response.data.payload.copado__Topic_Uri__c === `/execution-completed/${jobExecutionId}`) {
+        this.updateMetadataGrid(response);
+      } else if (response.data.payload.copado__Topic_Uri__c.startsWith('/events/copado/v1/step-monitor/')) {
+        const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
+        this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+      }
+    };
 
-          console.log("====================================");
+    try {
+      this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback)
+    } catch (err) {
+      this.showError(`${err.name}: An error occurred while subscribing to Emp API`, err.message);
+    }
+  }
 
-          const jobExecution = JSON.parse(
-            response.data.payload.copado__Payload__c
-          );
-          if (
-            response.data.payload.copado__Topic_Uri__c ===
-              `/execution-completed/${jobExecutionId}` &&
-            jobExecution.copado__Status__c === "Successful"
-          ) {
-            // hide spinner
+  async updateMetadataGrid(response) {
+    try {
+      unsubscribeEmp(this.empSubscription);
+    } catch (err) {
+      this.showError(`${err.name}: An error occurred while unsubscribing from Emp API`, err.message);
+    }
 
-            try {
-              unsubscribeEmp(self.empSubscription, (response2) => {
-                console.log("unsubscribe() response: ", response2);
-              });
-            } catch (err) {
-              console.error("Error while unsubscribing from Emp API: ", err);
-              self.showToastEvent(
-                `${err.name}: An error occurred while unsubscribing from Emp API`,
-                `${err.message}`,
-                "error",
-                "sticky"
-              );
-            }
-
-            try {
-              getMetadataFromEnvironment({ userStoryId }).then((result) => {
-                console.log("Metadata fetched from Environment: ", result);
-                const parsedResult = JSON.parse(result);
-                self.data = parsedResult;
-                self.visibleData = parsedResult;
-                this.loadingState(false);
-              });
-            } catch (err) {
-              console.error(
-                "Error fetching the Metadata from File after the Retrievement: ",
-                err
-              );
-              self.showToastEvent(
-                `${err.name}: Error fetching the Metadata from File after the Retrievement`,
-                `${err.message}`,
-                "error",
-                "sticky"
-              );
-            }
-          }
-        };
-      })
-      .catch((err) => {
-        console.error("Error while running Retrieve: ", err);
-        this.showToastEvent(
-          `${err.name}: An error occurred during the execution of the retrieve`,
-          `${err.message}`,
-          "error",
-          "sticky"
-        );
+    const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
+    if (jobExecution.copado__Status__c === "Successful") {
+      try {
+        const result = await getMetadataFromEnvironment({ userStoryId: this.userStoryId });
+        const parsedResult = JSON.parse(result);
+        this.data = parsedResult;
+        this.visibleData = parsedResult;
         this.loadingState(false);
-
-        // if previously Rows have been selected, set them as selected again
-        if (self.selectedRows.length > 0) {
-          self.selectedRows = self.selectedRows.map(({ k }) => k);
-        }
-      });
+      } catch (err) {
+        this.showError(`${err.name}: Error fetching the Metadata from File after the Retrieve`, err.message);
+      }
+    } else {
+      debugger;
+      this.showError(`Error while doing metadata retrieve: `, jobExecution.copado__ErrorMessage__c);
+      this.loadingState(false);
+    }
   }
 
   onHandleSort(event) {
@@ -489,6 +437,10 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
       mode
     });
     this.dispatchEvent(event);
+  }
+
+  showError(title, message) {
+    this.showToastEvent(title, message, "error", "sticky");
   }
 
   // Simple Function to Toggle the State of Loading
