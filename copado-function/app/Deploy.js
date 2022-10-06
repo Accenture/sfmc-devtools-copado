@@ -204,12 +204,12 @@ async function run() {
         Log.info('git push failed: ' + ex.message);
         throw ex;
     }
-
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
+    Log.result('Deployment completed');
 
     Copado.uploadToolLogs();
 }
@@ -666,11 +666,7 @@ class Deploy {
 
         Log.debug('Completed creating delta package');
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
-            Util.execCommand(
-                'Upload delta package results file',
-                'copado --uploadfile ' + CONFIG.deltaPackageLog,
-                'Completed uploading delta package results file'
-            );
+            Copado.attachLog(CONFIG.deltaPackageLog);
         }
 
         if (fs.existsSync(deployFolder)) {

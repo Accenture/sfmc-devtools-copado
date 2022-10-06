@@ -637,6 +637,7 @@ class Upgrade {
                 'Completed pushing branch'
             );
             if (0 != ec) {
+                Log.error('Could not push changes to feature branch ' + mainBranch);
                 throw (
                     'Could not push changes to feature branch ' +
                     mainBranch +
@@ -645,14 +646,11 @@ class Upgrade {
                     '. Please check logs for further details.'
                 );
             }
+            Log.result(stdout, 'Commit completed');
         } else {
-            Log.info(
-                '❌  Nothing to commit as all selected components have the same content as already exists in Git.'
-            );
-            Util.execCommand(
-                'Nothing to Commit.',
-                'copado -p "Nothing to commit" -r "Nothing to Commit as all selected components have the same content as already exists in Git."',
-                'Completed committing'
+            Log.result(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
             );
         }
     }
