@@ -172,6 +172,7 @@ async function run() {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
+    Log.result('Refresh done', 'Refresh done');
     try {
         Log.info('');
         Log.info('Attach JSON');
@@ -496,11 +497,7 @@ class Copado {
      * @returns {void}
      */
     static attachJson(metadataFilePath) {
-        Util.execCommand(
-            'Attach JSON ' + metadataFilePath,
-            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
-            'Completed attaching JSON'
-        );
+        this._attachFile(metadataFilePath, CONFIG.envId, 'Attach JSON ' + metadataFilePath);
     }
     /**
      * Finally, attach the resulting metadata JSON.
@@ -509,10 +506,31 @@ class Copado {
      * @returns {void}
      */
     static attachLog(metadataFilePath) {
+        this._attachFile(metadataFilePath, null, 'Attach Custom Log ' + metadataFilePath);
+    }
+
+    /**
+     * helper that attaches files to Salesforce records
+     *
+     * @private
+     * @param {string} localPath where we stored the temporary json file
+     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading
+     * @param {string} [postMsg] optional message to display after uploading
+     */
+    static _attachFile(
+        localPath,
+        parentId,
+        preMsg = 'Attaching file',
+        postMsg = 'Completed attaching file'
+    ) {
+        if (parentId) {
+            preMsg += ` to ${parentId}`;
+        }
         Util.execCommand(
-            'Attach Custom Log ' + metadataFilePath,
-            `copado --uploadfile "${metadataFilePath}"`,
-            'Completed attaching JSON'
+            preMsg,
+            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
+            postMsg
         );
     }
 

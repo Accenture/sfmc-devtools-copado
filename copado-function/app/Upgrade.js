@@ -495,11 +495,7 @@ class Copado {
      * @returns {void}
      */
     static attachJson(metadataFilePath) {
-        Util.execCommand(
-            'Attach JSON ' + metadataFilePath,
-            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
-            'Completed attaching JSON'
-        );
+        this._attachFile(metadataFilePath, CONFIG.envId, 'Attach JSON ' + metadataFilePath);
     }
     /**
      * Finally, attach the resulting metadata JSON.
@@ -508,10 +504,31 @@ class Copado {
      * @returns {void}
      */
     static attachLog(metadataFilePath) {
+        this._attachFile(metadataFilePath, null, 'Attach Custom Log ' + metadataFilePath);
+    }
+
+    /**
+     * helper that attaches files to Salesforce records
+     *
+     * @private
+     * @param {string} localPath where we stored the temporary json file
+     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading
+     * @param {string} [postMsg] optional message to display after uploading
+     */
+    static _attachFile(
+        localPath,
+        parentId,
+        preMsg = 'Attaching file',
+        postMsg = 'Completed attaching file'
+    ) {
+        if (parentId) {
+            preMsg += ` to ${parentId}`;
+        }
         Util.execCommand(
-            'Attach Custom Log ' + metadataFilePath,
-            `copado --uploadfile "${metadataFilePath}"`,
-            'Completed attaching JSON'
+            preMsg,
+            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
+            postMsg
         );
     }
 
@@ -637,6 +654,7 @@ class Upgrade {
                 'Completed pushing branch'
             );
             if (0 != ec) {
+                Log.error('Could not push changes to feature branch ' + mainBranch);
                 throw (
                     'Could not push changes to feature branch ' +
                     mainBranch +
@@ -645,14 +663,11 @@ class Upgrade {
                     '. Please check logs for further details.'
                 );
             }
+            Log.result(stdout, 'Commit completed');
         } else {
-            Log.info(
-                '❌  Nothing to commit as all selected components have the same content as already exists in Git.'
-            );
-            Util.execCommand(
-                'Nothing to Commit.',
-                'copado -p "Nothing to commit" -r "Nothing to Commit as all selected components have the same content as already exists in Git."',
-                'Completed committing'
+            Log.result(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
             );
         }
     }

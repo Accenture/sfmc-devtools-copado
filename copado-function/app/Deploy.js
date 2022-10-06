@@ -204,12 +204,12 @@ async function run() {
         Log.info('git push failed: ' + ex.message);
         throw ex;
     }
-
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
+    Log.result('Deployment completed');
 
     Copado.uploadToolLogs();
 }
@@ -519,11 +519,7 @@ class Copado {
      * @returns {void}
      */
     static attachJson(metadataFilePath) {
-        Util.execCommand(
-            'Attach JSON ' + metadataFilePath,
-            ['copado --uploadfile "' + metadataFilePath + '" --parentid "' + CONFIG.envId + '"'],
-            'Completed attaching JSON'
-        );
+        this._attachFile(metadataFilePath, CONFIG.envId, 'Attach JSON ' + metadataFilePath);
     }
     /**
      * Finally, attach the resulting metadata JSON.
@@ -532,10 +528,31 @@ class Copado {
      * @returns {void}
      */
     static attachLog(metadataFilePath) {
+        this._attachFile(metadataFilePath, null, 'Attach Custom Log ' + metadataFilePath);
+    }
+
+    /**
+     * helper that attaches files to Salesforce records
+     *
+     * @private
+     * @param {string} localPath where we stored the temporary json file
+     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading
+     * @param {string} [postMsg] optional message to display after uploading
+     */
+    static _attachFile(
+        localPath,
+        parentId,
+        preMsg = 'Attaching file',
+        postMsg = 'Completed attaching file'
+    ) {
+        if (parentId) {
+            preMsg += ` to ${parentId}`;
+        }
         Util.execCommand(
-            'Attach Custom Log ' + metadataFilePath,
-            `copado --uploadfile "${metadataFilePath}"`,
-            'Completed attaching JSON'
+            preMsg,
+            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
+            postMsg
         );
     }
 
@@ -666,11 +683,7 @@ class Deploy {
 
         Log.debug('Completed creating delta package');
         if (fs.existsSync(CONFIG.deltaPackageLog)) {
-            Util.execCommand(
-                'Upload delta package results file',
-                'copado --uploadfile ' + CONFIG.deltaPackageLog,
-                'Completed uploading delta package results file'
-            );
+            Copado.attachLog(CONFIG.deltaPackageLog);
         }
 
         if (fs.existsSync(deployFolder)) {
