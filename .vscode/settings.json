@@ -11,10 +11,10 @@
 "editor.formatOnSave": true,
 "files.eol": "\n",
 "[javascript]": {
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "vscode.typescript-language-features"
 },
 "[json]": {
-  "editor.defaultFormatter": "esbenp.prettier-vscode"
+  "editor.defaultFormatter": "vscode.json-language-features"
 },
 "outline.showProperties": false,
 "outline.showVariables": false,
@@ -34,5 +34,10 @@
         "label": "Created By Me",
         "query": "author:${user} state:open repo:${owner}/${repository} sort:created-desc"
     }
-]
+],
+"cSpell.words": [
+  "copado",
+  "Functiontionality"
+],
+"salesforcedx-vscode-core.show-cli-success-msg": false
 }

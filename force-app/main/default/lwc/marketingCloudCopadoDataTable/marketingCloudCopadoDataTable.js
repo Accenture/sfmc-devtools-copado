@@ -286,6 +286,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     this.loadingState(true);
 
     try {
+      this.progressStatus = "Starting Retrieve";
       const jobExecutionId = await ExecuteRetrieveFromCopado({ userStoryId: this.userStoryId });
       this.subscribeToCompletionEvent(jobExecutionId);
     } catch (error) {
