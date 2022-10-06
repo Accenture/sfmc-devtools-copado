@@ -351,6 +351,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
 
   sortData(fieldname, direction) {
     let parseData = "";
+
     parseData = JSON.parse(JSON.stringify(this.data));
     // Return the value stored in the field
     let keyValue = (a) => {
@@ -359,10 +360,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     // cheking reverse direction
     let isReverse = direction === "asc" ? 1 : -1;
     // sorting data
-
     parseData.sort((next, prev) => {
-      // console.log('next:',keyValue(next));
-      // console.log('prev:',keyValue(prev));
       next = keyValue(next) ? keyValue(next) : ""; // handling null values
       prev = keyValue(prev) ? keyValue(prev) : "";
       // sorting values based on direction
