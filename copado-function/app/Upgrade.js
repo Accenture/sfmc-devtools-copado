@@ -531,6 +531,35 @@ class Copado {
             postMsg
         );
     }
+    /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
+    }
 
     /**
      * Executes git fetch, followed by checking out the given branch

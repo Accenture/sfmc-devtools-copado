@@ -74,7 +74,7 @@ const CONFIG = {
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
+    fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
@@ -159,7 +159,7 @@ async function run() {
         );
         Log.info('===================');
         Log.info('');
-        commitSelectionArr = Commit.getCommitList(
+        commitSelectionArr = Copado.getJsonFile(
             CONFIG.fileSelectionSalesforceId,
             CONFIG.fileSelectionFileName
         );
@@ -566,6 +566,36 @@ class Copado {
         );
     }
     /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
+    }
+
+    /**
      * Executes git fetch, followed by checking out the given branch
      * newly created branches are based on the previously checked out branch!
      *
@@ -605,24 +635,6 @@ class Copado {
  * methods to handle interaction with the copado platform
  */
 class Commit {
-    /**
-     * @param {string} fileSelectionSalesforceId -
-     * @param {string} fileSelectionFileName -
-     * @returns {CommitSelection[]} commitSelectionArr
-     */
-    static getCommitList(fileSelectionSalesforceId, fileSelectionFileName) {
-        if (fileSelectionSalesforceId) {
-            Util.execCommand(
-                `Download ${fileSelectionSalesforceId}.`,
-                `copado --downloadfiles "${fileSelectionSalesforceId}"`,
-                'Completed download'
-            );
-
-            return JSON.parse(fs.readFileSync(fileSelectionFileName, 'utf8'));
-        } else {
-            throw new Error('fileSelectionSalesforceId is not set');
-        }
-    }
     /**
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
