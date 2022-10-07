@@ -62,8 +62,8 @@ const CONFIG = {
     // commit
     commitMessage: null,
     featureBranch: null,
-    fileSelectionSalesforceId: null,
-    fileSelectionFileName: null,
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - LWC depends on it!
     // deploy
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
