@@ -132,7 +132,7 @@ public with sharing class RunCopadoFunctionFromLWC {
                 request.sourceId = envId;            
                 request.runAfterInstantiation = true; 
                // RetriveCompletion is Class used as copada Callback
-                request.callback = 'RetriveCompletion';
+                request.callback = 'MCDO_RetrieveCompletion';
                 List<copado__JobExecution__c> jobExecution = copado.CreateExecution.execute(new List<copado.CreateExecution.Request>{ request });
                 Id jobExecutionId = jobExecution[0].Id;
                 return jobExecutionId;
