@@ -22,9 +22,29 @@
  * @property {string} t type
  * @property {string} n name
  * @property {string} m ???
- * @property {string} j json string with exta info
+ * @property {string} j json string with exta info "{\"key\":\"test-joern-filter-de\"}"
  * @property {'sfmc'} c system
  * @property {'add'} a action
+ */
+
+/**
+ * TYPES DEFINED BY mcdev. copied here for easier reference
+ *
+ * @typedef {'accountUser'|'asset'|'attributeGroup'|'automation'|'campaign'|'contentArea'|'dataExtension'|'dataExtensionField'|'dataExtensionTemplate'|'dataExtract'|'dataExtractType'|'discovery'|'email'|'emailSendDefinition'|'eventDefinition'|'fileTransfer'|'filter'|'folder'|'ftpLocation'|'importFile'|'interaction'|'list'|'mobileCode'|'mobileKeyword'|'query'|'role'|'script'|'setDefinition'|'triggeredSendDefinition'} SupportedMetadataTypes
+ * @typedef {object} DeltaPkgItem
+ * @property {string} file relative path to file
+ * //@property {number} changes changed lines
+ * //@property {number} insertions added lines
+ * //@property {number} deletions deleted lines
+ * //@property {boolean} binary is a binary file
+ * //@property {boolean} moved git thinks this file was moved
+ * //@property {string} [fromPath] git thinks this relative path is where the file was before
+ * @property {SupportedMetadataTypes} type metadata type
+ * @property {string} externalKey key
+ * @property {string} name name
+ * @property {'move'|'add/update'|'delete'} gitAction what git recognized as an action
+ * @property {string} _credential mcdev credential name
+ * @property {string} _businessUnit mcdev business unit name inside of _credential
  */
 
 const fs = require('node:fs');
@@ -214,7 +234,7 @@ async function run() {
     }
 
     try {
-        if (true == (await Deploy.createDeltaPackage(deployFolder))) {
+        if (true == (await Deploy.createDeltaPackage(deployFolder, commitSelectionArr))) {
             Log.info('Deploy BUs');
             Log.info('===================');
             await Deploy.deployBU(targetBU);
@@ -656,6 +676,23 @@ class Copado {
  */
 class Deploy {
     /**
+     * convert CommitSelection[] to DeltaPkgItem[]
+     *
+     * @param {CommitSelection[]} commitSelectionArr
+     * @returns {DeltaPkgItem[]} format required by mcdev.createDeltaPkg
+     */
+    static _convertCommitToDeltaPkgItems(commitSelectionArr) {
+        return commitSelectionArr.map((item) => ({
+            type: item.t,
+            name: item.n,
+            externalKey: JSON.parse(item.j).key,
+            gitAction: 'add/update',
+            _credential: '???', // TODO
+            _businessUnit: '???', // TODO
+            file: 'relative path', // TODO
+        }));
+    }
+    /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
      *
      * @returns {string} deploy folder
@@ -722,17 +759,25 @@ class Deploy {
      * return whether the delta package is empty or not
      *
      * @param {string} deployFolder path
+     * @param {CommitSelection[]} commitSelectionArr
      * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static async createDeltaPackage(deployFolder) {
-        const versionRange = 'HEAD^..HEAD';
+    static async createDeltaPackage(deployFolder, commitSelectionArr) {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
-        Log.debug('Create delta package using version range ' + versionRange);
+        let versionRange = null;
+        if (!commitSelectionArr || commitSelectionArr.length === 0) {
+            versionRange = 'HEAD^..HEAD';
+            Log.debug('Create delta package using version range ' + versionRange);
+        }
+        const deltaPkgItems = this._convertCommitToDeltaPkgItems(commitSelectionArr);
+        console.log('commitSelectionArr', commitSelectionArr);
+        console.log('deltaPkgItems', deltaPkgItems);
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
+            diffArr: deltaPkgItems,
             skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
