@@ -17,6 +17,15 @@
  * @property {EnvVar[]} environmentVariables list of environment variables
  * @property {string} environmentName name of environment in Copado
  */
+/**
+ * @typedef {object} CommitSelection
+ * @property {string} t type
+ * @property {string} n name
+ * @property {string} m ???
+ * @property {string} j json string with exta info
+ * @property {'sfmc'} c system
+ * @property {'add'} a action
+ */
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
@@ -62,9 +71,9 @@ const CONFIG = {
     // commit
     commitMessage: null,
     featureBranch: null,
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - LWC depends on it!
     // deploy
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -182,6 +191,28 @@ async function run() {
         Log.error('Updateing Market List failed: ' + ex.message);
         throw ex;
     }
+
+    /**
+     * @type {CommitSelection[]}
+     */
+    let commitSelectionArr;
+    try {
+        Log.info('');
+        Log.info(
+            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
+        );
+        Log.info('===================');
+        Log.info('');
+        commitSelectionArr = Copado.getJsonFile(
+            CONFIG.fileSelectionSalesforceId,
+            CONFIG.fileSelectionFileName
+        );
+        console.log('commitSelectionArr', commitSelectionArr);
+    } catch (ex) {
+        Log.info('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
     try {
         if (true == (await Deploy.createDeltaPackage(deployFolder))) {
             Log.info('Deploy BUs');
@@ -554,6 +585,35 @@ class Copado {
             [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
             postMsg
         );
+    }
+    /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
     /**
