@@ -3,7 +3,7 @@
  * 
  *  Platform Event PE copado__Event__e
  */
-global with sharing class MCDO_RetrieveCompletion {
+global with sharing class MCDO_RetrieveCompletion implements copado.JobExecutionCallback{
     /*
     publish the copado Event
     */
