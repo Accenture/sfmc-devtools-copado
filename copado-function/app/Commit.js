@@ -705,9 +705,14 @@ class Commit {
         // and what is already in Git, so commit and push
         // can be skipped.
         const branch = featureBranch || mainBranch;
-        const stdout = execSync('git diff --staged --name-only');
-        Log.debug('Git diff ended with the result: >' + stdout + '<');
-        if (stdout && 0 < stdout.length) {
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             if (CONFIG.localDev) {
                 Log.debug('🔥 Skipping git action in local dev environment');
                 return;
@@ -733,7 +738,7 @@ class Commit {
                     '. Please check logs for further details.'
                 );
             }
-            Log.result(stdout, 'Commit completed');
+            Log.result(gitDiffArr, 'Commit completed');
         } else {
             Log.result(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
