@@ -64,6 +64,7 @@ const CONFIG = {
     featureBranch: null,
     fileSelectionSalesforceId: null,
     fileSelectionFileName: null,
+    recreateFeatureBranch: null,
     // deploy
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
