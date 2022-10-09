@@ -6,7 +6,6 @@
 @SuppressWarnings('PMD')
 @IsTest
 public with sharing class TestDataFactory {
-    
     /**
      * Create Sample copado__Git_Repository__c and return it's instance
      */
@@ -19,7 +18,12 @@ public with sharing class TestDataFactory {
     /**
      * Create Sample copado__Git_Repository__c and return it's instance
      */
-    public static copado__Deployment_Flow__c createDeploymentFlow(String name, Boolean isActive, String gitRepositoryId, Boolean enableDX) {
+    public static copado__Deployment_Flow__c createDeploymentFlow(
+        String name,
+        Boolean isActive,
+        String gitRepositoryId,
+        Boolean enableDX
+    ) {
         // NOPMD : Supressing rule to avoid large refactor.
         copado__Deployment_Flow__c deploymentFlow = new copado__Deployment_Flow__c();
         deploymentFlow.Name = name;
@@ -62,7 +66,11 @@ public with sharing class TestDataFactory {
     /**
      * Create Sample copado__Environmental_Variable__c and return it's instance
      */
-    public static copado__Environmental_Variable__c createTestEnvironmentVariable(String environmentId, String name, String value) {
+    public static copado__Environmental_Variable__c createTestEnvironmentVariable(
+        String environmentId,
+        String name,
+        String value
+    ) {
         copado__Environmental_Variable__c environmentVariable = new copado__Environmental_Variable__c();
         environmentVariable.Name = name;
         environmentVariable.copado__Value__c = value;
@@ -105,25 +113,33 @@ public with sharing class TestDataFactory {
      * Create Sample ContentVersion and return it's instance
      */
     public static ContentVersion createFile(String title) {
-       ContentVersion contentVersionRecord = new ContentVersion();
-       contentVersionRecord.ContentLocation = 'S'; // 'S' = a Salesforce File
-       contentVersionRecord.VersionData = Blob.valueOf('sample content');
-       contentVersionRecord.Title = title;
-       contentVersionRecord.PathOnClient = title;
-       return contentVersionRecord;
+        ContentVersion contentVersionRecord = new ContentVersion();
+        contentVersionRecord.ContentLocation = 'S'; // 'S' = a Salesforce File
+        contentVersionRecord.VersionData = Blob.valueOf('sample content');
+        contentVersionRecord.Title = title;
+        contentVersionRecord.PathOnClient = title;
+        return contentVersionRecord;
     }
 
     /**
      * Create Sample ContentDocumentLink and return it's instance
      */
-    public static ContentDocumentLink createFileLink(String contentVersionRecordId, String entityId) {
-        Id contentDocumentId = [SELECT ContentDocumentId FROM ContentVersion WHERE Id = :contentVersionRecordId].ContentDocumentId;
+    public static ContentDocumentLink createFileLink(
+        String contentVersionRecordId,
+        String entityId
+    ) {
+        Id contentDocumentId = [
+            SELECT ContentDocumentId
+            FROM ContentVersion
+            WHERE Id = :contentVersionRecordId
+        ]
+        .ContentDocumentId;
         ContentDocumentLink contentDocumentLinkRecord = new ContentDocumentLink();
         contentDocumentLinkRecord.LinkedEntityId = entityId;
         contentDocumentLinkRecord.ContentDocumentId = contentDocumentId;
         contentDocumentLinkRecord.shareType = 'V';
         return contentDocumentLinkRecord;
-     }
+    }
 
     /**
      * This method creates a User with the Standard User profile for testing purposes - with username: test.username@testdomain.com
@@ -136,7 +152,12 @@ public with sharing class TestDataFactory {
      * This method creates a User with the Standard User profile for testing purposes - with username: invalidtest.username@testdomain.com
      */
     public static User createInvalidUser() {
-        return createUser('LastName', 'test1@test1.com', 'invalidtest.username@testdomain.com', 'alias1');
+        return createUser(
+            'LastName',
+            'test1@test1.com',
+            'invalidtest.username@testdomain.com',
+            'alias1'
+        );
     }
 
     /**
@@ -159,8 +180,15 @@ public with sharing class TestDataFactory {
     /**
      * This method assigns the Copado_ALM_User permission to a selected user for testing purposes.
      */
-    public static List<PermissionSetAssignment> createPermissions(Id userId, Set<String> permissionSetNames) {
-        List<PermissionSet> permissionSets = [SELECT Id FROM PermissionSet WHERE Name IN :permissionSetNames];
+    public static List<PermissionSetAssignment> createPermissions(
+        Id userId,
+        Set<String> permissionSetNames
+    ) {
+        List<PermissionSet> permissionSets = [
+            SELECT Id
+            FROM PermissionSet
+            WHERE Name IN :permissionSetNames
+        ];
         List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
         for (PermissionSet thisPermission : permissionSets) {
             PermissionSetAssignment assignment = new PermissionSetAssignment();
@@ -176,8 +204,12 @@ public with sharing class TestDataFactory {
      */
     public static List<PermissionSetAssignment> createRequiredPermissions(Id userId) {
         List<PermissionSetAssignment> assignments = new List<PermissionSetAssignment>();
-        assignments.addAll(createPermissions(userId, new Set<String> {'Copado_Job_Engine','Copado_User', 'Copado_Functions'}));
+        assignments.addAll(
+            createPermissions(
+                userId,
+                new Set<String>{ 'Copado_Job_Engine', 'Copado_User', 'Copado_Functions' }
+            )
+        );
         return assignments;
     }
-
 }
