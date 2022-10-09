@@ -32,7 +32,7 @@
  *
  * @typedef {'accountUser'|'asset'|'attributeGroup'|'automation'|'campaign'|'contentArea'|'dataExtension'|'dataExtensionField'|'dataExtensionTemplate'|'dataExtract'|'dataExtractType'|'discovery'|'email'|'emailSendDefinition'|'eventDefinition'|'fileTransfer'|'filter'|'folder'|'ftpLocation'|'importFile'|'interaction'|'list'|'mobileCode'|'mobileKeyword'|'query'|'role'|'script'|'setDefinition'|'triggeredSendDefinition'} SupportedMetadataTypes
  * @typedef {object} DeltaPkgItem
- * @property {string} file relative path to file
+ * //@property {string} file relative path to file
  * //@property {number} changes changed lines
  * //@property {number} insertions added lines
  * //@property {number} deletions deleted lines
@@ -689,15 +689,17 @@ class Deploy {
      * @returns {DeltaPkgItem[]} format required by mcdev.createDeltaPkg
      */
     static _convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) {
-        return commitSelectionArr.map((item) => ({
-            type: item.t,
-            name: item.n,
-            externalKey: JSON.parse(item.j).key,
-            gitAction: 'add/update',
-            _credential: CONFIG.credentials.source.credentialName,
-            _businessUnit: sourceBU,
-            file: 'relative path', // TODO
-        }));
+        return commitSelectionArr.map(
+            (item) =>
+                /** @type {DeltaPkgItem} */ ({
+                    type: item.t,
+                    name: item.n,
+                    externalKey: JSON.parse(item.j).key,
+                    gitAction: 'add/update',
+                    _credential: CONFIG.credentials.source.credentialName,
+                    _businessUnit: sourceBU,
+                })
+        );
     }
     /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
