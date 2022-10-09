@@ -36,7 +36,7 @@
     "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-unicorn": "44.0.2",
     "husky": "^7.0.0",
-    "lint-staged": "^11.0.0",
+    "lint-staged": "^13.0.3",
     "npm-check": "6.0.1",
     "prettier": "2.7.1",
     "prettier-eslint": "15.0.1",
