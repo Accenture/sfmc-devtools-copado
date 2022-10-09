@@ -1,12 +1,12 @@
-import { LightningElement, api } from 'lwc';
-import { ShowToastEvent } from 'lightning/platformShowToastEvent';
-import { NavigationMixin } from 'lightning/navigation';
-import getChildEnvironmentVariables from '@salesforce/apex/ChildEnvironmentVariableController.getChildEnvironmentVariables';
+import { LightningElement, api } from "lwc";
+import { ShowToastEvent } from "lightning/platformShowToastEvent";
+import { NavigationMixin } from "lightning/navigation";
+import getChildEnvironmentVariables from "@salesforce/apex/ChildEnvironmentVariableController.getChildEnvironmentVariables";
 
 export default class ChildEnvironmentVariables extends NavigationMixin(LightningElement) {
     @api recordId;
     @api items = [];
-    header = 'Child Environments & Variables';
+    header = "Child Environments & Variables";
 
     get hasItems() {
         const result = this.items && this.items.length ? true : false;
@@ -20,7 +20,7 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
     handleSelect(event) {
         const environmentId = event.detail.name;
         if (environmentId) {
-            this._navigateToPage({ Id: environmentId }, 'view');
+            this._navigateToPage({ Id: environmentId }, "view");
         }
     }
 
@@ -31,20 +31,26 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
             const result = await getChildEnvironmentVariables({ environmentId: this.recordId });
             if (result) {
                 this._processItems(JSON.parse(result));
-                this.header = this.header + ' (' + this.items.length + ')';
+                this.header = this.header + " (" + this.items.length + ")";
             }
         } catch (error) {
             const message = error.message ? error.message : error;
-            this.showToastMessage('Error: ', message, 'error', 'dismissable');
+            this.showToastMessage("Error: ", message, "error", "dismissable");
         }
     }
 
     _processItems(allRows) {
         const result = allRows.map((environment) => {
-            const eachItem = this._prepareItem(environment.name, environment.id, '');
+            const eachItem = this._prepareItem(environment.name, environment.id, "");
             const environmentVariables = [];
             environment.environmentVariables.forEach((environmentVariable) => {
-                environmentVariables.push(this._prepareItem(environmentVariable.name + ': ' + environmentVariable.value, environmentVariable.id, ''));
+                environmentVariables.push(
+                    this._prepareItem(
+                        environmentVariable.name + ": " + environmentVariable.value,
+                        environmentVariable.id,
+                        ""
+                    )
+                );
             });
             eachItem.items = environmentVariables;
             return eachItem;
@@ -65,13 +71,13 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
 
     _navigateToPage(row, actionName) {
         this[NavigationMixin.GenerateUrl]({
-            type: 'standard__recordPage',
+            type: "standard__recordPage",
             attributes: {
                 recordId: row.Id,
                 actionName: actionName
             }
         }).then((url) => {
-            window.open(url, '_blank');
+            window.open(url, "_blank");
         });
     }
 
