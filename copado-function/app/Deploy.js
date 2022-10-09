@@ -234,7 +234,13 @@ async function run() {
     }
 
     try {
-        if (true == (await Deploy.createDeltaPackage(deployFolder, commitSelectionArr))) {
+        if (
+            await Deploy.createDeltaPackage(
+                deployFolder,
+                commitSelectionArr,
+                sourceBU.split('/')[1]
+            )
+        ) {
             Log.info('Deploy BUs');
             Log.info('===================');
             await Deploy.deployBU(targetBU);
@@ -678,17 +684,18 @@ class Deploy {
     /**
      * convert CommitSelection[] to DeltaPkgItem[]
      *
-     * @param {CommitSelection[]} commitSelectionArr
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
      * @returns {DeltaPkgItem[]} format required by mcdev.createDeltaPkg
      */
-    static _convertCommitToDeltaPkgItems(commitSelectionArr) {
+    static _convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) {
         return commitSelectionArr.map((item) => ({
             type: item.t,
             name: item.n,
             externalKey: JSON.parse(item.j).key,
             gitAction: 'add/update',
-            _credential: '???', // TODO
-            _businessUnit: '???', // TODO
+            _credential: CONFIG.credentials.source.credentialName,
+            _businessUnit: sourceBU,
             file: 'relative path', // TODO
         }));
     }
@@ -759,20 +766,27 @@ class Deploy {
      * return whether the delta package is empty or not
      *
      * @param {string} deployFolder path
-     * @param {CommitSelection[]} commitSelectionArr
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
      * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static async createDeltaPackage(deployFolder, commitSelectionArr) {
+    static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
-        let versionRange = null;
-        if (!commitSelectionArr || commitSelectionArr.length === 0) {
-            versionRange = 'HEAD^..HEAD';
-            Log.debug('Create delta package using version range ' + versionRange);
+        const versionRange = null;
+        let deltaPkgItems = null;
+        if (Array.isArray(commitSelectionArr) && commitSelectionArr.length) {
+            deltaPkgItems = this._convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU);
+            Log.info(`Found ${deltaPkgItems.length} changed components in commits`);
+            Log.debug('DeltaPkgItems: ');
+            Log.debug(deltaPkgItems);
+        } else {
+            Log.info('No changed components found in commits');
+            // versionRange = 'HEAD^..HEAD';
+            // Log.debug('Create delta package using version range ' + versionRange);
         }
-        const deltaPkgItems = this._convertCommitToDeltaPkgItems(commitSelectionArr);
         console.log('commitSelectionArr', commitSelectionArr);
         console.log('deltaPkgItems', deltaPkgItems);
         const deltaPackageLog = await mcdev.createDeltaPkg({
@@ -784,6 +798,9 @@ class Deploy {
         if (!deltaPackageLog?.length) {
             Log.error('No changes found for deployment');
             return false;
+        } else {
+            Log.debug('deltaPackageLog:');
+            Log.debug(deltaPackageLog);
         }
 
         Log.debug('Completed creating delta package');
