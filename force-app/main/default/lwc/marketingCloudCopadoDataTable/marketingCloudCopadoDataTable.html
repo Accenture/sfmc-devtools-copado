@@ -1,51 +1,58 @@
 <template>
-  <div>
-    <div class="slds-card">
-      <div class="slds-clearfix">
-        <div class="slds-float_left slds-p-horizontal_medium slds-p-top_medium">
-          <div class="slds-text-heading_medium">Select Metadata</div>
+    <div>
+        <div class="slds-card">
+            <div class="slds-clearfix">
+                <div class="slds-float_left slds-p-horizontal_medium slds-p-top_medium">
+                    <div class="slds-text-heading_medium">Select Metadata</div>
+                </div>
+                <div class="slds-float_right slds-p-horizontal_medium slds-p-top_medium">
+                    <lightning-button
+                        label="Refresh"
+                        title="Retrieve"
+                        onclick={retrieve}
+                        disabled={refreshButtonDisabled}
+                    >
+                    </lightning-button>
+                </div>
+            </div>
+            <div if:true={showTable}>
+                <div class="slds-p-horizontal_small slds-p-bottom_small">
+                    <lightning-input
+                        type="search"
+                        name="search"
+                        label="Search"
+                        value={keyword}
+                        oncommit={handleSearch}
+                    >
+                    </lightning-input>
+                </div>
+                <lightning-datatable
+                    key-field="Id"
+                    columns={columns}
+                    data={visibleData}
+                    default-sort-direction={defaultSortDirection}
+                    sorted-direction={sortDirection}
+                    sorted-by={sortedBy}
+                    onsort={onHandleSort}
+                    selected-rows={selectedRows}
+                >
+                </lightning-datatable>
+            </div>
+            <!--Loading Spinner-->
+            <div if:true={isLoading} class="slds-spinner_inline spinner-padding">
+                <lightning-spinner
+                    variant="brand"
+                    alternative-text="Loading Metadata"
+                    size="medium"
+                >
+                </lightning-spinner>
+                <div
+                    class="slds-var-p-top_large slds-text-body_regular slds-align_absolute-center"
+                    style="height: 5rem"
+                >
+                    {progressStatus}
+                </div>
+            </div>
         </div>
-        <div class="slds-float_right slds-p-horizontal_medium slds-p-top_medium">
-          <lightning-button
-            label="Refresh"
-            title="Retrieve"
-            onclick={retrieve}
-            disabled={refreshButtonDisabled}>
-          </lightning-button>
-        </div>
-      </div>
-      <div if:true={showTable}>
-        <div class="slds-p-horizontal_small slds-p-bottom_small">
-          <lightning-input
-            type="search"
-            name="search"
-            label="Search"
-            value={keyword}
-            oncommit={handleSearch}>
-          </lightning-input>
-        </div>
-        <lightning-datatable
-          key-field="Id"
-          columns={columns}
-          data={visibleData}
-          default-sort-direction={defaultSortDirection}
-          sorted-direction={sortDirection}
-          sorted-by={sortedBy}
-          onsort={onHandleSort}
-          selected-rows={selectedRows}>
-        </lightning-datatable>
-      </div>
-      <!--Loading Spinner-->
-      <div if:true={isLoading} class="slds-spinner_inline spinner-padding">
-        <lightning-spinner
-          variant="brand"
-          alternative-text="Loading Metadata"
-          size="medium">
-        </lightning-spinner>
-        <div class="slds-var-p-top_large slds-text-body_regular slds-align_absolute-center" style="height: 5rem">
-          {progressStatus}
-        </div>
-      </div>
     </div>
-  </div>
 </template>

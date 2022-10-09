@@ -7,22 +7,35 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
 
     global String execute(Id environmentId) {
         List<Environment> result = new List<Environment>();
-        for (copado__Environmental_Variable__c environmentVariable : getEnvironmentVariables(environmentId)) {
+        for (
+            copado__Environmental_Variable__c environmentVariable : getEnvironmentVariables(
+                environmentId
+            )
+        ) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
-            if(envVariablesByEnvName.containsKey(environmentVariable.copado__Environment__r.name)) {
-               environmentVariables = envVariablesByEnvName.get(environmentVariable.copado__Environment__r.name);
+            if (
+                envVariablesByEnvName.containsKey(environmentVariable.copado__Environment__r.name)
+            ) {
+                environmentVariables = envVariablesByEnvName.get(
+                    environmentVariable.copado__Environment__r.name
+                );
             }
-            
-           environmentVariables.add(new EnvironmentVariablesRecord(environmentVariable));
-           envVariablesByEnvName.put(environmentVariable.copado__Environment__r.name, environmentVariables);  
+
+            environmentVariables.add(new EnvironmentVariablesRecord(environmentVariable));
+            envVariablesByEnvName.put(
+                environmentVariable.copado__Environment__r.name,
+                environmentVariables
+            );
         }
 
-        for(copado__Environment__c eachEnvironment: getChildEnvironments(environmentId)) {
+        for (copado__Environment__c eachEnvironment : getChildEnvironments(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
-            if(envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
+            if (envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
                 environmentVariables = envVariablesByEnvName.get(eachEnvironment.Name);
             }
-            result.add(new Environment(eachEnvironment.Name, eachEnvironment.Id, environmentVariables));
+            result.add(
+                new Environment(eachEnvironment.Name, eachEnvironment.Id, environmentVariables)
+            );
         }
         return JSON.serialize(result);
     }
@@ -30,11 +43,22 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
     // PRIVATE
 
     private List<copado__Environmental_Variable__c> getEnvironmentVariables(Id environmentId) {
-        return [SELECT Id, Name, copado__Value__c, copado__Scope__c, copado__Environment__r.name FROM copado__Environmental_Variable__c where copado__Environment__r.Parent_Environment__c = :environmentId WITH SECURITY_ENFORCED ORDER BY Name];
+        return [
+            SELECT Id, Name, copado__Value__c, copado__Scope__c, copado__Environment__r.name
+            FROM copado__Environmental_Variable__c
+            WHERE copado__Environment__r.Parent_Environment__c = :environmentId
+            WITH SECURITY_ENFORCED
+            ORDER BY Name
+        ];
     }
-    
+
     private List<copado__Environment__c> getChildEnvironments(Id environmentId) {
-        return [SELECT Id, Name FROM copado__Environment__c where Parent_Environment__c = :environmentId WITH SECURITY_ENFORCED];
+        return [
+            SELECT Id, Name
+            FROM copado__Environment__c
+            WHERE Parent_Environment__c = :environmentId
+            WITH SECURITY_ENFORCED
+        ];
     }
 
     // WRAPPER
@@ -52,13 +76,17 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
             this.scope = environmentVariable.copado__Scope__c;
         }
     }
-    
+
     public class Environment {
         public String name { get; set; }
         public String id { get; set; }
         public List<EnvironmentVariablesRecord> environmentVariables { get; set; }
 
-        public Environment(String name, String id, List<EnvironmentVariablesRecord> environmentVariables) {
+        public Environment(
+            String name,
+            String id,
+            List<EnvironmentVariablesRecord> environmentVariables
+        ) {
             this.name = name;
             this.id = id;
             this.environmentVariables = environmentVariables;
