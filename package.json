@@ -35,7 +35,7 @@
     "eslint-plugin-mocha": "10.1.0",
     "eslint-plugin-prettier": "4.2.1",
     "eslint-plugin-unicorn": "44.0.2",
-    "husky": "^7.0.0",
+    "husky": "^8.0.1",
     "lint-staged": "^13.0.3",
     "npm-check": "6.0.1",
     "prettier": "2.7.1",
