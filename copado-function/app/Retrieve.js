@@ -44,8 +44,8 @@ const CONFIG = {
     },
     // generic
     configFilePath: '.mcdevrc.json',
-    debug: process.env.debug === 'false' ? false : true,
-    localDev: process.env.LOCAL_DEV === 'false' ? false : true,
+    debug: process.env.debug === 'true' ? true : false,
+    localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
