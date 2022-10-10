@@ -75,7 +75,7 @@ const CONFIG = {
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
-    recreateFeatureBranch: process.env.recreateFeatureBranch === 'false' ? false : true,
+    recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
