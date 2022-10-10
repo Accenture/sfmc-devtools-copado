@@ -1,3 +1,3 @@
 {
-  "include": ["copado-function/app/**/*.js"]
+    "include": ["copado-function/app/**/*.js"]
 }

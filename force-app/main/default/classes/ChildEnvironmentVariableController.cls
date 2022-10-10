@@ -1,8 +1,8 @@
 public with sharing class ChildEnvironmentVariableController {
-    // PUBLIC 
-    
+    // PUBLIC
+
     @AuraEnabled
-    public static String getChildEnvironmentVariables(String environmentId){
+    public static String getChildEnvironmentVariables(String environmentId) {
         String result = '';
         if (String.isNotBlank(environmentId)) {
             ChildEnvironmentVariables controller = new ChildEnvironmentVariables();
