@@ -74,7 +74,7 @@ const CONFIG = {
     debug: process.env.debug === 'false' ? false : true,
     localDev: process.env.LOCAL_DEV === 'false' ? false : true,
     envId: process.env.envId,
-    mainBranch: null,
+    mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
@@ -252,6 +252,8 @@ async function run() {
         Copado.uploadToolLogs();
         throw ex;
     }
+
+    // run commit.js stuff here to add changes for source folder directly to MASTER
 
     try {
         Log.info('git-push changes');
@@ -674,6 +676,134 @@ class Copado {
             Log.progress('Attached mcdev logs');
         } catch (ex) {
             Log.info('attaching mcdev logs failed:' + ex.message);
+        }
+    }
+}
+/**
+ * methods to handle interaction with the copado platform
+ */
+class Commit {
+    /**
+     * Retrieve components into a clean retrieve folder.
+     * The retrieve folder is deleted before retrieving to make
+     * sure we have only components that really exist in the BU.
+     *
+     * @param {string} sourceBU specific subfolder for downloads
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
+     * @returns {Promise.<string[]>} list of files to git add & commit
+     */
+    static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
+
+        // limit to files that git believes need to be added
+        commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
+        // get unique list of types that need to be retrieved
+        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
+        const keyArrForAllTypes = [
+            ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
+        ];
+        console.log('typeArr', typeArr);
+        console.log('keyArrForAllTypes', keyArrForAllTypes);
+        // download all types of which
+        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
+        const fileArr = (
+            await Promise.all(
+                typeArr.map((type) => {
+                    const keyArr = [
+                        ...new Set(
+                            commitSelectionArr
+                                .filter((item) => item.t === type)
+                                .map((item) => JSON.parse(item.j).key)
+                        ),
+                    ];
+                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                })
+            )
+        ).flat();
+        console.log('fileArr', fileArr);
+        return fileArr;
+    }
+    /**
+     * After components have been retrieved,
+     * adds selected components to the Git history.
+     *
+     * @param {string[]} gitAddArr list of items to be added
+     * @returns {void}
+     */
+    static addSelectedComponents(gitAddArr) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+
+        // Iterate all metadata components selected by user to commit
+
+        for (const filePath of gitAddArr) {
+            if (fs.existsSync(filePath)) {
+                // Add this component to the Git index.
+                Util.execCommand(null, ['git add "' + filePath + '"'], 'staged ' + filePath);
+            } else {
+                Log.warn('❌  could not find ' + filePath);
+            }
+        }
+    }
+    /**
+     * Commits and pushes after adding selected components
+     *
+     * @param {string} mainBranch name of master branch
+     * @param {string} [featureBranch] can be null/undefined
+     * @returns {void}
+     */
+    static commitAndPush(mainBranch, featureBranch) {
+        // If the following command returns some output,
+        // git commit must be executed. Otherwise there
+        // are no differences between the components retrieved
+        // from the org and selected by the user
+        // and what is already in Git, so commit and push
+        // can be skipped.
+        const branch = featureBranch || mainBranch;
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
+            if (CONFIG.localDev) {
+                Log.debug('🔥 Skipping git action in local dev environment');
+                return;
+            }
+
+            Util.execCommand(
+                'Commit',
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                'Completed committing'
+            );
+            const ec = Util.execCommandReturnStatus(
+                'Push branch ' + branch,
+                ['git push origin "' + branch + '"'],
+                'Completed pushing branch'
+            );
+            if (0 != ec) {
+                Log.error('Could not push changes to branch ' + branch);
+                throw (
+                    'Could not push changes to branch ' +
+                    branch +
+                    '. Exit code is ' +
+                    ec +
+                    '. Please check logs for further details.'
+                );
+            }
+            Log.result(gitDiffArr, 'Commit completed');
+        } else {
+            Log.result(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
+            );
         }
     }
 }

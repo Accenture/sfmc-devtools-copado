@@ -706,7 +706,7 @@ class Commit {
      * Commits and pushes after adding selected components
      *
      * @param {string} mainBranch name of master branch
-     * @param {string} featureBranch can be null/undefined
+     * @param {string} [featureBranch] can be null/undefined
      * @returns {void}
      */
     static commitAndPush(mainBranch, featureBranch) {
@@ -737,13 +737,13 @@ class Commit {
             );
             const ec = Util.execCommandReturnStatus(
                 'Push branch ' + branch,
-                ['git push origin "' + branch + '" --atomic'],
+                ['git push origin "' + branch + '"'],
                 'Completed pushing branch'
             );
             if (0 != ec) {
-                Log.error('Could not push changes to feature branch ' + branch);
+                Log.error('Could not push changes to branch ' + branch);
                 throw (
-                    'Could not push changes to feature branch ' +
+                    'Could not push changes to branch ' +
                     branch +
                     '. Exit code is ' +
                     ec +
