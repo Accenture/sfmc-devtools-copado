@@ -145,7 +145,7 @@ async function run() {
         // test if source branch (promotion branch) exists (otherwise this would cause an error)
         Copado.checkoutSrc(CONFIG.promotionBranch);
         // checkout destination branch
-        Copado.checkoutSrc(CONFIG.destinationBranch);
+        Copado.checkoutSrc(CONFIG.main_branch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -253,12 +253,36 @@ async function run() {
         throw ex;
     }
 
-    // run commit.js stuff here to add changes for source folder directly to MASTER
+    let gitAddArr;
+    try {
+        Log.info('');
+        Log.info('Retrieve components');
+        Log.info('===================');
+        Log.info('');
+        gitAddArr = await Commit.retrieveCommitSelection(sourceBU, commitSelectionArr);
+    } catch (ex) {
+        Log.error('Retrieving failed: ' + ex.message);
+        Copado.uploadToolLogs();
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Add components in metadata JSON to Git history');
+        Log.info('===================');
+        Log.info('');
+        Commit.addSelectedComponents(gitAddArr);
+    } catch (ex) {
+        Log.error('git add failed:' + ex.message);
+        throw ex;
+    }
+
+    Commit.commit(CONFIG.mainBranch);
 
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.destinationBranch);
+        Deploy.push(CONFIG.main_branch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -750,21 +774,20 @@ class Commit {
             }
         }
     }
+
     /**
-     * Commits and pushes after adding selected components
+     * Commits after adding selected components
      *
-     * @param {string} mainBranch name of master branch
-     * @param {string} [featureBranch] can be null/undefined
+     * @param {string} branch name of master branch
      * @returns {void}
      */
-    static commitAndPush(mainBranch, featureBranch) {
+    static commit(branch) {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
         // from the org and selected by the user
         // and what is already in Git, so commit and push
         // can be skipped.
-        const branch = featureBranch || mainBranch;
         const gitDiffArr = execSync('git diff --staged --name-only')
             .toString()
             .split('\n')
@@ -780,29 +803,38 @@ class Commit {
 
             Util.execCommand(
                 'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git checkout ' + branch, 'git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            const ec = Util.execCommandReturnStatus(
-                'Push branch ' + branch,
-                ['git push origin "' + branch + '"'],
-                'Completed pushing branch'
-            );
-            if (0 != ec) {
-                Log.error('Could not push changes to branch ' + branch);
-                throw (
-                    'Could not push changes to branch ' +
-                    branch +
-                    '. Exit code is ' +
-                    ec +
-                    '. Please check logs for further details.'
-                );
-            }
             Log.result(gitDiffArr, 'Commit completed');
         } else {
             Log.result(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
+            );
+        }
+    }
+
+    /**
+     * Pushes after commit the added components
+     *
+     * @param {string } branch name of master branch
+     * @returns {void}
+     */
+    static push(branch) {
+        const ec = Util.execCommandReturnStatus(
+            'Push branch ' + branch,
+            ['git push origin "' + branch + '"'],
+            'Completed pushing branch'
+        );
+        if (0 != ec) {
+            Log.error('Could not push changes to branch ' + branch);
+            throw (
+                'Could not push changes to branch ' +
+                branch +
+                '. Exit code is ' +
+                ec +
+                '. Please check logs for further details.'
             );
         }
     }
