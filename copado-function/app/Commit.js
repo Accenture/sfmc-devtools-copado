@@ -140,7 +140,7 @@ async function run() {
 
         Copado.checkoutSrc(CONFIG.featureBranch, true);
     } catch (ex) {
-        Log.error('Checkout to feature branch failed:' + ex.message);
+        Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
 
