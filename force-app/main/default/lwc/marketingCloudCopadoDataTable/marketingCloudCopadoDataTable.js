@@ -383,13 +383,15 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         // cheking reverse direction
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
-        parseData.sort((next, prev) => {
-            next = keyValue(next) ? keyValue(next) : ""; // handling null values
-            prev = keyValue(prev) ? keyValue(prev) : "";
-            // sorting values based on direction
-            return isReverse * ((next > prev) - (prev > next));
-        });
-        this.visibleData = parseData;
+        if (parseData) {
+            parseData.sort((next, prev) => {
+                next = keyValue(next) ? keyValue(next) : ""; // handling null values
+                prev = keyValue(prev) ? keyValue(prev) : "";
+                // sorting values based on direction
+                return isReverse * ((next > prev) - (prev > next));
+            });
+            this.visibleData = parseData;
+        }
     }
 
     // Registers a listener to errors that the server returns by the empApi module
@@ -464,7 +466,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
     //  Validate JSON string
     isJSON(tempData) {
         var str = tempData;
-        // if (str.blank()) return false;
         str = str.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@");
         str = str.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]");
         str = str.replace(/(?:^|:|,)(?:\s*\[)+/g, "");
