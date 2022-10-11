@@ -308,9 +308,11 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                     "/events/copado/v1/step-monitor/"
                 )
             ) {
-                // show progress on screen
-                const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                if (this.isJSON(response.data.payload.copado__Payload__c)) {
+                    // show progress on screen
+                    const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
+                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                }
             }
         };
 
@@ -458,5 +460,14 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
         this.isLoading = isLoading;
         this.showTable = !isLoading;
         this.refreshButtonDisabled = isLoading;
+    }
+    //  Validate JSON string
+    isJSON(tempData) {
+        var str = tempData;
+        // if (str.blank()) return false;
+        str = str.replace(/\\(?:["\\\/bfnrt]|u[0-9a-fA-F]{4})/g, "@");
+        str = str.replace(/"[^"\\\n\r]*"|true|false|null|-?\d+(?:\.\d*)?(?:[eE][+\-]?\d+)?/g, "]");
+        str = str.replace(/(?:^|:|,)(?:\s*\[)+/g, "");
+        return /^[\],:{}\s]*$/.test(str);
     }
 }
