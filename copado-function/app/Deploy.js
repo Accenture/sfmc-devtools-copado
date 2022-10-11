@@ -89,7 +89,7 @@ const CONFIG = {
         destinationChildren: process.env.envVariablesDestinationChildren,
     },
     // commit
-    commitMessage: null,
+    commitMessage: 'Local dev commit message',
     featureBranch: null,
     // deploy
     fileSelectionSalesforceId: process.env.metadata_file,
@@ -145,7 +145,7 @@ async function run() {
         // test if source branch (promotion branch) exists (otherwise this would cause an error)
         Copado.checkoutSrc(CONFIG.promotionBranch);
         // checkout destination branch
-        Copado.checkoutSrc(CONFIG.main_branch);
+        Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -259,7 +259,7 @@ async function run() {
         Log.info('Retrieve components');
         Log.info('===================');
         Log.info('');
-        gitAddArr = await Commit.retrieveCommitSelection(sourceBU, commitSelectionArr);
+        gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
     } catch (ex) {
         Log.error('Retrieving failed: ' + ex.message);
         Copado.uploadToolLogs();
@@ -277,12 +277,21 @@ async function run() {
         throw ex;
     }
 
-    Commit.commit(CONFIG.mainBranch);
+    try {
+        Log.info('');
+        Log.info('Commit components');
+        Log.info('===================');
+        Log.info('');
+        Commit.commit(CONFIG.mainBranch);
+    } catch (ex) {
+        Log.error('git commit failed:' + ex.message);
+        throw ex;
+    }
 
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.main_branch);
+        Util.push(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -378,6 +387,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -814,30 +840,6 @@ class Commit {
             );
         }
     }
-
-    /**
-     * Pushes after commit the added components
-     *
-     * @param {string } branch name of master branch
-     * @returns {void}
-     */
-    static push(branch) {
-        const ec = Util.execCommandReturnStatus(
-            'Push branch ' + branch,
-            ['git push origin "' + branch + '"'],
-            'Completed pushing branch'
-        );
-        if (0 != ec) {
-            Log.error('Could not push changes to branch ' + branch);
-            throw (
-                'Could not push changes to branch ' +
-                branch +
-                '. Exit code is ' +
-                ec +
-                '. Please check logs for further details.'
-            );
-        }
-    }
 }
 /**
  * handles downloading metadata
@@ -1045,23 +1047,6 @@ class Deploy {
             'Merge commit ' + promotionBranch,
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
-        );
-    }
-    /**
-     * Pushes after a successfull deployment
-     *
-     * @param {string} destinationBranch name of branch to push to
-     * @returns {void}
-     */
-    static push(destinationBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
-        Util.execCommand(
-            'Push branch ' + destinationBranch,
-            ['git push origin "' + destinationBranch + '"'],
-            'Completed pushing branch'
         );
     }
 }

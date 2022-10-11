@@ -206,11 +206,13 @@ async function run() {
     }
     try {
         Log.info('');
-        Log.info('Commit and push');
+        Log.info('Commit');
         Log.info('===================');
         Log.info('');
-        Commit.commit(CONFIG.mainBranch);
-        Commit.push(CONFIG.mainBranch);
+        Commit.commit();
+        Log.info('Push');
+        Log.info('===================');
+        Util.push(CONFIG.featureBranch);
     } catch (ex) {
         Log.error('git commit / push failed:' + ex.message);
         throw ex;
@@ -305,6 +307,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -707,10 +726,9 @@ class Commit {
     /**
      * Commits after adding selected components
      *
-     * @param {string} branch name of master branch
      * @returns {void}
      */
-    static commit(branch) {
+    static commit() {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
@@ -732,7 +750,7 @@ class Commit {
 
             Util.execCommand(
                 'Commit',
-                ['git checkout ' + branch, 'git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             Log.result(gitDiffArr, 'Commit completed');
@@ -740,30 +758,6 @@ class Commit {
             Log.result(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
-            );
-        }
-    }
-
-    /**
-     * Pushes after commit the added components
-     *
-     * @param {string } branch name of master branch
-     * @returns {void}
-     */
-    static push(branch) {
-        const ec = Util.execCommandReturnStatus(
-            'Push branch ' + branch,
-            ['git push origin "' + branch + '"'],
-            'Completed pushing branch'
-        );
-        if (0 != ec) {
-            Log.error('Could not push changes to branch ' + branch);
-            throw (
-                'Could not push changes to branch ' +
-                branch +
-                '. Exit code is ' +
-                ec +
-                '. Please check logs for further details.'
             );
         }
     }
