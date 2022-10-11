@@ -604,7 +604,10 @@ class Copado {
         // delete feature branch on origin code in here
         Util.execCommand(
             'Deleting branch ' + featureBranch,
-            [`git push origin --delete ${featureBranch}`],
+            [
+                `git push origin --delete ${featureBranch}`,
+                `git branch --delete --force ${featureBranch}`,
+            ],
             'Completed deleting branch ' + featureBranch
         );
     }
