@@ -17,6 +17,35 @@
  * @property {EnvVar[]} environmentVariables list of environment variables
  * @property {string} environmentName name of environment in Copado
  */
+/**
+ * @typedef {object} CommitSelection
+ * @property {string} t type
+ * @property {string} n name
+ * @property {string} m ???
+ * @property {string} j json string with exta info "{\"key\":\"test-joern-filter-de\"}"
+ * @property {'sfmc'} c system
+ * @property {'add'} a action
+ */
+
+/**
+ * TYPES DEFINED BY mcdev. copied here for easier reference
+ *
+ * @typedef {'accountUser'|'asset'|'attributeGroup'|'automation'|'campaign'|'contentArea'|'dataExtension'|'dataExtensionField'|'dataExtensionTemplate'|'dataExtract'|'dataExtractType'|'discovery'|'email'|'emailSendDefinition'|'eventDefinition'|'fileTransfer'|'filter'|'folder'|'ftpLocation'|'importFile'|'interaction'|'list'|'mobileCode'|'mobileKeyword'|'query'|'role'|'script'|'setDefinition'|'triggeredSendDefinition'} SupportedMetadataTypes
+ * @typedef {object} DeltaPkgItem
+ * //@property {string} file relative path to file
+ * //@property {number} changes changed lines
+ * //@property {number} insertions added lines
+ * //@property {number} deletions deleted lines
+ * //@property {boolean} binary is a binary file
+ * //@property {boolean} moved git thinks this file was moved
+ * //@property {string} [fromPath] git thinks this relative path is where the file was before
+ * @property {SupportedMetadataTypes} type metadata type
+ * @property {string} externalKey key
+ * @property {string} name name
+ * @property {'move'|'add/update'|'delete'} gitAction what git recognized as an action
+ * @property {string} _credential mcdev credential name
+ * @property {string} _businessUnit mcdev business unit name inside of _credential
+ */
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
@@ -62,10 +91,11 @@ const CONFIG = {
     // commit
     commitMessage: null,
     featureBranch: null,
-    fileSelectionSalesforceId: null,
-    fileSelectionFileName: null,
     recreateFeatureBranch: null,
+
     // deploy
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -183,8 +213,36 @@ async function run() {
         Log.error('Updateing Market List failed: ' + ex.message);
         throw ex;
     }
+
+    /**
+     * @type {CommitSelection[]}
+     */
+    let commitSelectionArr;
     try {
-        if (true == (await Deploy.createDeltaPackage(deployFolder))) {
+        Log.info('');
+        Log.info(
+            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
+        );
+        Log.info('===================');
+        Log.info('');
+        commitSelectionArr = Copado.getJsonFile(
+            CONFIG.fileSelectionSalesforceId,
+            CONFIG.fileSelectionFileName
+        );
+        console.log('commitSelectionArr', commitSelectionArr);
+    } catch (ex) {
+        Log.info('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        if (
+            await Deploy.createDeltaPackage(
+                deployFolder,
+                commitSelectionArr,
+                sourceBU.split('/')[1]
+            )
+        ) {
             Log.info('Deploy BUs');
             Log.info('===================');
             await Deploy.deployBU(targetBU);
@@ -556,6 +614,35 @@ class Copado {
             postMsg
         );
     }
+    /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
+    }
 
     /**
      * Executes git fetch, followed by checking out the given branch
@@ -596,6 +683,26 @@ class Copado {
  * handles downloading metadata
  */
 class Deploy {
+    /**
+     * convert CommitSelection[] to DeltaPkgItem[]
+     *
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
+     * @returns {DeltaPkgItem[]} format required by mcdev.createDeltaPkg
+     */
+    static _convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) {
+        return commitSelectionArr.map(
+            (item) =>
+                /** @type {DeltaPkgItem} */ ({
+                    type: item.t,
+                    name: item.n,
+                    externalKey: JSON.parse(item.j).key,
+                    gitAction: 'add/update',
+                    _credential: CONFIG.credentials.source.credentialName,
+                    _businessUnit: sourceBU,
+                })
+        );
+    }
     /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
      *
@@ -663,23 +770,41 @@ class Deploy {
      * return whether the delta package is empty or not
      *
      * @param {string} deployFolder path
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
      * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static async createDeltaPackage(deployFolder) {
-        const versionRange = 'HEAD^..HEAD';
+    static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
-        Log.debug('Create delta package using version range ' + versionRange);
+        const versionRange = null;
+        let deltaPkgItems = null;
+        if (Array.isArray(commitSelectionArr) && commitSelectionArr.length) {
+            deltaPkgItems = this._convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU);
+            Log.info(`Found ${deltaPkgItems.length} changed components in commits`);
+            Log.debug('DeltaPkgItems: ');
+            Log.debug(deltaPkgItems);
+        } else {
+            Log.info('No changed components found in commits');
+            // versionRange = 'HEAD^..HEAD';
+            // Log.debug('Create delta package using version range ' + versionRange);
+        }
+        console.log('commitSelectionArr', commitSelectionArr);
+        console.log('deltaPkgItems', deltaPkgItems);
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
+            diffArr: deltaPkgItems,
             skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
         if (!deltaPackageLog?.length) {
             Log.error('No changes found for deployment');
             return false;
+        } else {
+            Log.debug('deltaPackageLog:');
+            Log.debug(deltaPackageLog);
         }
 
         Log.debug('Completed creating delta package');
