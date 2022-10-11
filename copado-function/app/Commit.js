@@ -75,6 +75,7 @@ const CONFIG = {
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
+    recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
@@ -119,15 +120,27 @@ async function run() {
     // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
+
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('===================');
+    Log.info('');
+
     try {
-        Log.info('');
-        Log.info('Clone repository');
-        Log.info('===================');
-        Log.info('');
         Copado.checkoutSrc(CONFIG.mainBranch);
+
+        try {
+            if (CONFIG.recreateFeatureBranch) {
+                Copado.deleteBranch(CONFIG.featureBranch);
+            }
+        } catch (ex) {
+            Log.error('Delete feature branch failed:' + ex.message);
+            throw ex;
+        }
+
         Copado.checkoutSrc(CONFIG.featureBranch, true);
     } catch (ex) {
-        Log.error('Cloning failed:' + ex.message);
+        Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
 
@@ -578,6 +591,24 @@ class Copado {
             'Create / checkout branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
+        );
+    }
+
+    /**
+     * Deletes the remote feature branch
+     *
+     * @param {string} featureBranch branch that is going to be deleted
+     * @returns {void}
+     */
+    static deleteBranch(featureBranch) {
+        // delete feature branch on origin code in here
+        Util.execCommand(
+            'Deleting branch ' + featureBranch,
+            [
+                `git push origin --delete ${featureBranch}`,
+                `git branch --delete --force ${featureBranch}`,
+            ],
+            'Completed deleting branch ' + featureBranch
         );
     }
 
