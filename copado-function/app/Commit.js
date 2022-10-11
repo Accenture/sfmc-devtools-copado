@@ -771,10 +771,11 @@ class Commit {
             }
             Log.result(gitDiffArr, 'Commit completed');
         } else {
-            Log.result(
+            Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
             );
+            throw new Error('Nothing to commit');
         }
     }
 }
