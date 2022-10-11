@@ -75,6 +75,7 @@ const CONFIG = {
     featureBranch: null,
     fileSelectionSalesforceId: null,
     fileSelectionFileName: null,
+    recreateFeatureBranch: null,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits

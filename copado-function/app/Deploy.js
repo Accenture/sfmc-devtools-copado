@@ -91,6 +91,8 @@ const CONFIG = {
     // commit
     commitMessage: 'Local dev commit message',
     featureBranch: null,
+    recreateFeatureBranch: null,
+
     // deploy
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
