@@ -53,8 +53,8 @@ const CONFIG = {
     },
     // generic
     configFilePath: '.mcdevrc.json',
-    debug: process.env.debug === 'false' ? false : true,
-    localDev: process.env.LOCAL_DEV === 'false' ? false : true,
+    debug: process.env.debug === 'true' ? true : false,
+    localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -75,6 +75,7 @@ const CONFIG = {
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
+    recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
@@ -119,15 +120,27 @@ async function run() {
     // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
+
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('===================');
+    Log.info('');
+
     try {
-        Log.info('');
-        Log.info('Clone repository');
-        Log.info('===================');
-        Log.info('');
         Copado.checkoutSrc(CONFIG.mainBranch);
+
+        try {
+            if (CONFIG.recreateFeatureBranch) {
+                Copado.deleteBranch(CONFIG.featureBranch);
+            }
+        } catch (ex) {
+            Log.error('Delete feature branch failed:' + ex.message);
+            throw ex;
+        }
+
         Copado.checkoutSrc(CONFIG.featureBranch, true);
     } catch (ex) {
-        Log.error('Cloning failed:' + ex.message);
+        Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
 
@@ -612,6 +625,24 @@ class Copado {
     }
 
     /**
+     * Deletes the remote feature branch
+     *
+     * @param {string} featureBranch branch that is going to be deleted
+     * @returns {void}
+     */
+    static deleteBranch(featureBranch) {
+        // delete feature branch on origin code in here
+        Util.execCommand(
+            'Deleting branch ' + featureBranch,
+            [
+                `git push origin --delete ${featureBranch}`,
+                `git branch --delete --force ${featureBranch}`,
+            ],
+            'Completed deleting branch ' + featureBranch
+        );
+    }
+
+    /**
      * to be executed at the very end
      *
      * @returns {void}
@@ -752,10 +783,11 @@ class Commit {
             }
             Log.result(gitDiffArr, 'Commit completed');
         } else {
-            Log.result(
+            Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
             );
+            throw new Error('Nothing to commit');
         }
     }
 }
