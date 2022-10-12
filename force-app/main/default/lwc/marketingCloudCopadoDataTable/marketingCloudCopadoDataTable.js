@@ -351,12 +351,12 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             }
         } else if (jobExecution.copado__Status__c === "Error") {
             this.loadingState(false);
-            let JobUrl = "/" +jobExecutionId;
+            let JobUrl = "/" + jobExecutionId;
             const errEvent = new ShowToastEvent({
                 title: "Error",
                 variant: "error",
                 mode: "sticky",
-                message: "Refreshing metadata list failed. For more details {0}.",
+                message: "Refreshing metadata list failed. For more details {0}.{1}",
                 messageData: [
                     {
                         url: JobUrl,
