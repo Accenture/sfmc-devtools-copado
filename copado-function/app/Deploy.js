@@ -62,11 +62,11 @@ const CONFIG = {
             enterpriseId: process.env.enterprise_id,
         },
         target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
+            clientId: process.env.targetClientId,
+            clientSecret: process.env.targetClientSecret,
+            credentialName: process.env.targetCredentialName,
+            tenant: process.env.targetTenant,
+            enterpriseId: process.env.targetEnterprise_id,
         },
     },
     // generic
