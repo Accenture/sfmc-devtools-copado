@@ -89,7 +89,7 @@ const CONFIG = {
         destinationChildren: process.env.envVariablesDestinationChildren,
     },
     // commit
-    commitMessage: 'Local dev commit message',
+    commitMessage: null,
     featureBranch: null,
     recreateFeatureBranch: null,
 
@@ -280,6 +280,7 @@ async function run() {
     }
 
     try {
+        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';
         Log.info('');
         Log.info('Commit components');
         Log.info('===================');
