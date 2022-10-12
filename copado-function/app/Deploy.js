@@ -789,10 +789,9 @@ class Commit {
     /**
      * Commits after adding selected components
      *
-     * @param {string} branch name of master branch
      * @returns {void}
      */
-    static commit(branch) {
+    static commit() {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
@@ -814,7 +813,7 @@ class Commit {
 
             Util.execCommand(
                 'Commit',
-                ['git checkout ' + branch, 'git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             Log.result(gitDiffArr, 'Commit completed');
