@@ -53,22 +53,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.targetClientId,
-            clientSecret: process.env.targetClientSecret,
-            credentialName: process.env.targetCredentialName,
-            tenant: process.env.targetTenant,
-            enterpriseId: process.env.targetEnterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: process.env.credentialNameTarget,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -111,6 +98,17 @@ const CONFIG = {
  */
 async function run() {
     Log.info('Deploy.js started');
+
+    const credSource = CONFIG.credentials[CONFIG.credentialNameSource];
+    const credTarget = CONFIG.credentials[CONFIG.credentialNameTarget];
+
+    if (!credSource) {
+        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+    }
+    if (!credTarget) {
+        throw new Error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+    }
+
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
@@ -201,8 +199,8 @@ async function run() {
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
-        targetBU = Util.getBuName(CONFIG.credentials.target.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentialNameTarget, CONFIG.target_mid);
     } catch (ex) {
         Log.error('Getting Source / Target BU failed: ' + ex.message);
         throw ex;
@@ -698,7 +696,7 @@ class Deploy {
                     name: item.n,
                     externalKey: JSON.parse(item.j).key,
                     gitAction: 'add/update',
-                    _credential: CONFIG.credentials.source.credentialName,
+                    _credential: CONFIG.credentialNameSource,
                     _businessUnit: sourceBU,
                 })
         );
