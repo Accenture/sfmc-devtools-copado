@@ -360,7 +360,6 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                 messageData: [
                     {
                         url: JobUrl,
-                        //  url: "https://copadonull71743980.lightning.force.com",
                         label: "click here"
                     }
                 ]
