@@ -61,7 +61,7 @@ const CONFIG = {
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     envId: process.env.envId,
-    mainBranch: null,
+    mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
@@ -145,7 +145,7 @@ async function run() {
         // test if source branch (promotion branch) exists (otherwise this would cause an error)
         Copado.checkoutSrc(CONFIG.promotionBranch);
         // checkout destination branch
-        Copado.checkoutSrc(CONFIG.destinationBranch);
+        Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -253,10 +253,14 @@ async function run() {
         throw ex;
     }
 
+    // Retrieve what was deployed to target
+    // and commit it to the repo as a backup
+    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.destinationBranch);
+        Util.push(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -352,6 +356,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -678,9 +699,166 @@ class Copado {
     }
 }
 /**
+ * methods to handle interaction with the copado platform
+ */
+class Commit {
+    /**
+     * Retrieve components into a clean retrieve folder.
+     * The retrieve folder is deleted before retrieving to make
+     * sure we have only components that really exist in the BU.
+     *
+     * @param {string} sourceBU specific subfolder for downloads
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
+     * @returns {Promise.<string[]>} list of files to git add & commit
+     */
+    static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
+
+        // limit to files that git believes need to be added
+        commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
+        // get unique list of types that need to be retrieved
+        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
+        const keyArrForAllTypes = [
+            ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
+        ];
+        console.log('typeArr', typeArr);
+        console.log('keyArrForAllTypes', keyArrForAllTypes);
+        // download all types of which
+        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
+        const fileArr = (
+            await Promise.all(
+                typeArr.map((type) => {
+                    const keyArr = [
+                        ...new Set(
+                            commitSelectionArr
+                                .filter((item) => item.t === type)
+                                .map((item) => JSON.parse(item.j).key)
+                        ),
+                    ];
+                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                })
+            )
+        ).flat();
+        console.log('fileArr', fileArr);
+        return fileArr;
+    }
+    /**
+     * After components have been retrieved,
+     * adds selected components to the Git history.
+     *
+     * @param {string[]} gitAddArr list of items to be added
+     * @returns {void}
+     */
+    static addSelectedComponents(gitAddArr) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+
+        // Iterate all metadata components selected by user to commit
+
+        for (const filePath of gitAddArr) {
+            if (fs.existsSync(filePath)) {
+                // Add this component to the Git index.
+                Util.execCommand(null, ['git add "' + filePath + '"'], 'staged ' + filePath);
+            } else {
+                Log.warn('❌  could not find ' + filePath);
+            }
+        }
+    }
+
+    /**
+     * Commits after adding selected components
+     *
+     * @returns {void}
+     */
+    static commit() {
+        // If the following command returns some output,
+        // git commit must be executed. Otherwise there
+        // are no differences between the components retrieved
+        // from the org and selected by the user
+        // and what is already in Git, so commit and push
+        // can be skipped.
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
+            if (CONFIG.localDev) {
+                Log.debug('🔥 Skipping git action in local dev environment');
+                return;
+            }
+
+            Util.execCommand(
+                'Commit',
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                'Completed committing'
+            );
+            Log.result(gitDiffArr, 'Commit completed');
+        } else {
+            Log.error(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
+            );
+            throw new Error('Nothing to commit');
+        }
+    }
+}
+/**
  * handles downloading metadata
  */
 class Deploy {
+    /**
+     * retrieve the new values into the targets folder so it can be commited later.
+     *
+     * @param {string} targetBU buname of source BU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @returns {void}
+     */
+    static async retrieveAndCommit(targetBU, commitSelectionArr) {
+        CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
+
+        let gitAddArr;
+        try {
+            Log.info('');
+            Log.info('Retrieve components');
+            Log.info('===================');
+            Log.info('');
+            gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
+        } catch (ex) {
+            Log.error('Retrieving failed: ' + ex.message);
+            Copado.uploadToolLogs();
+            throw ex;
+        }
+
+        try {
+            Log.info('');
+            Log.info('Add components in metadata JSON to Git history');
+            Log.info('===================');
+            Log.info('');
+            Commit.addSelectedComponents(gitAddArr);
+        } catch (ex) {
+            Log.error('git add failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('');
+            Log.info('Commit');
+            Log.info('===================');
+            Log.info('');
+            Commit.commit();
+        } catch (ex) {
+            Log.error('git commit failed:' + ex.message);
+            throw ex;
+        }
+    }
+
     /**
      * convert CommitSelection[] to DeltaPkgItem[]
      *
@@ -883,23 +1061,6 @@ class Deploy {
             'Merge commit ' + promotionBranch,
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
-        );
-    }
-    /**
-     * Pushes after a successfull deployment
-     *
-     * @param {string} destinationBranch name of branch to push to
-     * @returns {void}
-     */
-    static push(destinationBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
-        Util.execCommand(
-            'Push branch ' + destinationBranch,
-            ['git push origin "' + destinationBranch + '"'],
-            'Completed pushing branch'
         );
     }
 }

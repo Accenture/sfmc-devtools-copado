@@ -219,10 +219,13 @@ async function run() {
     }
     try {
         Log.info('');
-        Log.info('Commit and push');
+        Log.info('Commit');
         Log.info('===================');
         Log.info('');
-        Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+        Commit.commit();
+        Log.info('Push');
+        Log.info('===================');
+        Util.push(CONFIG.featureBranch);
     } catch (ex) {
         Log.error('git commit / push failed:' + ex.message);
         throw ex;
@@ -317,6 +320,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -733,21 +753,19 @@ class Commit {
             }
         }
     }
+
     /**
-     * Commits and pushes after adding selected components
+     * Commits after adding selected components
      *
-     * @param {string} mainBranch name of master branch
-     * @param {string} featureBranch can be null/undefined
      * @returns {void}
      */
-    static commitAndPush(mainBranch, featureBranch) {
+    static commit() {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
         // from the org and selected by the user
         // and what is already in Git, so commit and push
         // can be skipped.
-        const branch = featureBranch || mainBranch;
         const gitDiffArr = execSync('git diff --staged --name-only')
             .toString()
             .split('\n')
@@ -766,21 +784,6 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            const ec = Util.execCommandReturnStatus(
-                'Push branch ' + branch,
-                ['git push origin "' + branch + '" --atomic'],
-                'Completed pushing branch'
-            );
-            if (0 != ec) {
-                Log.error('Could not push changes to feature branch ' + branch);
-                throw (
-                    'Could not push changes to feature branch ' +
-                    branch +
-                    '. Exit code is ' +
-                    ec +
-                    '. Please check logs for further details.'
-                );
-            }
             Log.result(gitDiffArr, 'Commit completed');
         } else {
             Log.error(
