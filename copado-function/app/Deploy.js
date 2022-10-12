@@ -257,7 +257,7 @@ async function run() {
 
     // Retrieve the new values into the target folder
     try {
-        Deploy.retrieve(targetBU, commitSelectionArr); 
+        await Deploy.retrieve(targetBU, commitSelectionArr);
     } catch (ex) {
         Log.error('Retrieve failed: ' + ex.message);
         Copado.uploadToolLogs();
@@ -265,7 +265,7 @@ async function run() {
     }
 
     // Commit the new values inside the target folder
-    try{
+    try {
         Deploy.commit();
     } catch (ex) {
         Log.error('Commit failed: ' + ex.message);
@@ -819,10 +819,11 @@ class Commit {
             );
             Log.result(gitDiffArr, 'Commit completed');
         } else {
-            Log.result(
+            Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
             );
+            throw new Error('Nothing to commit');
         }
     }
 }
@@ -830,7 +831,6 @@ class Commit {
  * handles downloading metadata
  */
 class Deploy {
-
     /**
      * retrieve the new values into the targets folder so it can be commited later.
      *
@@ -838,7 +838,7 @@ class Deploy {
      * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @returns {void}
      */
-    static retrieve(targetBU, commitSelectionArr){
+    static async retrieve(targetBU, commitSelectionArr) {
         let gitAddArr;
         try {
             Log.info('');
@@ -861,8 +861,8 @@ class Deploy {
         } catch (ex) {
             Log.error('git add failed:' + ex.message);
             throw ex;
-        }        
-        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';        
+        }
+        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';
     }
 
     /**
@@ -870,7 +870,7 @@ class Deploy {
      *
      * @returns {void}
      */
-    static commit(){
+    static commit() {
         try {
             Log.info('');
             Log.info('Commit components');
