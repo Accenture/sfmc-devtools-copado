@@ -356,7 +356,7 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                 title: "Error",
                 variant: "error",
                 mode: "sticky",
-                message: "Refreshing metadata list failed. For more details {0}.{1}",
+                message: "Refreshing metadata list failed. For more details {0}.",
                 messageData: [
                     {
                         url: JobUrl,
