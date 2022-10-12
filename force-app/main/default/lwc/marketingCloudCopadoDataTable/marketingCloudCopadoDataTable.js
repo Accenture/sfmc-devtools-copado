@@ -351,21 +351,17 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             }
         } else if (jobExecution.copado__Status__c === "Error") {
             this.loadingState(false);
-            let JobUrl =
-                "https://copadonull71743980.lightning.force.com/lightning/r/copado__JobExecution__c/" +
-                jobExecutionId +
-                "/view";
+            let JobUrl = "/" +jobExecutionId;
             const errEvent = new ShowToastEvent({
                 title: "Error",
                 variant: "error",
                 mode: "sticky",
-                message: "Refreshing metadata list failed. For more details {0} please go to {1}",
+                message: "Refreshing metadata list failed. For more details {0}.",
                 messageData: [
-                    "Salesforce",
                     {
                         url: JobUrl,
                         //  url: "https://copadonull71743980.lightning.force.com",
-                        label: "this Job Execution record"
+                        label: "click here"
                     }
                 ]
             });
