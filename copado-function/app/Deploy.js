@@ -255,23 +255,9 @@ async function run() {
         throw ex;
     }
 
-    // Retrieve the new values into the target folder
-    try {
-        await Deploy.retrieve(targetBU, commitSelectionArr);
-    } catch (ex) {
-        Log.error('Retrieve failed: ' + ex.message);
-        Copado.uploadToolLogs();
-        throw ex;
-    }
-
-    // Commit the new values inside the target folder
-    try {
-        Deploy.commit();
-    } catch (ex) {
-        Log.error('Commit failed: ' + ex.message);
-        Copado.uploadToolLogs();
-        throw ex;
-    }
+    // Retrieve what was deployed to target
+    // and commit it to the repo as a backup
+    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     try {
         Log.info('git-push changes');
@@ -837,7 +823,9 @@ class Deploy {
      * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @returns {void}
      */
-    static async retrieve(targetBU, commitSelectionArr) {
+    static async retrieveAndCommit(targetBU, commitSelectionArr) {
+        CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
+
         let gitAddArr;
         try {
             Log.info('');
@@ -861,21 +849,12 @@ class Deploy {
             Log.error('git add failed:' + ex.message);
             throw ex;
         }
-        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';
-    }
-
-    /**
-     * Commit the changes
-     *
-     * @returns {void}
-     */
-    static commit() {
         try {
             Log.info('');
-            Log.info('Commit components');
+            Log.info('Commit');
             Log.info('===================');
             Log.info('');
-            Commit.commit(CONFIG.mainBranch);
+            Commit.commit();
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
             throw ex;
