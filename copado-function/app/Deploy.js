@@ -255,39 +255,21 @@ async function run() {
         throw ex;
     }
 
-    let gitAddArr;
+    // Retrieve the new values into the target folder
     try {
-        Log.info('');
-        Log.info('Retrieve components');
-        Log.info('===================');
-        Log.info('');
-        gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
+        Deploy.retrieve(targetBU, commitSelectionArr); 
     } catch (ex) {
-        Log.error('Retrieving failed: ' + ex.message);
+        Log.error('Retrieve failed: ' + ex.message);
         Copado.uploadToolLogs();
         throw ex;
     }
 
-    try {
-        Log.info('');
-        Log.info('Add components in metadata JSON to Git history');
-        Log.info('===================');
-        Log.info('');
-        Commit.addSelectedComponents(gitAddArr);
+    // Commit the new values inside the target folder
+    try{
+        Deploy.commit();
     } catch (ex) {
-        Log.error('git add failed:' + ex.message);
-        throw ex;
-    }
-
-    try {
-        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';
-        Log.info('');
-        Log.info('Commit components');
-        Log.info('===================');
-        Log.info('');
-        Commit.commit(CONFIG.mainBranch);
-    } catch (ex) {
-        Log.error('git commit failed:' + ex.message);
+        Log.error('Commit failed: ' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
 
@@ -848,6 +830,59 @@ class Commit {
  * handles downloading metadata
  */
 class Deploy {
+
+    /**
+     * retrieve the new values into the targets folder so it can be commited later.
+     *
+     * @param {string} targetBU buname of source BU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @returns {void}
+     */
+    static retrieve(targetBU, commitSelectionArr){
+        let gitAddArr;
+        try {
+            Log.info('');
+            Log.info('Retrieve components');
+            Log.info('===================');
+            Log.info('');
+            gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
+        } catch (ex) {
+            Log.error('Retrieving failed: ' + ex.message);
+            Copado.uploadToolLogs();
+            throw ex;
+        }
+
+        try {
+            Log.info('');
+            Log.info('Add components in metadata JSON to Git history');
+            Log.info('===================');
+            Log.info('');
+            Commit.addSelectedComponents(gitAddArr);
+        } catch (ex) {
+            Log.error('git add failed:' + ex.message);
+            throw ex;
+        }        
+        CONFIG.commitMessage = 'Updated BU (' + targetBU + ')';        
+    }
+
+    /**
+     * Commit the changes
+     *
+     * @returns {void}
+     */
+    static commit(){
+        try {
+            Log.info('');
+            Log.info('Commit components');
+            Log.info('===================');
+            Log.info('');
+            Commit.commit(CONFIG.mainBranch);
+        } catch (ex) {
+            Log.error('git commit failed:' + ex.message);
+            throw ex;
+        }
+    }
+
     /**
      * convert CommitSelection[] to DeltaPkgItem[]
      *
