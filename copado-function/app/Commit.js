@@ -36,7 +36,7 @@ const resolve = require('node:path').resolve;
 const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
-    credentialNameTarget: process.env.credentialNameTarget,
+    credentialNameTarget: null,
     credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
@@ -87,7 +87,8 @@ async function run() {
 
     // ensure we got SFMC credentials for our source BU
     if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
-        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        throw new Error(`No source credentials`);
     }
 
     Log.debug('Environment');
