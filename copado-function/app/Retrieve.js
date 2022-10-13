@@ -36,7 +36,7 @@ const resolve = require('node:path').resolve;
 const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
-    credentialNameTarget: process.env.credentialNameTarget,
+    credentialNameTarget: null,
     credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
