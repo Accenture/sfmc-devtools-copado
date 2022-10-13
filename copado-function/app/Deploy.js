@@ -94,7 +94,7 @@ const CONFIG = {
 /**
  * main method that combines runs this function
  *
- * @returns {void}credSource
+ * @returns {void}
  */
 async function run() {
     Log.info('Deploy.js started');
