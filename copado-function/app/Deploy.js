@@ -254,7 +254,7 @@ async function run() {
 
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
-    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     try {
         Log.info('git-push changes');
