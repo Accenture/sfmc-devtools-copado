@@ -35,22 +35,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: process.env.credentialNameTarget,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -92,6 +79,17 @@ const CONFIG = {
  */
 async function run() {
     Log.info('Commit.js started');
+
+    const credSource = CONFIG.credentials[CONFIG.credentialNameSource];
+    const credTarget = CONFIG.credentials[CONFIG.credentialNameTarget];
+
+    if (!credSource) {
+        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+    }
+    if (!credTarget) {
+        throw new Error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+    }
+
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
@@ -189,7 +187,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
