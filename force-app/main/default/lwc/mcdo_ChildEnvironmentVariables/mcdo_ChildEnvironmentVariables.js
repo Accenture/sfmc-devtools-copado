@@ -1,9 +1,9 @@
 import { LightningElement, api } from "lwc";
 import { ShowToastEvent } from "lightning/platformShowToastEvent";
 import { NavigationMixin } from "lightning/navigation";
-import getChildEnvironmentVariables from "@salesforce/apex/ChildEnvironmentVariableController.getChildEnvironmentVariables";
+import getmcdo_ChildEnvironmentVariables from "@salesforce/apex/mcdo_ChildEnvironmentVariableController.getmcdo_ChildEnvironmentVariables";
 
-export default class ChildEnvironmentVariables extends NavigationMixin(LightningElement) {
+export default class mcdo_ChildEnvironmentVariables extends NavigationMixin(LightningElement) {
     @api recordId;
     @api items = [];
     header = "Child Environments & Variables";
@@ -28,7 +28,7 @@ export default class ChildEnvironmentVariables extends NavigationMixin(Lightning
 
     async _getVariables() {
         try {
-            const result = await getChildEnvironmentVariables({ environmentId: this.recordId });
+            const result = await getmcdo_ChildEnvironmentVariables({ environmentId: this.recordId });
             if (result) {
                 this._processItems(JSON.parse(result));
                 this.header = this.header + " (" + this.items.length + ")";

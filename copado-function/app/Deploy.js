@@ -17,6 +17,35 @@
  * @property {EnvVar[]} environmentVariables list of environment variables
  * @property {string} environmentName name of environment in Copado
  */
+/**
+ * @typedef {object} CommitSelection
+ * @property {string} t type
+ * @property {string} n name
+ * @property {string} m ???
+ * @property {string} j json string with exta info "{\"key\":\"test-joern-filter-de\"}"
+ * @property {'sfmc'} c system
+ * @property {'add'} a action
+ */
+
+/**
+ * TYPES DEFINED BY mcdev. copied here for easier reference
+ *
+ * @typedef {'accountUser'|'asset'|'attributeGroup'|'automation'|'campaign'|'contentArea'|'dataExtension'|'dataExtensionField'|'dataExtensionTemplate'|'dataExtract'|'dataExtractType'|'discovery'|'email'|'emailSendDefinition'|'eventDefinition'|'fileTransfer'|'filter'|'folder'|'ftpLocation'|'importFile'|'interaction'|'list'|'mobileCode'|'mobileKeyword'|'query'|'role'|'script'|'setDefinition'|'triggeredSendDefinition'} SupportedMetadataTypes
+ * @typedef {object} DeltaPkgItem
+ * //@property {string} file relative path to file
+ * //@property {number} changes changed lines
+ * //@property {number} insertions added lines
+ * //@property {number} deletions deleted lines
+ * //@property {boolean} binary is a binary file
+ * //@property {boolean} moved git thinks this file was moved
+ * //@property {string} [fromPath] git thinks this relative path is where the file was before
+ * @property {SupportedMetadataTypes} type metadata type
+ * @property {string} externalKey key
+ * @property {string} name name
+ * @property {'move'|'add/update'|'delete'} gitAction what git recognized as an action
+ * @property {string} _credential mcdev credential name
+ * @property {string} _businessUnit mcdev business unit name inside of _credential
+ */
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
@@ -45,7 +74,7 @@ const CONFIG = {
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     envId: process.env.envId,
-    mainBranch: null,
+    mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
@@ -62,9 +91,11 @@ const CONFIG = {
     // commit
     commitMessage: null,
     featureBranch: null,
-    fileSelectionSalesforceId: null,
-    fileSelectionFileName: null,
+    recreateFeatureBranch: null,
+
     // deploy
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -116,7 +147,7 @@ async function run() {
         // test if source branch (promotion branch) exists (otherwise this would cause an error)
         Copado.checkoutSrc(CONFIG.promotionBranch);
         // checkout destination branch
-        Copado.checkoutSrc(CONFIG.destinationBranch);
+        Copado.checkoutSrc(CONFIG.mainBranch);
     } catch (ex) {
         Log.error('Cloning failed:' + ex.message);
         throw ex;
@@ -182,8 +213,36 @@ async function run() {
         Log.error('Updateing Market List failed: ' + ex.message);
         throw ex;
     }
+
+    /**
+     * @type {CommitSelection[]}
+     */
+    let commitSelectionArr;
     try {
-        if (true == (await Deploy.createDeltaPackage(deployFolder))) {
+        Log.info('');
+        Log.info(
+            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
+        );
+        Log.info('===================');
+        Log.info('');
+        commitSelectionArr = Copado.getJsonFile(
+            CONFIG.fileSelectionSalesforceId,
+            CONFIG.fileSelectionFileName
+        );
+        console.log('commitSelectionArr', commitSelectionArr);
+    } catch (ex) {
+        Log.info('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        if (
+            await Deploy.createDeltaPackage(
+                deployFolder,
+                commitSelectionArr,
+                sourceBU.split('/')[1]
+            )
+        ) {
             Log.info('Deploy BUs');
             Log.info('===================');
             await Deploy.deployBU(targetBU);
@@ -196,10 +255,14 @@ async function run() {
         throw ex;
     }
 
+    // Retrieve what was deployed to target
+    // and commit it to the repo as a backup
+    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+
     try {
         Log.info('git-push changes');
         Log.info('===================');
-        Deploy.push(CONFIG.destinationBranch);
+        Util.push(CONFIG.mainBranch);
     } catch (ex) {
         Log.info('git push failed: ' + ex.message);
         throw ex;
@@ -295,6 +358,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -555,6 +635,35 @@ class Copado {
             postMsg
         );
     }
+    /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
+    }
 
     /**
      * Executes git fetch, followed by checking out the given branch
@@ -592,9 +701,186 @@ class Copado {
     }
 }
 /**
+ * methods to handle interaction with the copado platform
+ */
+class Commit {
+    /**
+     * Retrieve components into a clean retrieve folder.
+     * The retrieve folder is deleted before retrieving to make
+     * sure we have only components that really exist in the BU.
+     *
+     * @param {string} sourceBU specific subfolder for downloads
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
+     * @returns {Promise.<string[]>} list of files to git add & commit
+     */
+    static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
+        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        // ensure wizard is not started
+        mcdev.setSkipInteraction(true);
+
+        // limit to files that git believes need to be added
+        commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
+        // get unique list of types that need to be retrieved
+        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
+        const keyArrForAllTypes = [
+            ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
+        ];
+        console.log('typeArr', typeArr);
+        console.log('keyArrForAllTypes', keyArrForAllTypes);
+        // download all types of which
+        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
+        const fileArr = (
+            await Promise.all(
+                typeArr.map((type) => {
+                    const keyArr = [
+                        ...new Set(
+                            commitSelectionArr
+                                .filter((item) => item.t === type)
+                                .map((item) => JSON.parse(item.j).key)
+                        ),
+                    ];
+                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                })
+            )
+        ).flat();
+        console.log('fileArr', fileArr);
+        return fileArr;
+    }
+    /**
+     * After components have been retrieved,
+     * adds selected components to the Git history.
+     *
+     * @param {string[]} gitAddArr list of items to be added
+     * @returns {void}
+     */
+    static addSelectedComponents(gitAddArr) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+
+        // Iterate all metadata components selected by user to commit
+
+        for (const filePath of gitAddArr) {
+            if (fs.existsSync(filePath)) {
+                // Add this component to the Git index.
+                Util.execCommand(null, ['git add "' + filePath + '"'], 'staged ' + filePath);
+            } else {
+                Log.warn('❌  could not find ' + filePath);
+            }
+        }
+    }
+
+    /**
+     * Commits after adding selected components
+     *
+     * @returns {void}
+     */
+    static commit() {
+        // If the following command returns some output,
+        // git commit must be executed. Otherwise there
+        // are no differences between the components retrieved
+        // from the org and selected by the user
+        // and what is already in Git, so commit and push
+        // can be skipped.
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
+            if (CONFIG.localDev) {
+                Log.debug('🔥 Skipping git action in local dev environment');
+                return;
+            }
+
+            Util.execCommand(
+                'Commit',
+                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                'Completed committing'
+            );
+            Log.result(gitDiffArr, 'Commit completed');
+        } else {
+            Log.error(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
+            );
+            throw new Error('Nothing to commit');
+        }
+    }
+}
+/**
  * handles downloading metadata
  */
 class Deploy {
+    /**
+     * retrieve the new values into the targets folder so it can be commited later.
+     *
+     * @param {string} targetBU buname of source BU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @returns {void}
+     */
+    static async retrieveAndCommit(targetBU, commitSelectionArr) {
+        CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
+
+        let gitAddArr;
+        try {
+            Log.info('');
+            Log.info('Retrieve components');
+            Log.info('===================');
+            Log.info('');
+            gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
+        } catch (ex) {
+            Log.error('Retrieving failed: ' + ex.message);
+            Copado.uploadToolLogs();
+            throw ex;
+        }
+
+        try {
+            Log.info('');
+            Log.info('Add components in metadata JSON to Git history');
+            Log.info('===================');
+            Log.info('');
+            Commit.addSelectedComponents(gitAddArr);
+        } catch (ex) {
+            Log.error('git add failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('');
+            Log.info('Commit');
+            Log.info('===================');
+            Log.info('');
+            Commit.commit();
+        } catch (ex) {
+            Log.error('git commit failed:' + ex.message);
+            throw ex;
+        }
+    }
+
+    /**
+     * convert CommitSelection[] to DeltaPkgItem[]
+     *
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
+     * @returns {DeltaPkgItem[]} format required by mcdev.createDeltaPkg
+     */
+    static _convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) {
+        return commitSelectionArr.map(
+            (item) =>
+                /** @type {DeltaPkgItem} */ ({
+                    type: item.t,
+                    name: item.n,
+                    externalKey: JSON.parse(item.j).key,
+                    gitAction: 'add/update',
+                    _credential: CONFIG.credentials.source.credentialName,
+                    _businessUnit: sourceBU,
+                })
+        );
+    }
     /**
      * Determines the deploy folder from MC Dev configuration (.mcdev.json)
      *
@@ -662,23 +948,41 @@ class Deploy {
      * return whether the delta package is empty or not
      *
      * @param {string} deployFolder path
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {string} sourceBU buname of source BU
      * @returns {Promise.<boolean>} true: files found, false: not
      */
-    static async createDeltaPackage(deployFolder) {
-        const versionRange = 'HEAD^..HEAD';
+    static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
-        Log.debug('Create delta package using version range ' + versionRange);
+        const versionRange = null;
+        let deltaPkgItems = null;
+        if (Array.isArray(commitSelectionArr) && commitSelectionArr.length) {
+            deltaPkgItems = this._convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU);
+            Log.info(`Found ${deltaPkgItems.length} changed components in commits`);
+            Log.debug('DeltaPkgItems: ');
+            Log.debug(deltaPkgItems);
+        } else {
+            Log.info('No changed components found in commits');
+            // versionRange = 'HEAD^..HEAD';
+            // Log.debug('Create delta package using version range ' + versionRange);
+        }
+        console.log('commitSelectionArr', commitSelectionArr);
+        console.log('deltaPkgItems', deltaPkgItems);
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
+            diffArr: deltaPkgItems,
             skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
         if (!deltaPackageLog?.length) {
             Log.error('No changes found for deployment');
             return false;
+        } else {
+            Log.debug('deltaPackageLog:');
+            Log.debug(deltaPackageLog);
         }
 
         Log.debug('Completed creating delta package');
@@ -759,23 +1063,6 @@ class Deploy {
             'Merge commit ' + promotionBranch,
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
-        );
-    }
-    /**
-     * Pushes after a successfull deployment
-     *
-     * @param {string} destinationBranch name of branch to push to
-     * @returns {void}
-     */
-    static push(destinationBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
-        Util.execCommand(
-            'Push branch ' + destinationBranch,
-            ['git push origin "' + destinationBranch + '"'],
-            'Completed pushing branch'
         );
     }
 }

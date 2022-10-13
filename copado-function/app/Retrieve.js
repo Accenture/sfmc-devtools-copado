@@ -19,6 +19,15 @@
  * @property {EnvVar[]} environmentVariables list of environment variables
  * @property {string} environmentName name of environment in Copado
  */
+/**
+ * @typedef {object} CommitSelection
+ * @property {string} t type
+ * @property {string} n name
+ * @property {string} m ???
+ * @property {string} j json string with exta info
+ * @property {'sfmc'} c system
+ * @property {'add'} a action
+ */
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
@@ -66,6 +75,7 @@ const CONFIG = {
     featureBranch: null,
     fileSelectionSalesforceId: null,
     fileSelectionFileName: null,
+    recreateFeatureBranch: null,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
@@ -273,6 +283,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -532,6 +559,35 @@ class Copado {
             [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
             postMsg
         );
+    }
+    /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
     /**

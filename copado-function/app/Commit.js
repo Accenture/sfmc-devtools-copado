@@ -74,7 +74,8 @@ const CONFIG = {
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json', // do not change - LWC depends on it!
+    fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
+    recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     deltaPackageLog: null,
     git_depth: null, // set a default git depth of 100 commits
@@ -119,15 +120,27 @@ async function run() {
     // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
+
+    Log.info('');
+    Log.info('Clone repository');
+    Log.info('===================');
+    Log.info('');
+
     try {
-        Log.info('');
-        Log.info('Clone repository');
-        Log.info('===================');
-        Log.info('');
         Copado.checkoutSrc(CONFIG.mainBranch);
+
+        try {
+            if (CONFIG.recreateFeatureBranch) {
+                Copado.deleteBranch(CONFIG.featureBranch);
+            }
+        } catch (ex) {
+            Log.error('Delete feature branch failed:' + ex.message);
+            throw ex;
+        }
+
         Copado.checkoutSrc(CONFIG.featureBranch, true);
     } catch (ex) {
-        Log.error('Cloning failed:' + ex.message);
+        Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
 
@@ -159,7 +172,7 @@ async function run() {
         );
         Log.info('===================');
         Log.info('');
-        commitSelectionArr = Commit.getCommitList(
+        commitSelectionArr = Copado.getJsonFile(
             CONFIG.fileSelectionSalesforceId,
             CONFIG.fileSelectionFileName
         );
@@ -206,10 +219,13 @@ async function run() {
     }
     try {
         Log.info('');
-        Log.info('Commit and push');
+        Log.info('Commit');
         Log.info('===================');
         Log.info('');
-        Commit.commitAndPush(CONFIG.mainBranch, CONFIG.featureBranch);
+        Commit.commit();
+        Log.info('Push');
+        Log.info('===================');
+        Util.push(CONFIG.featureBranch);
     } catch (ex) {
         Log.error('git commit / push failed:' + ex.message);
         throw ex;
@@ -304,6 +320,23 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * Pushes after a successfull deployment
+     *
+     * @param {string} destinationBranch name of branch to push to
+     * @returns {void}
+     */
+    static push(destinationBranch) {
+        if (CONFIG.localDev) {
+            Log.debug('🔥 Skipping git action in local dev environment');
+            return;
+        }
+        Util.execCommand(
+            'Push branch ' + destinationBranch,
+            ['git push origin "' + destinationBranch + '"'],
+            'Completed pushing branch'
+        );
+    }
     /**
      * Execute command
      *
@@ -566,6 +599,36 @@ class Copado {
         );
     }
     /**
+     * download file to CWD with the name that was stored in Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @returns {void}
+     */
+    static downloadFile(fileSFID) {
+        if (fileSFID) {
+            Util.execCommand(
+                `Download ${fileSFID}.`,
+                `copado --downloadfiles "${fileSFID}"`,
+                'Completed download'
+            );
+        } else {
+            throw new Error('fileSalesforceId is not set');
+        }
+    }
+
+    /**
+     * downloads & parses JSON file from Salesforce
+     *
+     * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} fileName name of the file the download will be saved as
+     * @returns {CommitSelection[]} commitSelectionArr
+     */
+    static getJsonFile(fileSFID, fileName) {
+        this.downloadFile(fileSFID);
+        return JSON.parse(fs.readFileSync(fileName, 'utf8'));
+    }
+
+    /**
      * Executes git fetch, followed by checking out the given branch
      * newly created branches are based on the previously checked out branch!
      *
@@ -578,6 +641,24 @@ class Copado {
             'Create / checkout branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
+        );
+    }
+
+    /**
+     * Deletes the remote feature branch
+     *
+     * @param {string} featureBranch branch that is going to be deleted
+     * @returns {void}
+     */
+    static deleteBranch(featureBranch) {
+        // delete feature branch on origin code in here
+        Util.execCommand(
+            'Deleting branch ' + featureBranch,
+            [
+                `git push origin --delete ${featureBranch}`,
+                `git branch --delete --force ${featureBranch}`,
+            ],
+            'Completed deleting branch ' + featureBranch
         );
     }
 
@@ -605,24 +686,6 @@ class Copado {
  * methods to handle interaction with the copado platform
  */
 class Commit {
-    /**
-     * @param {string} fileSelectionSalesforceId -
-     * @param {string} fileSelectionFileName -
-     * @returns {CommitSelection[]} commitSelectionArr
-     */
-    static getCommitList(fileSelectionSalesforceId, fileSelectionFileName) {
-        if (fileSelectionSalesforceId) {
-            Util.execCommand(
-                `Download ${fileSelectionSalesforceId}.`,
-                `copado --downloadfiles "${fileSelectionSalesforceId}"`,
-                'Completed download'
-            );
-
-            return JSON.parse(fs.readFileSync(fileSelectionFileName, 'utf8'));
-        } else {
-            throw new Error('fileSelectionSalesforceId is not set');
-        }
-    }
     /**
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
@@ -690,21 +753,19 @@ class Commit {
             }
         }
     }
+
     /**
-     * Commits and pushes after adding selected components
+     * Commits after adding selected components
      *
-     * @param {string} mainBranch name of master branch
-     * @param {string} featureBranch can be null/undefined
      * @returns {void}
      */
-    static commitAndPush(mainBranch, featureBranch) {
+    static commit() {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
         // from the org and selected by the user
         // and what is already in Git, so commit and push
         // can be skipped.
-        const branch = featureBranch || mainBranch;
         const gitDiffArr = execSync('git diff --staged --name-only')
             .toString()
             .split('\n')
@@ -723,27 +784,13 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            const ec = Util.execCommandReturnStatus(
-                'Push branch ' + branch,
-                ['git push origin "' + branch + '" --atomic'],
-                'Completed pushing branch'
-            );
-            if (0 != ec) {
-                Log.error('Could not push changes to feature branch ' + branch);
-                throw (
-                    'Could not push changes to feature branch ' +
-                    branch +
-                    '. Exit code is ' +
-                    ec +
-                    '. Please check logs for further details.'
-                );
-            }
             Log.result(gitDiffArr, 'Commit completed');
         } else {
-            Log.result(
+            Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
                 'Nothing to commit'
             );
+            throw new Error('Nothing to commit');
         }
     }
 }

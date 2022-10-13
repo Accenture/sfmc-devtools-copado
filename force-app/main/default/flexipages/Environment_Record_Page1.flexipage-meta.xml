@@ -111,7 +111,7 @@
         </itemInstances>
         <itemInstances>
             <fieldInstance>
-                <fieldItem>Record.Parent_Environment__c</fieldItem>
+                <fieldItem>Record.mcdo_Parent_Environment__c</fieldItem>
                 <identifier>RecordParent_Environment_cField</identifier>
                 <visibilityRule>
                     <criteria>
@@ -1697,8 +1697,8 @@
         </itemInstances>
         <itemInstances>
             <componentInstance>
-                <componentName>childEnvironmentVariables</componentName>
-                <identifier>c_childEnvironmentVariables</identifier>
+                <componentName>mcdo_ChildEnvironmentVariables</componentName>
+                <identifier>c_mcdo_ChildEnvironmentVariables</identifier>
                 <visibilityRule>
                     <criteria>
                         <leftValue>{!Record.copado__Platform__c}</leftValue>

@@ -5,7 +5,7 @@
  */
 @SuppressWarnings('PMD')
 @IsTest
-public with sharing class TestDataFactory {
+public with sharing class mcdo_TestDataFactory {
     /**
      * Create Sample copado__Git_Repository__c and return it's instance
      */

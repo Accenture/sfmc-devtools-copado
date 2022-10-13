@@ -23,8 +23,8 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
-import ExecuteRetrieveFromCopado from "@salesforce/apex/RunCopadoFunctionFromLWC.executeRetrieve";
-import getMetadataFromEnvironment from "@salesforce/apex/RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
+import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
+import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
 
 // Apex functions to retrieve Recorddata from LWC
 
@@ -38,7 +38,7 @@ import {
 
 import { CurrentPageReference } from "lightning/navigation";
 
-export default class MarketingCloudCopadoDataTable extends LightningElement {
+export default class mcdo_RetrieveTable extends LightningElement {
     // This will hold current Record ID
     currentPageReference;
 
@@ -353,10 +353,20 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
             }
         } else if (jobExecution.copado__Status__c === "Error") {
             this.loadingState(false);
-            this.showError(
-                ` An error occurred while Metadata file Retrieve.please refere to the job id: `,
-                jobExecutionId
-            );
+            let JobUrl = "/" + jobExecutionId;
+            const errEvent = new ShowToastEvent({
+                title: "Error",
+                variant: "error",
+                mode: "sticky",
+                message: "Refreshing metadata list failed. For more details {0}.",
+                messageData: [
+                    {
+                        url: JobUrl,
+                        label: "click here"
+                    }
+                ]
+            });
+            this.dispatchEvent(errEvent);
         } else {
             this.showError(
                 `Error while doing metadata retrieve: `,
