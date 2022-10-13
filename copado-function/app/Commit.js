@@ -80,21 +80,16 @@ const CONFIG = {
 async function run() {
     Log.info('Commit.js started');
 
-    const credSource = CONFIG.credentials[CONFIG.credentialNameSource];
-    const credTarget = CONFIG.credentials[CONFIG.credentialNameTarget];
-
-    if (!credSource) {
-        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
-    }
-    if (!credTarget) {
-        throw new Error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
-    }
-
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
+
+    // ensure we got SFMC credentials for our source BU
+    if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
+        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+    }
 
     Log.debug('Environment');
     Log.debug('===================');
@@ -441,20 +436,10 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        const authObj = {};
-        for (const type of Object.keys(credentials)) {
-            authObj[credentials[type].credentialName] = {
-                client_id: credentials[type].clientId,
-                client_secret: credentials[type].clientSecret,
-                auth_url: credentials[type].tenant.startsWith('https')
-                    ? credentials[type].tenant
-                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
-                account_id: credentials[type].enterpriseId,
-            };
-        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
         Log.progress('Completed providing authentication');
+
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
