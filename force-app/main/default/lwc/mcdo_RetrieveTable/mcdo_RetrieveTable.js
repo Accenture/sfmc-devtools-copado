@@ -23,8 +23,8 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
-import ExecuteRetrieveFromCopado from "@salesforce/apex/RunCopadoFunctionFromLWC.executeRetrieve";
-import getMetadataFromEnvironment from "@salesforce/apex/RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
+import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
+import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
 
 // Apex functions to retrieve Recorddata from LWC
 
@@ -38,7 +38,7 @@ import {
 
 import { CurrentPageReference } from "lightning/navigation";
 
-export default class MarketingCloudCopadoDataTable extends LightningElement {
+export default class MCDO_RetrieveTable extends LightningElement {
     // This will hold current Record ID
     currentPageReference;
 
