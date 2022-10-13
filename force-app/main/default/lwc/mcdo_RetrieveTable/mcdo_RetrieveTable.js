@@ -393,7 +393,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         // cheking reverse direction
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
-       // might be null for new pipelines; also if response has special characters which then fails the JSON.parse 
+        // might be null for new pipelines; also if response has special characters which then fails the JSON.parse 
         if (parseData) {
             parseData.sort((next, prev) => {
                 next = keyValue(next) ? keyValue(next) : ""; // handling null values
