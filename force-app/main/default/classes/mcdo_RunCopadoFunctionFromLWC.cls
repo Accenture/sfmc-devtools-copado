@@ -7,7 +7,7 @@
  copado__User_Story__r.copado__Project__r.copado__Deployment_Flow__c.copado__Git_Repository__c
  
  */
-public with sharing class RunCopadoFunctionFromLWC {
+public with sharing class mcdo_RunCopadoFunctionFromLWC {
     /**
      * This function reads the, by the retrieve method created, latest file with the commitable Metadata
      * @return      Returns the content of the file with the Metadata
@@ -119,7 +119,7 @@ public with sharing class RunCopadoFunctionFromLWC {
             request.sourceId = envId;
             request.runAfterInstantiation = true;
             // RetriveCompletion is Class used as copada Callback
-            request.callback = 'MCDO_RetrieveCompletion';
+            request.callback = 'mcdo_RetrieveCompletion';
             List<copado__JobExecution__c> jobExecution = copado.CreateExecution.execute(
                 new List<copado.CreateExecution.Request>{ request }
             );
