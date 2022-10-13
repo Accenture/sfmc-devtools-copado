@@ -176,7 +176,7 @@ async function run() {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
-    Log.result('Refresh done', 'Refresh done');
+    Log.result(`Found ${metadataJson.length} elements on server`, 'Refresh done');
     try {
         Log.info('');
         Log.info('Attach JSON');
@@ -256,7 +256,7 @@ class Log {
         }
         console.log('✅', json); // eslint-disable-line no-console
         // running JSON.stringify escapes potentially existing double quotes in msg
-        json = JSON.stringify(json);
+        json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
         // note: --result-data requires --progress to be also given - they can have different values
         execSync(`copado --result-data ${json} --progress ${msg}`);

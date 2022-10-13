@@ -292,7 +292,7 @@ class Log {
         }
         console.log('✅', json); // eslint-disable-line no-console
         // running JSON.stringify escapes potentially existing double quotes in msg
-        json = JSON.stringify(json);
+        json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
         // note: --result-data requires --progress to be also given - they can have different values
         execSync(`copado --result-data ${json} --progress ${msg}`);

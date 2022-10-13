@@ -256,7 +256,7 @@ async function run() {
 
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
-    await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     try {
         Log.info('git-push changes');
@@ -271,7 +271,7 @@ async function run() {
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
-    Log.result('Deployment completed');
+    Log.result(gitDiffArr, 'Deployment completed');
 
     Copado.uploadToolLogs();
 }
@@ -336,7 +336,7 @@ class Log {
         }
         console.log('✅', json); // eslint-disable-line no-console
         // running JSON.stringify escapes potentially existing double quotes in msg
-        json = JSON.stringify(json);
+        json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
         // note: --result-data requires --progress to be also given - they can have different values
         execSync(`copado --result-data ${json} --progress ${msg}`);
@@ -764,7 +764,7 @@ class Commit {
     /**
      * Commits after adding selected components
      *
-     * @returns {void}
+     * @returns {string[]} gitDiffArr
      */
     static commit() {
         // If the following command returns some output,
@@ -791,7 +791,7 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            Log.result(gitDiffArr, 'Commit completed');
+            Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
@@ -799,6 +799,7 @@ class Commit {
             );
             throw new Error('Nothing to commit');
         }
+        return gitDiffArr;
     }
 }
 /**
@@ -810,12 +811,13 @@ class Deploy {
      *
      * @param {string} targetBU buname of source BU
      * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
-     * @returns {void}
+     * @returns {string[]} gitDiffArr
      */
     static async retrieveAndCommit(targetBU, commitSelectionArr) {
         CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
 
         let gitAddArr;
+        let gitDiffArr = [];
         try {
             Log.info('');
             Log.info('Retrieve components');
@@ -843,11 +845,12 @@ class Deploy {
             Log.info('Commit');
             Log.info('===================');
             Log.info('');
-            Commit.commit();
+            gitDiffArr = Commit.commit();
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
             throw ex;
         }
+        return gitDiffArr;
     }
 
     /**
