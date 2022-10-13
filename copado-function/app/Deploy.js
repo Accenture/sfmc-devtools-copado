@@ -106,7 +106,8 @@ async function run() {
 
     // ensure we got SFMC credentials for our source BU
     if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
-        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        throw new Error(`No source credentials`);
     }
 
     // ensure we got SFMC credentials for our target BU
