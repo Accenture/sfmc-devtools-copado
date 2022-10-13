@@ -79,7 +79,6 @@ const CONFIG = {
  */
 async function run() {
     Log.info('Commit.js started');
-
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
