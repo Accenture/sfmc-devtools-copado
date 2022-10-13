@@ -1,10 +1,10 @@
 @IsTest
-private class ChildEnvironmentVariablesTest {
+private class mcdo_ChildEnvironmentVariablesTest {
     @TestSetup
     private static void setupData() {
-        User standardUser = TestDataFactory.createStandardUser();
+        User standardUser = mcdo_TestDataFactory.createStandardUser();
         insert standardUser;
-        List<PermissionSetAssignment> permissions = TestDataFactory.createRequiredPermissions(
+        List<PermissionSetAssignment> permissions = mcdo_TestDataFactory.createRequiredPermissions(
             standardUser.Id
         );
         insert permissions;
@@ -32,16 +32,16 @@ private class ChildEnvironmentVariablesTest {
             String result = '';
 
             Test.startTest();
-            result = ChildEnvironmentVariableController.getChildEnvironmentVariables(
+            result = mcdo_ChildEnvironmentVariableController.getmcdo_ChildEnvironmentVariables(
                 parentEnvironment.Id
             );
             Test.stopTest();
 
             System.assertNotEquals(null, result, 'Environment Variables JSON is null');
 
-            List<ChildEnvironmentVariables.Environment> environments = (List<ChildEnvironmentVariables.Environment>) JSON.deserialize(
+            List<mcdo_ChildEnvironmentVariables.Environment> environments = (List<mcdo_ChildEnvironmentVariables.Environment>) JSON.deserialize(
                 result,
-                List<ChildEnvironmentVariables.Environment>.class
+                List<mcdo_ChildEnvironmentVariables.Environment>.class
             );
             System.assertEquals(3, environments.size(), 'Environment list size is not equal');
             System.assertEquals(
@@ -50,14 +50,14 @@ private class ChildEnvironmentVariablesTest {
                 'Environment Variable list size is not equal'
             );
 
-            Integer totalActualChildEnvironmentVariables =
+            Integer totalActualmcdo_ChildEnvironmentVariables =
                 environments[0].environmentVariables.size() * environments.size();
-            Integer totalExpectedChildEnvironmentVariables = environments.size() * 3;
-            Integer totalEnvironmentVariables = totalExpectedChildEnvironmentVariables + 2;
+            Integer totalExpectedmcdo_ChildEnvironmentVariables = environments.size() * 3;
+            Integer totalEnvironmentVariables = totalExpectedmcdo_ChildEnvironmentVariables + 2;
 
             System.assertEquals(
-                totalExpectedChildEnvironmentVariables,
-                totalActualChildEnvironmentVariables,
+                totalExpectedmcdo_ChildEnvironmentVariables,
+                totalActualmcdo_ChildEnvironmentVariables,
                 'Environment Variables list size is not equal for Child Environment'
             );
             System.assertEquals(
@@ -80,43 +80,43 @@ private class ChildEnvironmentVariablesTest {
     }
 
     private static void createDefaultTestData() {
-        List<copado__Environment__c> childEnvironments = new List<copado__Environment__c>();
+        List<copado__Environment__c> mcdo_ChildEnvironments = new List<copado__Environment__c>();
         List<copado__Environmental_Variable__c> environmentVariables = new List<copado__Environmental_Variable__c>();
 
-        copado__Environment__c parentEnvironment = TestDataFactory.createTestEnvironment(
+        copado__Environment__c parentEnvironment = mcdo_TestDataFactory.createTestEnvironment(
             'Parent EMEA',
             'Production/Developer'
         );
         insert parentEnvironment;
 
-        copado__Environment__c childEnvironmentFrance = TestDataFactory.createTestEnvironment(
+        copado__Environment__c mcdo_ChildEnvironmentFrance = mcdo_TestDataFactory.createTestEnvironment(
             'France',
             'Production/Developer'
         );
-        childEnvironmentFrance.Parent_Environment__c = parentEnvironment.Id;
-        childEnvironments.add(childEnvironmentFrance);
+        mcdo_ChildEnvironmentFrance.mcdo_Parent_Environment__c = parentEnvironment.Id;
+        mcdo_ChildEnvironments.add(mcdo_ChildEnvironmentFrance);
 
-        copado__Environment__c childEnvironmentGermany = TestDataFactory.createTestEnvironment(
+        copado__Environment__c mcdo_ChildEnvironmentGermany = mcdo_TestDataFactory.createTestEnvironment(
             'Germany',
             'Production/Developer'
         );
-        childEnvironmentGermany.Parent_Environment__c = parentEnvironment.Id;
-        childEnvironments.add(childEnvironmentGermany);
+        mcdo_ChildEnvironmentGermany.mcdo_Parent_Environment__c = parentEnvironment.Id;
+        mcdo_ChildEnvironments.add(mcdo_ChildEnvironmentGermany);
 
-        copado__Environment__c childEnvironmentIreland = TestDataFactory.createTestEnvironment(
+        copado__Environment__c mcdo_ChildEnvironmentIreland = mcdo_TestDataFactory.createTestEnvironment(
             'Ireland',
             'Production/Developer'
         );
-        childEnvironmentIreland.Parent_Environment__c = parentEnvironment.Id;
-        childEnvironments.add(childEnvironmentIreland);
+        mcdo_ChildEnvironmentIreland.mcdo_Parent_Environment__c = parentEnvironment.Id;
+        mcdo_ChildEnvironments.add(mcdo_ChildEnvironmentIreland);
 
-        insert childEnvironments;
+        insert mcdo_ChildEnvironments;
 
-        for (copado__Environment__c eachEvironment : childEnvironments) {
+        for (copado__Environment__c eachEvironment : mcdo_ChildEnvironments) {
             //Environment Variable creation
             for (Integer i = 1; i <= 3; i++) {
                 environmentVariables.add(
-                    TestDataFactory.createTestEnvironmentVariable(
+                    mcdo_TestDataFactory.createTestEnvironmentVariable(
                         eachEvironment.Id,
                         'envVariable_' + i,
                         'envVariableValue_' + i
@@ -127,7 +127,7 @@ private class ChildEnvironmentVariablesTest {
 
         for (Integer i = 1; i <= 2; i++) {
             environmentVariables.add(
-                TestDataFactory.createTestEnvironmentVariable(
+                mcdo_TestDataFactory.createTestEnvironmentVariable(
                     parentEnvironment.Id,
                     'envVariable_' + i,
                     'envVariableValue_' + i

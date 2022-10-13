@@ -1,10 +1,10 @@
 @IsTest
-private class RunCopadoFunctionFromLWCTest {
+private class mcdo_RunCopadoFunctionFromLWCTest {
     @TestSetup
     static void makeData() {
-        User standardUser = TestDataFactory.createStandardUser();
+        User standardUser = mcdo_TestDataFactory.createStandardUser();
         insert standardUser;
-        List<PermissionSetAssignment> permissions = TestDataFactory.createRequiredPermissions(
+        List<PermissionSetAssignment> permissions = mcdo_TestDataFactory.createRequiredPermissions(
             standardUser.Id
         );
         insert permissions;
@@ -40,7 +40,7 @@ private class RunCopadoFunctionFromLWCTest {
             copado__User_Story__c userStory = [SELECT Id FROM copado__User_Story__c LIMIT 1];
 
             // Exercise
-            String result = RunCopadoFunctionFromLWC.executeRetrieve(userStory.Id);
+            String result = mcdo_RunCopadoFunctionFromLWC.executeRetrieve(userStory.Id);
 
             //Verify
             System.assertNotEquals(null, result, 'Result should not be null');
@@ -55,7 +55,7 @@ private class RunCopadoFunctionFromLWCTest {
             copado__User_Story__c userStory = [SELECT Id FROM copado__User_Story__c LIMIT 1];
 
             // Exercise
-            String result = RunCopadoFunctionFromLWC.getMetadataFromEnvironment(userStory.Id);
+            String result = mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment(userStory.Id);
 
             //Verify
             System.assertNotEquals(null, result, 'Content data should not be null');
@@ -74,7 +74,7 @@ private class RunCopadoFunctionFromLWCTest {
     }
 
     private static void createDefaultTestData() {
-        copado__Deployment_Flow__c pipeline = TestDataFactory.createDeploymentFlow(
+        copado__Deployment_Flow__c pipeline = mcdo_TestDataFactory.createDeploymentFlow(
             'Test Pipeline',
             true,
             null,
@@ -82,16 +82,16 @@ private class RunCopadoFunctionFromLWCTest {
         );
         insert pipeline;
 
-        copado__Environment__c environment = TestDataFactory.createTestEnvironment(
+        copado__Environment__c environment = mcdo_TestDataFactory.createTestEnvironment(
             'dev1',
             'Production/Developer'
         );
         insert environment;
 
-        copado__Project__c project = TestDataFactory.createTestProject(pipeline.Id);
+        copado__Project__c project = mcdo_TestDataFactory.createTestProject(pipeline.Id);
         insert project;
 
-        copado__User_Story__c userStory = TestDataFactory.createUserStory(
+        copado__User_Story__c userStory = mcdo_TestDataFactory.createUserStory(
             'Test Enhancement',
             'Draft',
             null,
@@ -100,10 +100,10 @@ private class RunCopadoFunctionFromLWCTest {
         );
         insert userStory;
 
-        ContentVersion file = TestDataFactory.createFile('mcmetadata.json');
+        ContentVersion file = mcdo_TestDataFactory.createFile('mcmetadata.json');
         insert file;
 
-        ContentDocumentLink fileLink = TestDataFactory.createFileLink(file.Id, environment.Id);
+        ContentDocumentLink fileLink = mcdo_TestDataFactory.createFileLink(file.Id, environment.Id);
         insert fileLink;
     }
 }

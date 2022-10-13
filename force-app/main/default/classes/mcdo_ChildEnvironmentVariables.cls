@@ -1,7 +1,9 @@
 // Note: This class have been used as Dynamic Expression class for Marketing Cloud functions - Hence marked Global
 @SuppressWarnings('PMD.AvoidGlobalModifier')
-global with sharing class ChildEnvironmentVariables implements copado.ParameterExpressionCallable {
+global with sharing class mcdo_ChildEnvironmentVariables implements copado.ParameterExpressionCallable {
+
     // GLOBAL
+  
 
     private Map<String, List<EnvironmentVariablesRecord>> envVariablesByEnvName = new Map<String, List<EnvironmentVariablesRecord>>();
 
@@ -28,7 +30,7 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
             );
         }
 
-        for (copado__Environment__c eachEnvironment : getChildEnvironments(environmentId)) {
+        for (copado__Environment__c eachEnvironment : getmcdo_ChildEnvironments(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
             if (envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
                 environmentVariables = envVariablesByEnvName.get(eachEnvironment.Name);
@@ -46,21 +48,21 @@ global with sharing class ChildEnvironmentVariables implements copado.ParameterE
         return [
             SELECT Id, Name, copado__Value__c, copado__Scope__c, copado__Environment__r.name
             FROM copado__Environmental_Variable__c
-            WHERE copado__Environment__r.Parent_Environment__c = :environmentId
+            WHERE copado__Environment__r.mcdo_Parent_Environment__c = :environmentId
             WITH SECURITY_ENFORCED
             ORDER BY Name
         ];
     }
 
-    private List<copado__Environment__c> getChildEnvironments(Id environmentId) {
+    private List<copado__Environment__c> getmcdo_ChildEnvironments(Id environmentId) {
         return [
             SELECT Id, Name
             FROM copado__Environment__c
-            WHERE Parent_Environment__c = :environmentId
+            WHERE mcdo_Parent_Environment__c = :environmentId
             WITH SECURITY_ENFORCED
         ];
     }
-
+ 
     // WRAPPER
 
     public class EnvironmentVariablesRecord {
