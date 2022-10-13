@@ -38,3 +38,4 @@ $RECYCLE.BIN/
 .env
 tmp/
 *.env
+.sf/config.json

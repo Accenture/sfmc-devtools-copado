@@ -53,22 +53,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: process.env.credentialNameTarget,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -116,6 +103,18 @@ async function run() {
     Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
+
+    // ensure we got SFMC credentials for our source BU
+    if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
+        Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        throw new Error(`No source credentials`);
+    }
+
+    // ensure we got SFMC credentials for our target BU
+    if (!CONFIG.credentials[CONFIG.credentialNameTarget]) {
+        Log.error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+        throw new Error(`No target credentials`);
+    }
 
     Log.debug('Environment');
     Log.debug('===================');
@@ -201,8 +200,8 @@ async function run() {
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
-        targetBU = Util.getBuName(CONFIG.credentials.target.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentialNameTarget, CONFIG.target_mid);
     } catch (ex) {
         Log.error('Getting Source / Target BU failed: ' + ex.message);
         throw ex;
@@ -257,7 +256,7 @@ async function run() {
 
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
-    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     try {
         Log.info('git-push changes');
@@ -481,20 +480,10 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        const authObj = {};
-        for (const type of Object.keys(credentials)) {
-            authObj[credentials[type].credentialName] = {
-                client_id: credentials[type].clientId,
-                client_secret: credentials[type].clientSecret,
-                auth_url: credentials[type].tenant.startsWith('https')
-                    ? credentials[type].tenant
-                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
-                account_id: credentials[type].enterpriseId,
-            };
-        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
         Log.progress('Completed providing authentication');
+
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
@@ -876,7 +865,7 @@ class Deploy {
                     name: item.n,
                     externalKey: JSON.parse(item.j).key,
                     gitAction: 'add/update',
-                    _credential: CONFIG.credentials.source.credentialName,
+                    _credential: CONFIG.credentialNameSource,
                     _businessUnit: sourceBU,
                 })
         );
