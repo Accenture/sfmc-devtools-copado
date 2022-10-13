@@ -308,11 +308,11 @@ export default class MarketingCloudCopadoDataTable extends LightningElement {
                     "/events/copado/v1/step-monitor/"
                 )
             ) {
-                if (this.isJSON(response.data.payload.copado__Payload__c)) {
+                try {
                     // show progress on screen
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                }
+                } catch {}
             }
         };
 
