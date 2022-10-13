@@ -112,7 +112,8 @@ async function run() {
 
     // ensure we got SFMC credentials for our target BU
     if (!CONFIG.credentials[CONFIG.credentialNameTarget]) {
-        throw new Error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+        Log.error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+        throw new Error(`No target credentials`);
     }
 
     Log.debug('Environment');
