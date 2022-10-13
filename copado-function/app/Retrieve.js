@@ -35,22 +35,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: process.env.credentialNameTarget,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -97,6 +84,12 @@ async function run() {
     Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
+
+    const credSource = CONFIG.credentials[CONFIG.credentialNameSource];
+
+    if (!credSource) {
+        throw new Error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+    }
 
     Log.debug('Environment');
     Log.debug('===================');
@@ -154,7 +147,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
