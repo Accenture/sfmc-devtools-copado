@@ -38,7 +38,7 @@ import {
 
 import { CurrentPageReference } from "lightning/navigation";
 
-export default class MCDO_RetrieveTable extends LightningElement {
+export default class mcdo_RetrieveTable extends LightningElement {
     // This will hold current Record ID
     currentPageReference;
 
