@@ -308,9 +308,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     "/events/copado/v1/step-monitor/"
                 )
             ) {
-                // show progress on screen
-                const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                try {
+                    // show progress on screen
+                    const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
+                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                } catch {}
             }
         };
 
@@ -391,13 +393,16 @@ export default class mcdo_RetrieveTable extends LightningElement {
         // cheking reverse direction
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
-        parseData.sort((next, prev) => {
-            next = keyValue(next) ? keyValue(next) : ""; // handling null values
-            prev = keyValue(prev) ? keyValue(prev) : "";
-            // sorting values based on direction
-            return isReverse * ((next > prev) - (prev > next));
-        });
-        this.visibleData = parseData;
+        // might be null for new pipelines; also if response has special characters which then fails the JSON.parse 
+        if (parseData) {
+            parseData.sort((next, prev) => {
+                next = keyValue(next) ? keyValue(next) : ""; // handling null values
+                prev = keyValue(prev) ? keyValue(prev) : "";
+                // sorting values based on direction
+                return isReverse * ((next > prev) - (prev > next));
+            });
+            this.visibleData = parseData;
+        }
     }
 
     // Registers a listener to errors that the server returns by the empApi module
