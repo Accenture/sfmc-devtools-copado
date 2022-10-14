@@ -35,22 +35,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: null,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -97,6 +84,13 @@ async function run() {
     Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
+
+    // ensure we got SFMC credentials for our source BU
+    if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
+        Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        throw new Error(`No credentials`);
+    }
+    Log.debug('Credentials found for source BU');
 
     Log.debug('Environment');
     Log.debug('===================');
@@ -154,7 +148,7 @@ async function run() {
         Log.info('Get source BU');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
     } catch (ex) {
         Log.error('Getting Source BU failed: ' + ex.message);
         throw ex;
@@ -182,7 +176,7 @@ async function run() {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
-    Log.result('Refresh done', 'Refresh done');
+    Log.result(`Found ${metadataJson.length} elements on server`, 'Refresh done');
     try {
         Log.info('');
         Log.info('Attach JSON');
@@ -262,7 +256,7 @@ class Log {
         }
         console.log('✅', json); // eslint-disable-line no-console
         // running JSON.stringify escapes potentially existing double quotes in msg
-        json = JSON.stringify(json);
+        json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
         // note: --result-data requires --progress to be also given - they can have different values
         execSync(`copado --result-data ${json} --progress ${msg}`);
@@ -406,20 +400,10 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        const authObj = {};
-        for (const type of Object.keys(credentials)) {
-            authObj[credentials[type].credentialName] = {
-                client_id: credentials[type].clientId,
-                client_secret: credentials[type].clientSecret,
-                auth_url: credentials[type].tenant.startsWith('https')
-                    ? credentials[type].tenant
-                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
-                account_id: credentials[type].enterpriseId,
-            };
-        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
         Log.progress('Completed providing authentication');
+
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,

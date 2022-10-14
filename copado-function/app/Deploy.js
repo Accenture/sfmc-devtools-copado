@@ -53,22 +53,9 @@ const resolve = require('node:path').resolve;
 
 const CONFIG = {
     // credentials
-    credentials: {
-        source: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-        target: {
-            clientId: process.env.clientId,
-            clientSecret: process.env.clientSecret,
-            credentialName: process.env.credentialName,
-            tenant: process.env.tenant,
-            enterpriseId: process.env.enterprise_id,
-        },
-    },
+    credentialNameSource: process.env.credentialNameSource,
+    credentialNameTarget: process.env.credentialNameTarget,
+    credentials: JSON.parse(process.env.credentials),
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -116,6 +103,18 @@ async function run() {
     Log.debug('===================');
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
+
+    // ensure we got SFMC credentials for our source BU
+    if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
+        Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
+        throw new Error(`No source credentials`);
+    }
+
+    // ensure we got SFMC credentials for our target BU
+    if (!CONFIG.credentials[CONFIG.credentialNameTarget]) {
+        Log.error(`No credentials found for target (${CONFIG.credentialNameTarget})`);
+        throw new Error(`No target credentials`);
+    }
 
     Log.debug('Environment');
     Log.debug('===================');
@@ -201,8 +200,8 @@ async function run() {
         Log.info('Create delta package');
         Log.info('===================');
         Log.info('');
-        sourceBU = Util.getBuName(CONFIG.credentials.source.credentialName, CONFIG.source_mid);
-        targetBU = Util.getBuName(CONFIG.credentials.target.credentialName, CONFIG.target_mid);
+        sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
+        targetBU = Util.getBuName(CONFIG.credentialNameTarget, CONFIG.target_mid);
     } catch (ex) {
         Log.error('Getting Source / Target BU failed: ' + ex.message);
         throw ex;
@@ -257,7 +256,7 @@ async function run() {
 
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
-    Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     try {
         Log.info('git-push changes');
@@ -272,7 +271,7 @@ async function run() {
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
-    Log.result('Deployment completed');
+    Log.result(gitDiffArr, 'Deployment completed');
 
     Copado.uploadToolLogs();
 }
@@ -337,7 +336,7 @@ class Log {
         }
         console.log('✅', json); // eslint-disable-line no-console
         // running JSON.stringify escapes potentially existing double quotes in msg
-        json = JSON.stringify(json);
+        json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
         // note: --result-data requires --progress to be also given - they can have different values
         execSync(`copado --result-data ${json} --progress ${msg}`);
@@ -481,20 +480,10 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        const authObj = {};
-        for (const type of Object.keys(credentials)) {
-            authObj[credentials[type].credentialName] = {
-                client_id: credentials[type].clientId,
-                client_secret: credentials[type].clientSecret,
-                auth_url: credentials[type].tenant.startsWith('https')
-                    ? credentials[type].tenant
-                    : `https://${credentials[type].tenant}.auth.marketingcloudapis.com/`,
-                account_id: credentials[type].enterpriseId,
-            };
-        }
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(authObj));
+        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
         Log.progress('Completed providing authentication');
+
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
@@ -775,7 +764,7 @@ class Commit {
     /**
      * Commits after adding selected components
      *
-     * @returns {void}
+     * @returns {string[]} gitDiffArr
      */
     static commit() {
         // If the following command returns some output,
@@ -802,7 +791,7 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            Log.result(gitDiffArr, 'Commit completed');
+            Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git.',
@@ -810,6 +799,7 @@ class Commit {
             );
             throw new Error('Nothing to commit');
         }
+        return gitDiffArr;
     }
 }
 /**
@@ -821,12 +811,13 @@ class Deploy {
      *
      * @param {string} targetBU buname of source BU
      * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
-     * @returns {void}
+     * @returns {string[]} gitDiffArr
      */
     static async retrieveAndCommit(targetBU, commitSelectionArr) {
         CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
 
         let gitAddArr;
+        let gitDiffArr = [];
         try {
             Log.info('');
             Log.info('Retrieve components');
@@ -854,11 +845,12 @@ class Deploy {
             Log.info('Commit');
             Log.info('===================');
             Log.info('');
-            Commit.commit();
+            gitDiffArr = Commit.commit();
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
             throw ex;
         }
+        return gitDiffArr;
     }
 
     /**
@@ -876,7 +868,7 @@ class Deploy {
                     name: item.n,
                     externalKey: JSON.parse(item.j).key,
                     gitAction: 'add/update',
-                    _credential: CONFIG.credentials.source.credentialName,
+                    _credential: CONFIG.credentialNameSource,
                     _businessUnit: sourceBU,
                 })
         );
