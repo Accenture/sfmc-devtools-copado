@@ -271,10 +271,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     // Function to get the newest Committable Metadata, and save it in the environment
     async retrieve() {
-        this.loadingState(true);
+        this.loadingState(true, "Starting Retrieve");
 
         try {
-            this.progressStatus = "Starting Retrieve";
             const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
@@ -495,7 +494,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
 
     // Simple Function to Toggle the State of Loading
-    loadingState(isLoading) {
+    loadingState(isLoading, progressStatus) {
+        if (progressStatus) {
+            this.progressStatus = progressStatus;
+        }
         this.isLoading = isLoading;
         this.showTable = !isLoading;
         this.refreshButtonDisabled = isLoading;
