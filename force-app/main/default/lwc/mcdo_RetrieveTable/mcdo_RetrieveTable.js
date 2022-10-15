@@ -339,6 +339,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 const result = await getMetadataFromEnvironment({ userStoryId: this.userStoryId });
                 this.data = this.addIdToData(JSON.parse(result));
                 this.visibleData = [...this.data];
+                // apply sorting again
+                this.sortData(this.sortedBy, this.sortDirection);
                 this.loadingState(false);
             } catch (err) {
                 this.loadingState(false);
