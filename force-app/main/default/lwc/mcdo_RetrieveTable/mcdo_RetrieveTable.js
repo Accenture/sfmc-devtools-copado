@@ -139,7 +139,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     // Sorting variables
     defaultSortDirection = "asc";
-    sortDirection = "asc";
+    sortDirection = "desc";
     sortedBy = "ld";
 
     // Search Functionality related variables
