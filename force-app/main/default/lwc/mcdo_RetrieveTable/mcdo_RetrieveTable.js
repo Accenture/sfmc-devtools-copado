@@ -1,5 +1,5 @@
 /**
- *
+ * Copyright (c) 2022 Accenture. MIT licensed.
  * This Lightning Web Component contains a table that displays deployable Marketing Cloud metadata
  * that can be selected to be committed from one Business Unit to another.
  * Committed metadata will be included in the version control system and then deployed.
@@ -267,7 +267,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
             );
         }
     }
-
+    /**
+     * adds an id field to the data to track what was selected and what wasnt across filter actions or pagination
+     * @param {object} data our central list of data as retrieved from the json attached to the environment
+     * @returns {object} data with an id field added
+     */
     addIdToData(data) {
         return data.map((row, index) => {
             row.id = `${row.t}.${row.k}`;
@@ -275,7 +279,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
         });
     }
 
-    // Function to get the newest Committable Metadata, and save it in the environment
+    /**
+     * called when the Refresh-button is clicked to get new data from SFMC
+     */
     async retrieve() {
         this.loadingState(true, "Starting Retrieve");
 
@@ -298,6 +304,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
         }
     }
 
+    /**
+     * helper for retrieve()
+     * @param {string} jobExecutionId sfid
+     * @returns {Promise<void>} resolves when the job is done
+     */
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
             if (
@@ -329,6 +340,12 @@ export default class mcdo_RetrieveTable extends LightningElement {
         }
     }
 
+    /**
+     * helper for retrieve() called when refreshing metadata is done to update the table
+     * @param {object} response empApi response
+     * @param {string} jobExecutionId sfid
+     * @returns {Promise<void>} resolves when the job is done
+     */
     async updateMetadataGrid(response, jobExecutionId) {
         try {
             unsubscribeEmp(this.empSubscription);
@@ -384,13 +401,23 @@ export default class mcdo_RetrieveTable extends LightningElement {
             );
         }
     }
-
+    /**
+     * called when sorting is changed by user
+     * @param {object} event LWC event object
+     * @returns {void}
+     */
     onHandleSort(event) {
         this.sortedBy = event.detail.fieldName;
         this.sortDirection = event.detail.sortDirection;
         this.sortData(this.sortedBy, this.sortDirection);
     }
 
+    /**
+     * helper for onHandleSort that does the actual sorting
+     * @param {string} fieldname this.sortedBy
+     * @param {string} direction this.sortDirection
+     * @returns {void}
+     */
     sortData(fieldname, direction) {
         // create new array to trigger the update
         const visibleDataResorted = [...this.visibleData];
@@ -424,6 +451,12 @@ export default class mcdo_RetrieveTable extends LightningElement {
             throw new Error(error);
         });
     }
+
+    /**
+     * called when a row is selected or deselected via its checkbox
+     * @param {object} event LWC event object
+     * @returns {void}
+     */
     updateSelected(event) {
         // get rows that are selected AFTER the select/deselect that triggered calling this method
         const selectedRows = JSON.parse(JSON.stringify(event.detail.selectedRows));
@@ -450,6 +483,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
     /**
      * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
+     * @param {object} event LWC event object
+     * @returns {void}
      */
     handleSearch(event) {
         // Filter Rows
@@ -483,13 +518,23 @@ export default class mcdo_RetrieveTable extends LightningElement {
         );
     }
 
-    // General Handler for simple Inputs
+    /**
+     * General Handler for simple Inputs
+     * @param {object} event LWC event object
+     * @returns {void}
+     */
     handleChange(event) {
         this[event.target.name] = event.detail.value;
     }
 
-    // Method to show dynamic popups for various events
-    // Later, we can implement the Loading Functiontionality into the toast, because they can be triggered together.
+    /**
+     * helper to show dynamic popups for various events
+     * @param {string} title displayed as heading
+     * @param {string} message body of the message. It can contain placeholders in the form of {0} ... {N}. The placeholders are replaced with the links on messageData.
+     * @param {'info'|'success'|'warning'|'error'} [variant=info] Changes the appearance of the notice
+     * @param {'dismissible'|'pester'|'sticky'} [mode=dismissible] Determines how persistent the toast is
+     * @returns {void}
+     */
     showToastEvent(title, message, variant, mode) {
         const event = new ShowToastEvent({
             title,
@@ -500,14 +545,31 @@ export default class mcdo_RetrieveTable extends LightningElement {
         this.dispatchEvent(event);
     }
 
+    /**
+     * show sticky error message
+     * @param {string} title displayed as heading
+     * @param {string} message body of the message. It can contain placeholders in the form of {0} ... {N}. The placeholders are replaced with the links on messageData.
+     * @returns {void}
+     */
     showError(title, message) {
         this.showToastEvent(title, message, "error", "sticky");
     }
+    /**
+     * show sticky error message
+     * @param {string} title displayed as heading
+     * @param {string} message body of the message. It can contain placeholders in the form of {0} ... {N}. The placeholders are replaced with the links on messageData.
+     * @returns {void}
+     */
     showSuccess(title, message) {
         this.showToastEvent(title, message, "success", "dismissible");
     }
 
-    // Simple Function to Toggle the State of Loading
+    /**
+     * shows loading spinner and progress message or hides it again
+     * @param {boolean} isLoading shows/hides spinner
+     * @param {string} [progressStatus] sets progress message
+     * @returns {void}
+     */
     loadingState(isLoading, progressStatus) {
         if (progressStatus) {
             this.progressStatus = progressStatus;
