@@ -252,8 +252,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 this.userStoryId
             );
             getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then((result) => {
-                const parsedResult = JSON.parse(result);
-                this.data = parsedResult;
+                this.data = this.addIdToData(JSON.parse(result));
                 this.sortData(this.sortedBy, this.sortDirection);
             });
         } catch (err) {
@@ -267,6 +266,15 @@ export default class mcdo_RetrieveTable extends LightningElement {
         } finally {
             this.loadingState(false);
         }
+    }
+
+    addIdToData(data) {
+        const test = data.map((row, index) => {
+            row.id = `${row.t}.${row.k}`;
+            return row;
+        });
+        console.log(test);
+        return test;
     }
 
     // Function to get the newest Committable Metadata, and save it in the environment
@@ -288,7 +296,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
             // if previously Rows have been selected, set them as selected again
             if (self.selectedRows.length > 0) {
-                self.selectedRows = self.selectedRows.map(({ k }) => k);
+                self.selectedRows = self.selectedRows.map(({ id }) => id);
             }
         }
     }
@@ -340,7 +348,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         if (jobExecution.copado__Status__c === "Successful") {
             try {
                 const result = await getMetadataFromEnvironment({ userStoryId: this.userStoryId });
-                const parsedResult = JSON.parse(result);
+                const parsedResult = this.addIdToData(JSON.parse(result));
                 this.data = parsedResult;
                 this.visibleData = parsedResult;
                 this.loadingState(false);
@@ -393,7 +401,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         // cheking reverse direction
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
-        // might be null for new pipelines; also if response has special characters which then fails the JSON.parse 
+        // might be null for new pipelines; also if response has special characters which then fails the JSON.parse
         if (parseData) {
             parseData.sort((next, prev) => {
                 next = keyValue(next) ? keyValue(next) : ""; // handling null values
@@ -417,7 +425,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
             throw new Error(error);
         });
     }
-
+    updateSelected(event) {
+        const selectedRows = event.detail.selectedRows;
+        // Display that fieldName of the selected rows
+        console.log("updateSelected-selectedRows: ", JSON.parse(JSON.stringify(selectedRows)));
+    }
     /**
      * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
      * TODO: It's not possible to remove a row, when the dataset is reduced (search)
@@ -426,9 +438,16 @@ export default class mcdo_RetrieveTable extends LightningElement {
         const visibleSelectedRowsBefore = this.template
             .querySelector("lightning-datatable")
             .getSelectedRows();
+        console.log(
+            "handleSearch-1-selectedRows",
+            JSON.parse(JSON.stringify(visibleSelectedRowsBefore))
+        );
+        event.detail.selectedRows;
+        console.log("handleSearch-1-this.allSelectedRows", this.allSelectedRows);
 
-        let ar = [...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])];
-        this.allSelectedRows = ar;
+        this.allSelectedRows = [
+            ...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])
+        ];
 
         // Filter Rows
         const regex = new RegExp(event.target.value, "gi"); // global and case insensitive match
@@ -444,7 +463,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
         );
 
         // Set selected Rows
-        this.selectedRows = this.allSelectedRows.map(({ k }) => k);
+        this.selectedRows = [...new Set([...this.allSelectedRows.map(({ id }) => id)])];
+        // this.selectedRows = this.allSelectedRows;
+        console.log("handleSearch-2-selectedRows", this.selectedRows);
     }
 
     // General Handler for simple Inputs
