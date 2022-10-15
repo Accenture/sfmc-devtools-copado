@@ -127,8 +127,7 @@ async function run() {
                 Copado.deleteBranch(CONFIG.featureBranch);
             }
         } catch (ex) {
-            Log.error('Delete feature branch failed:' + ex.message);
-            throw ex;
+            Log.warn('Delete feature branch failed:' + ex.message);
         }
 
         Copado.checkoutSrc(CONFIG.featureBranch, true);
@@ -350,7 +349,8 @@ class Util {
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (ex) {
-            Log.error(ex.status + ': ' + ex.message);
+            // do not use Log.error here to prevent our copado-function from auto-failing right here
+            Log.info(ex.status + ': ' + ex.message);
             throw new Error(ex);
         }
 
@@ -636,12 +636,14 @@ class Copado {
     static deleteBranch(featureBranch) {
         // delete feature branch on origin code in here
         Util.execCommand(
-            'Deleting branch ' + featureBranch,
-            [
-                `git push origin --delete ${featureBranch}`,
-                `git branch --delete --force ${featureBranch}`,
-            ],
-            'Completed deleting branch ' + featureBranch
+            'Deleting server branch ' + featureBranch,
+            [`git push origin --delete ${featureBranch}`],
+            'Completed deleting server branch ' + featureBranch
+        );
+        Util.execCommand(
+            'Deleting local branch ' + featureBranch,
+            [`git branch --delete --force ${featureBranch}`],
+            'Completed deleting local branch ' + featureBranch
         );
     }
 

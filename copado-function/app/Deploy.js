@@ -394,7 +394,8 @@ class Util {
         try {
             execSync(command, { stdio: [0, 1, 2], stderr: 'inherit' });
         } catch (ex) {
-            Log.error(ex.status + ': ' + ex.message);
+            // do not use Log.error here to prevent our copado-function from auto-failing right here
+            Log.info(ex.status + ': ' + ex.message);
             throw new Error(ex);
         }
 
