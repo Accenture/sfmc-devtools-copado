@@ -27,14 +27,15 @@
                     </lightning-input>
                 </div>
                 <lightning-datatable
-                    key-field="Id"
+                    key-field="id"
                     columns={columns}
                     data={visibleData}
                     default-sort-direction={defaultSortDirection}
                     sorted-direction={sortDirection}
                     sorted-by={sortedBy}
                     onsort={onHandleSort}
-                    selected-rows={selectedRows}
+                    onrowselection={updateSelected}
+                    selected-rows={selectedRowIDs}
                 >
                 </lightning-datatable>
             </div>
