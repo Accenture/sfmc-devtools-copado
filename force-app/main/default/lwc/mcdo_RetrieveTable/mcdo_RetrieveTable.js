@@ -473,6 +473,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 regex.test(row.lb) ||
                 regex.test(row.k)
         );
+        // apply sorting again
+        this.sortData(this.sortedBy, this.sortDirection);
         // Set selected Rows (needs to be a new array to trigger the update)
         this.selectedRowIDs = [...this.allSelectedRows.map(({ id }) => id)];
 
