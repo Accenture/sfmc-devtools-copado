@@ -253,6 +253,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
             );
             getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then((result) => {
                 this.data = this.addIdToData(JSON.parse(result));
+                this.visibleData = [...this.data];
                 this.sortData(this.sortedBy, this.sortDirection);
             });
         } catch (err) {
@@ -348,9 +349,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
         if (jobExecution.copado__Status__c === "Successful") {
             try {
                 const result = await getMetadataFromEnvironment({ userStoryId: this.userStoryId });
-                const parsedResult = this.addIdToData(JSON.parse(result));
-                this.data = parsedResult;
-                this.visibleData = parsedResult;
+                this.data = this.addIdToData(JSON.parse(result));
+                this.visibleData = [...this.data];
                 this.loadingState(false);
             } catch (err) {
                 this.loadingState(false);
@@ -391,9 +391,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
 
     sortData(fieldname, direction) {
-        let parseData = "";
 
-        parseData = JSON.parse(JSON.stringify(this.data));
+        const visibleDataResorted = [...this.visibleData];
         // Return the value stored in the field
         let keyValue = (a) => {
             return a[fieldname];
@@ -402,14 +401,14 @@ export default class mcdo_RetrieveTable extends LightningElement {
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
         // might be null for new pipelines; also if response has special characters which then fails the JSON.parse
-        if (parseData) {
-            parseData.sort((next, prev) => {
+        if (visibleDataResorted) {
+            visibleDataResorted.sort((next, prev) => {
                 next = keyValue(next) ? keyValue(next) : ""; // handling null values
                 prev = keyValue(prev) ? keyValue(prev) : "";
                 // sorting values based on direction
                 return isReverse * ((next > prev) - (prev > next));
             });
-            this.visibleData = parseData;
+            this.visibleData = visibleDataResorted;
         }
     }
 
