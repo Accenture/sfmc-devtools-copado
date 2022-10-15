@@ -462,17 +462,22 @@ export default class mcdo_RetrieveTable extends LightningElement {
         );
 
         // Filter Rows
-        const regex = new RegExp(event.target.value, "gi"); // global and case insensitive match
-        this.visibleData = this.data.filter(
-            (row) =>
-                regex.test(row.n) ||
-                regex.test(row.t) ||
-                regex.test(row.cd) ||
-                regex.test(row.cb) ||
-                regex.test(row.ld) ||
-                regex.test(row.lb) ||
-                regex.test(row.k)
-        );
+        if (event.target.value === "") {
+            // way faster in case the filter was cleared
+            this.visibleData = [...this.data];
+        } else {
+            const regex = new RegExp(event.target.value, "gi"); // global and case insensitive match
+            this.visibleData = this.data.filter(
+                (row) =>
+                    regex.test(row.n) ||
+                    regex.test(row.t) ||
+                    regex.test(row.cd) ||
+                    regex.test(row.cb) ||
+                    regex.test(row.ld) ||
+                    regex.test(row.lb) ||
+                    regex.test(row.k)
+            );
+        }
         // apply sorting again
         this.sortData(this.sortedBy, this.sortDirection);
         // Set selected Rows (needs to be a new array to trigger the update)
