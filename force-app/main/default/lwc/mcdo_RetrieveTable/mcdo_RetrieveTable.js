@@ -486,7 +486,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
         // reset list for current filter to allow add/remove from global list
         this.selectedRowsIDsFiltered.length = 0;
         this.selectedRowsIDsFiltered.push(
-            ...this.visibleData.filter((row) => this.selectedRowIDs.includes(row.id))
+            ...this.visibleData
+                .filter((row) => this.selectedRowIDs.includes(row.id))
+                .map(({ id }) => id)
         );
     }
 
