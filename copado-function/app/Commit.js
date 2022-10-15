@@ -214,7 +214,7 @@ async function run() {
         Log.info('Commit');
         Log.info('===================');
         Log.info('');
-        Commit.commit();
+        Commit.commit(gitAddArr);
         Log.info('Push');
         Log.info('===================');
         Util.push(CONFIG.featureBranch);
@@ -742,9 +742,10 @@ class Commit {
     /**
      * Commits after adding selected components
      *
+     * @param {string[]} originalSelection list of paths that the user wanted to commit
      * @returns {void}
      */
-    static commit() {
+    static commit(originalSelection) {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
@@ -769,10 +770,15 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            Log.result(gitDiffArr, 'Commit completed');
+            const result = {
+                committed: gitDiffArr,
+                noChangesFound: originalSelection.filter((item) => !gitDiffArr.includes(item)),
+            };
+            Log.result(result, 'Commit completed');
         } else {
             Log.error(
-                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit as all selected components have the same content as already exists in Git. ' +
+                    JSON.stringify(originalSelection),
                 'Nothing to commit'
             );
             throw new Error('Nothing to commit');
