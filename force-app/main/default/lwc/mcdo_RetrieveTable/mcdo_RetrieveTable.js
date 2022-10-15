@@ -136,7 +136,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
     ];
 
     // Row Selection
-    selectedRows = [];
+    selectedRowIDs = []; // used to tell the table which rows are selected
+    selectedRowsIDsFiltered = [];
 
     // Sorting variables
     defaultSortDirection = "asc";
@@ -146,8 +147,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
     // Search Functionality related variables
     keyword;
     allSelectedRows = [];
-    missingSelectedRows = [];
-    newSelectedRows = [];
 
     // Loading State related variables
     isLoading = true;
@@ -392,12 +391,13 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     sortData(fieldname, direction) {
 
+        // create new array to trigger the update
         const visibleDataResorted = [...this.visibleData];
         // Return the value stored in the field
         let keyValue = (a) => {
             return a[fieldname];
         };
-        // cheking reverse direction
+        // checking reverse direction
         let isReverse = direction === "asc" ? 1 : -1;
         // sorting data
         // might be null for new pipelines; also if response has special characters which then fails the JSON.parse
@@ -408,6 +408,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 // sorting values based on direction
                 return isReverse * ((next > prev) - (prev > next));
             });
+            // reset with newly created array from this method to trigger the update
             this.visibleData = visibleDataResorted;
         }
     }
@@ -425,13 +426,31 @@ export default class mcdo_RetrieveTable extends LightningElement {
         });
     }
     updateSelected(event) {
-        const selectedRows = event.detail.selectedRows;
+        // get rows that are selected AFTER the select/deselect that triggered calling this method
+        const selectedRows = JSON.parse(JSON.stringify(event.detail.selectedRows));
         // Display that fieldName of the selected rows
-        console.log("updateSelected-selectedRows: ", JSON.parse(JSON.stringify(selectedRows)));
+
+        // add newly selected rows to the list of selected rows
+        for (let i = 0; i < selectedRows.length; i++) {
+            if (!this.selectedRowsIDsFiltered.includes(selectedRows[i].id)) {
+                this.selectedRowsIDsFiltered.push(selectedRows[i].id);
+                this.allSelectedRows.push(selectedRows[i]);
+            }
+        }
+        // remove deselected rows from the list of selected rows
+        const reducedSelectedRows = selectedRows.map((row) => row.id);
+        for (let i = 0; i < this.selectedRowsIDsFiltered.length; i++) {
+            if (!reducedSelectedRows.includes(this.selectedRowsIDsFiltered[i])) {
+                this.selectedRowsIDsFiltered.splice(i, 1);
+                const allIndex = this.allSelectedRows.findIndex(
+                    (row) => row.id === this.selectedRowsIDsFiltered[i]
+                );
+                this.allSelectedRows.splice(allIndex, 1);
+            }
+        }
     }
     /**
      * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
-     * TODO: It's not possible to remove a row, when the dataset is reduced (search)
      */
     handleSearch(event) {
         const visibleSelectedRowsBefore = this.template
@@ -441,12 +460,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
             "handleSearch-1-selectedRows",
             JSON.parse(JSON.stringify(visibleSelectedRowsBefore))
         );
-        event.detail.selectedRows;
-        console.log("handleSearch-1-this.allSelectedRows", this.allSelectedRows);
-
-        this.allSelectedRows = [
-            ...new Set([...this.allSelectedRows, ...visibleSelectedRowsBefore])
-        ];
 
         // Filter Rows
         const regex = new RegExp(event.target.value, "gi"); // global and case insensitive match
@@ -460,11 +473,14 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 regex.test(row.lb) ||
                 regex.test(row.k)
         );
+        // Set selected Rows (needs to be a new array to trigger the update)
+        this.selectedRowIDs = [...this.allSelectedRows.map(({ id }) => id)];
 
-        // Set selected Rows
-        this.selectedRows = [...new Set([...this.allSelectedRows.map(({ id }) => id)])];
-        // this.selectedRows = this.allSelectedRows;
-        console.log("handleSearch-2-selectedRows", this.selectedRows);
+        // reset list for current filter to allow add/remove from global list
+        this.selectedRowsIDsFiltered.length = 0;
+        this.selectedRowsIDsFiltered.push(
+            ...this.visibleData.filter((row) => this.selectedRowIDs.includes(row.id))
+        );
     }
 
     // General Handler for simple Inputs
