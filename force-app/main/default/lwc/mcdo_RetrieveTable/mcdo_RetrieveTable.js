@@ -55,11 +55,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
             }
         } catch (err) {
             console.error(`${err.name}: ${err.message}: `, err);
-            this.showToastEvent(
+            this.showError(
                 `${err.name}: An Error occurred while reading the Record ID from CurrentPageReference inside LWC`,
-                `${err.message}`,
-                "error",
-                "sticky"
+                `${err.message}`
             );
             console.error(
                 "There might be a problem with CurrentPageReference: ",
@@ -179,11 +177,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
             }
         } catch (err) {
             console.error(`${err.name}: ${err.message}: `, err);
-            this.showToastEvent(
+            this.showError(
                 `${err.name}: An Error occurred while handling the Commit Page Communication Message:`,
-                `${err.message}`,
-                "error",
-                "sticky"
+                `${err.message}`
             );
         } finally {
             this.loadingState(false);
@@ -222,11 +218,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
             this._subscribeToMessageService();
         } catch (err) {
             console.error(`${err.name}: ${err.message}: `, err);
-            this.showToastEvent(
+            this.showError(
                 `${err.name}: An Error occurred while subscribing to the message service:`,
-                `${err.message}`,
-                "error",
-                "sticky"
+                `${err.message}`
             );
         }
 
@@ -234,30 +228,42 @@ export default class mcdo_RetrieveTable extends LightningElement {
             this.registerEmpErrorListener();
         } catch (err) {
             console.error(`${err.name}: ${err.message}: `, err);
-            this.showToastEvent(
+            this.showError(
                 `${err.name}: An Error occured while registering the emp-API Error Listener:`,
-                `${err.message}`,
-                "error",
-                "sticky"
+                `${err.message}`
             );
         }
 
         // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
         try {
             getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then((result) => {
-                this.data = this.addIdToData(JSON.parse(result));
-                this.visibleData = [...this.data];
-                this.sortData(this.sortedBy, this.sortDirection);
-                this.loadingState(false);
+                if (!result) {
+                    this.showToastEvent(
+                        "No Metadata found",
+                        "No Metadata was found in the environment. Please retrieve the metadata first.",
+                        "warning",
+                        "sticky"
+                    );
+                    // ! do not set loadingState to false here because the user has to retrieve the metadata first
+                    // otherwise, the table will be empty and clicking on it might cause JS errors that break further interaction
+                } else {
+                    this.data = this.addIdToData(JSON.parse(result));
+                    this.showToastEvent(
+                        "Showing Metadata from your last Refresh",
+                        `The below table with ${this.data.length} items from your Business Unit is loaded from cache. To get the most recent list please use the 'Refresh' button.`
+                    );
+
+                    this.visibleData = [...this.data];
+                    this.sortData(this.sortedBy, this.sortDirection);
+                    this.loadingState(false);
+                }
             });
         } catch (err) {
             this.loadingState(false);
             console.error("Error while fetching the Metadata from the Org: ", err);
-            this.showToastEvent(
+            this.showError(
                 `${err.name}: An error occurred while getting the metadata from the environment`,
-                `${err.message}`,
-                "error",
-                "sticky"
+                `${err.message}`
             );
         }
     }
@@ -332,12 +338,17 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 err.message
             );
         }
-
         const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
         if (jobExecution.copado__Status__c === "Successful") {
             try {
-                const result = await getMetadataFromEnvironment({ userStoryId: this.userStoryId });
-                this.data = this.addIdToData(JSON.parse(result));
+                const result = JSON.parse(
+                    await getMetadataFromEnvironment({ userStoryId: this.userStoryId })
+                );
+                this.showSuccess(
+                    "Refresh done",
+                    `Successfully loaded ${result.length} items from your Business Unit.`
+                );
+                this.data = this.addIdToData(result);
                 this.visibleData = [...this.data];
                 // apply sorting again
                 this.sortData(this.sortedBy, this.sortDirection);
@@ -406,11 +417,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
     // Registers a listener to errors that the server returns by the empApi module
     registerEmpErrorListener() {
         onEmpError((error) => {
-            this.showToastEvent(
+            this.showError(
                 "There was a problem with empApi",
-                "The server returned an error regarding the empApi module.",
-                "error",
-                "sticky"
+                "The server returned an error regarding the empApi module."
             );
             throw new Error(error);
         });
@@ -493,6 +502,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     showError(title, message) {
         this.showToastEvent(title, message, "error", "sticky");
+    }
+    showSuccess(title, message) {
+        this.showToastEvent(title, message, "success", "dismissible");
     }
 
     // Simple Function to Toggle the State of Loading
