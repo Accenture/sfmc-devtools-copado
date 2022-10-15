@@ -152,7 +152,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
     isLoading = true;
     showTable = false;
     refreshButtonDisabled = true;
-    progressStatus = "Starting Retrieve";
+    progressStatus = "Loading data";
 
     // Subscription related variables
     empSubscription = {};
@@ -254,8 +254,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 this.data = this.addIdToData(JSON.parse(result));
                 this.visibleData = [...this.data];
                 this.sortData(this.sortedBy, this.sortDirection);
+                this.loadingState(false);
             });
         } catch (err) {
+            this.loadingState(false);
             console.error("Error while fetching the Metadata from the Org: ", err);
             this.showToastEvent(
                 `${err.name}: An error occurred while getting the metadata from the environment`,
@@ -263,8 +265,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 "error",
                 "sticky"
             );
-        } finally {
-            this.loadingState(false);
         }
     }
 
@@ -288,11 +288,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
             });
             this.subscribeToCompletionEvent(jobExecutionId);
         } catch (error) {
+            this.loadingState(false);
             this.showError(
                 `${error.name}: An error occurred during the execution of the retrieve`,
                 error.message
             );
-            this.loadingState(false);
 
             // if previously Rows have been selected, set them as selected again
             if (self.selectedRows.length > 0) {
@@ -375,11 +375,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
             });
             this.dispatchEvent(errEvent);
         } else {
+            this.loadingState(false);
             this.showError(
                 `Error while doing metadata retrieve: `,
                 jobExecution.copado__ErrorMessage__c
             );
-            this.loadingState(false);
         }
     }
 
