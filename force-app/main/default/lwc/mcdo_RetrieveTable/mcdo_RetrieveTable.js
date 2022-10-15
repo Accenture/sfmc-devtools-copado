@@ -162,6 +162,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
         );
     }
 
+    /**
+     * helper for commit action to pass on what was selected
+     * @param {*} message
+     */
     async _handleCommitPageCommunicationMessage(message) {
         try {
             this.loadingState(true);
@@ -186,23 +190,24 @@ export default class mcdo_RetrieveTable extends LightningElement {
         }
     }
 
+    /**
+     * helper for commit action to pass on what was selected
+     */
     _handleRequestMessage() {
-        const selectedRows = this.template.querySelector("lightning-datatable").getSelectedRows();
-        const selectedChanges = [];
-        for (let i = 0; i < selectedRows.length; i++) {
-            selectedChanges.push({
+        const selectedChanges = this.allSelectedRows.map((item) => {
+            return {
                 m: "",
                 a: "add",
                 c: "sfmc",
-                n: selectedRows[i].n,
-                t: selectedRows[i].t,
-                cd: selectedRows[i].cd,
-                cb: selectedRows[i].cb,
-                ld: selectedRows[i].ld,
-                lb: selectedRows[i].lb,
-                j: '{"key":"' + selectedRows[i].k + '"}'
-            });
-        }
+                n: item.n,
+                t: item.t,
+                cd: item.cd,
+                cb: item.cb,
+                ld: item.ld,
+                lb: item.lb,
+                j: '{"key":"' + item.k + '"}'
+            };
+        });
 
         const payload = {
             type: "changes",
