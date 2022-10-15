@@ -166,7 +166,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     async _handleCommitPageCommunicationMessage(message) {
         try {
-            console.log("_handleCommitPageCommunicationMessage(message): ", message);
             this.loadingState(true);
             switch (message.type) {
                 case "request":
@@ -192,7 +191,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
 
     _handleRequestMessage() {
-        console.log("_handleRequestMessage runs now");
         const selectedRows = this.template.querySelector("lightning-datatable").getSelectedRows();
         const selectedChanges = [];
         for (let i = 0; i < selectedRows.length; i++) {
@@ -246,10 +244,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
         // This Apex method gets the metadata from the last metadata.json File, that was created by the Retrieve Apex method
         try {
-            console.log(
-                "Running Initial getMetadataFromEnvironment, this is the userStoryId: ",
-                this.userStoryId
-            );
             getMetadataFromEnvironment({ userStoryId: this.userStoryId }).then((result) => {
                 this.data = this.addIdToData(JSON.parse(result));
                 this.visibleData = [...this.data];
@@ -269,12 +263,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
 
     addIdToData(data) {
-        const test = data.map((row, index) => {
+        return data.map((row, index) => {
             row.id = `${row.t}.${row.k}`;
             return row;
         });
-        console.log(test);
-        return test;
     }
 
     // Function to get the newest Committable Metadata, and save it in the environment
@@ -303,8 +295,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
-            console.log("Event callback: ", JSON.parse(JSON.stringify(response)));
-
             if (
                 response.data.payload.copado__Topic_Uri__c ===
                 `/execution-completed/${jobExecutionId}`
@@ -390,7 +380,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
     }
 
     sortData(fieldname, direction) {
-
         // create new array to trigger the update
         const visibleDataResorted = [...this.visibleData];
         // Return the value stored in the field
@@ -453,14 +442,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * Function that handles the search input field and the selectedRows of the table regarding the changing visible Data
      */
     handleSearch(event) {
-        const visibleSelectedRowsBefore = this.template
-            .querySelector("lightning-datatable")
-            .getSelectedRows();
-        console.log(
-            "handleSearch-1-selectedRows",
-            JSON.parse(JSON.stringify(visibleSelectedRowsBefore))
-        );
-
         // Filter Rows
         if (event.target.value === "") {
             // way faster in case the filter was cleared
