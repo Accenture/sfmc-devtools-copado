@@ -284,10 +284,6 @@ class Util {
      * @returns {void}
      */
     static push(destinationBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
         Util.execCommand(
             'Push branch ' + destinationBranch,
             ['git push origin "' + destinationBranch + '"'],

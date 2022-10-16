@@ -319,10 +319,6 @@ class Util {
      * @returns {void}
      */
     static push(destinationBranch) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
         Util.execCommand(
             'Push branch ' + destinationBranch,
             ['git push origin "' + destinationBranch + '"'],
@@ -722,11 +718,6 @@ class Commit {
      * @returns {void}
      */
     static addSelectedComponents(gitAddArr) {
-        if (CONFIG.localDev) {
-            Log.debug('🔥 Skipping git action in local dev environment');
-            return;
-        }
-
         // Iterate all metadata components selected by user to commit
 
         for (const filePath of gitAddArr) {
@@ -760,11 +751,6 @@ class Commit {
         Log.debug('Git diff ended with the result:');
         Log.debug(gitDiffArr);
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
-            if (CONFIG.localDev) {
-                Log.debug('🔥 Skipping git action in local dev environment');
-                return;
-            }
-
             Util.execCommand(
                 'Commit',
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
