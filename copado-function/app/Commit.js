@@ -685,14 +685,22 @@ class Commit {
         // limit to files that git believes need to be added
         commitSelectionArr = commitSelectionArr.filter((item) => item.a === 'add');
         // get unique list of types that need to be retrieved
+        const typeKeyMap = {};
+        for (const item of commitSelectionArr) {
+            if (!typeKeyMap[item.t]) {
+                typeKeyMap[item.t] = [];
+            }
+            typeKeyMap[item.t].push(JSON.parse(item.j).key);
+        }
         const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
         const keyArrForAllTypes = [
             ...new Set(commitSelectionArr.map((item) => JSON.parse(item.j).key)),
         ];
         console.log('typeArr', typeArr);
         console.log('keyArrForAllTypes', keyArrForAllTypes);
+        console.log('typeKeyMap', typeKeyMap);
         // download all types of which
-        await mcdev.retrieve(sourceBU, typeArr, keyArrForAllTypes, false);
+        await mcdev.retrieve(sourceBU, typeKeyMap, null, false);
         const fileArr = (
             await Promise.all(
                 typeArr.map((type) => {
