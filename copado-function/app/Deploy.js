@@ -258,7 +258,8 @@ async function run() {
     // and commit it to the repo as a backup
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
-    let success = false;
+    let success = false,
+        i = 0;
     do {
         try {
             Log.info('git-push changes');
@@ -266,14 +267,41 @@ async function run() {
             Util.push(CONFIG.mainBranch);
             success = true;
         } catch (ex) {
-            if (ex.message === 'need a pull') {
-                Util.pull(CONFIG.mainBranch);
-            } else {
-                Log.info('git push failed: ' + ex.message);
-                throw ex;
+            if (ex.message === 'Error: Command failed: git push origin "master"') {
+                // Util.pull(CONFIG.mainBranch);
+                Util.execCommand(
+                    'git fetch origin master',
+                    ['git fetch origin "' + CONFIG.mainBranch + '"'],
+                    'git fetch origin master'
+                );
+                Util.execCommand(
+                    'git checkout --force master',
+                    ['git checkout --force "' + CONFIG.mainBranch + '"'],
+                    'git checkout --force master'
+                );
+                Util.execCommand(
+                    'git merge origin/master',
+                    ['git merge origin/"' + CONFIG.promotionBranch + '"'],
+                    'git merge origin/master'
+                );
+                Util.execCommand(
+                    'git merge promotion-branch',
+                    ['git merge "' + CONFIG.promotionBranch + '"'],
+                    'git merge promotion-branch'
+                );
+                try {
+                    Util.execCommand(
+                        'git pull --rebase origin master',
+                        ['git pull --rebase origin "' + CONFIG.mainBranch + '"'],
+                        'git pull --rebase origin master'
+                    );
+                } catch (ex_) {
+                    console.log(ex_);
+                }
             }
         }
-    } while (!success);
+        i++;
+    } while (!success && i <= 2);
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
@@ -282,6 +310,7 @@ async function run() {
     Log.result(gitDiffArr, 'Deployment completed');
 
     Copado.uploadToolLogs();
+    throw new Error('error');
 }
 
 /**
@@ -378,19 +407,19 @@ class Util {
             'Completed pushing branch'
         );
     }
-    /**
-     * Pull after a unsuccessfull push
-     *
-     * @param destinationBranch name of branch to pull from
-     * @returns {void}
-     */
-    static pull(destinationBranch) {
-        Util.execCommand(
-            'Git fetch and git pull',
-            ['git pull origin "' + destinationBranch + '"'],
-            'Completed pulling branch'
-        );
-    }
+    // /**
+    //  * Pull after a unsuccessfull push
+    //  *
+    //  * @param destinationBranch name of branch to pull from
+    //  * @returns {void}
+    //  */
+    // static pull(destinationBranch) {
+    //     Util.execCommand(
+    //         'Git pull',
+    //         ['git pull origin "' + destinationBranch + '"'],
+    //         'Completed pulling branch'
+    //     );
+    // }
     /**
      * Execute command
      *
