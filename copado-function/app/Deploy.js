@@ -258,14 +258,22 @@ async function run() {
     // and commit it to the repo as a backup
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
-    try {
-        Log.info('git-push changes');
-        Log.info('===================');
-        Util.push(CONFIG.mainBranch);
-    } catch (ex) {
-        Log.info('git push failed: ' + ex.message);
-        throw ex;
-    }
+    let success = false;
+    do {
+        try {
+            Log.info('git-push changes');
+            Log.info('===================');
+            Util.push(CONFIG.mainBranch);
+            success = true;
+        } catch (ex) {
+            if (ex.message === 'need a pull') {
+                Util.pull(CONFIG.mainBranch);
+            } else {
+                Log.info('git push failed: ' + ex.message);
+                throw ex;
+            }
+        }
+    } while (!success);
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
@@ -368,6 +376,19 @@ class Util {
             'Push branch ' + destinationBranch,
             ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
+        );
+    }
+    /**
+     * Pull after a unsuccessfull push
+     *
+     * @param destinationBranch name of branch to pull from
+     * @returns {void}
+     */
+    static pull(destinationBranch) {
+        Util.execCommand(
+            'Git fetch and git pull',
+            ['git pull origin "' + destinationBranch + '"'],
+            'Completed pulling branch'
         );
     }
     /**

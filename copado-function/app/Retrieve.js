@@ -291,6 +291,19 @@ class Util {
         );
     }
     /**
+     * Pull after a unsuccessfull push
+     *
+     * @param destinationBranch name of branch to pull from
+     * @returns {void}
+     */
+    static pull(destinationBranch) {
+        Util.execCommand(
+            'Git fetch and git pull',
+            ['git pull origin "' + destinationBranch + '"'],
+            'Completed pulling branch'
+        );
+    }
+    /**
      * Execute command
      *
      * @param {string} [preMsg] the message displayed to the user in copado before execution
