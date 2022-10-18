@@ -263,41 +263,21 @@ async function run() {
         i = 0;
     do {
         try {
+            Log.warn('Got into the try part');
             Log.info('git-push changes');
             Log.info('===================');
             Util.push(CONFIG.mainBranch);
             success = true;
         } catch (ex) {
+            Log.warn('Got into the catch part');
             if (ex.message === 'Error: Command failed: git push origin "master"') {
+                Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(
-                    'git fetch origin master',
-                    ['git fetch origin "' + CONFIG.mainBranch + '"'],
-                    'git fetch origin master'
+                    null,
+                    ['git reset --hard origin/"' + CONFIG.mainBranch + '"'],
+                    null
                 );
-                Util.execCommand(
-                    'git checkout --force master',
-                    ['git checkout --force "' + CONFIG.mainBranch + '"'],
-                    'git checkout --force master'
-                );
-                Util.execCommand(
-                    'git merge origin/master',
-                    ['git merge origin/"' + CONFIG.promotionBranch + '"'],
-                    'git merge origin/master'
-                );
-                Util.execCommand(
-                    'git merge promotion-branch',
-                    ['git merge "' + CONFIG.promotionBranch + '"'],
-                    'git merge promotion-branch'
-                );
-                try {
-                    Util.execCommand(
-                        'git pull --rebase origin master',
-                        ['git pull --rebase origin "' + CONFIG.mainBranch + '"'],
-                        'git pull --rebase origin master'
-                    );
-                } catch (ex_) {
-                    console.log(ex_);
-                }
+                Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
             }
         }
         i++;
