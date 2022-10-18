@@ -263,13 +263,11 @@ async function run() {
         i = 0;
     do {
         try {
-            Log.warn('#################### Got into the try part');
             Log.info('git-push changes');
             Log.info('===================');
             Util.push(CONFIG.mainBranch);
             success = true;
         } catch (ex) {
-            Log.warn('##################### Got into the catch part');
             if (ex.message === 'Error: Command failed: git push origin "master"') {
                 Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
