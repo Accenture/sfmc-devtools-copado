@@ -258,6 +258,7 @@ async function run() {
     // and commit it to the repo as a backup
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
+    // trying to push
     let success = false,
         i = 0;
     do {
@@ -268,7 +269,6 @@ async function run() {
             success = true;
         } catch (ex) {
             if (ex.message === 'Error: Command failed: git push origin "master"') {
-                // Util.pull(CONFIG.mainBranch);
                 Util.execCommand(
                     'git fetch origin master',
                     ['git fetch origin "' + CONFIG.mainBranch + '"'],
@@ -301,7 +301,7 @@ async function run() {
             }
         }
         i++;
-    } while (!success && i <= 2);
+    } while (!success && i <= 50);
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
@@ -310,7 +310,6 @@ async function run() {
     Log.result(gitDiffArr, 'Deployment completed');
 
     Copado.uploadToolLogs();
-    throw new Error('error');
 }
 
 /**
@@ -407,19 +406,6 @@ class Util {
             'Completed pushing branch'
         );
     }
-    // /**
-    //  * Pull after a unsuccessfull push
-    //  *
-    //  * @param destinationBranch name of branch to pull from
-    //  * @returns {void}
-    //  */
-    // static pull(destinationBranch) {
-    //     Util.execCommand(
-    //         'Git pull',
-    //         ['git pull origin "' + destinationBranch + '"'],
-    //         'Completed pulling branch'
-    //     );
-    // }
     /**
      * Execute command
      *
