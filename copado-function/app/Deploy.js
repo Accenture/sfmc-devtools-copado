@@ -1060,7 +1060,7 @@ class Deploy {
             throw new Error(
                 'Deployment of BU ' +
                     bu +
-                    ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
+                    ' failed. Please check the SFMC DevTools logs for more details.'
             );
         }
     }
