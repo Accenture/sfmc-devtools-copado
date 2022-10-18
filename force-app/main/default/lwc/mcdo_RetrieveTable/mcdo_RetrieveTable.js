@@ -330,7 +330,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 try {
                     // show progress on screen
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                    if (stepStatus.externalJobId === jobExecutionId) {
+                        this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                    }
                 } catch {}
             }
         };
