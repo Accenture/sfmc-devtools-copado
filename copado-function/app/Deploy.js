@@ -823,6 +823,14 @@ class Deploy {
         let gitAddArr;
         let gitDiffArr = [];
         try {
+            Log.info('Switch to source branch to add updates for target');
+            Copado.checkoutSrc(CONFIG.promotionBranch);
+        } catch (ex) {
+            Log.error('Switching failed:' + ex.message);
+            throw ex;
+        }
+
+        try {
             Log.info('');
             Log.info('Retrieve components');
             Log.info('===================');
@@ -852,6 +860,21 @@ class Deploy {
             gitDiffArr = Commit.commit();
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('Switch back to main branch to allow merging promotion branch into it');
+            Copado.checkoutSrc(CONFIG.mainBranch);
+        } catch (ex) {
+            Log.error('Switching failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('Merge promotion into main branch');
+            Deploy.merge(CONFIG.promotionBranch);
+        } catch (ex) {
+            // if confict with other deployment this would have failed
+            Log.error('Merge failed: ' + ex.message);
             throw ex;
         }
         return gitDiffArr;
