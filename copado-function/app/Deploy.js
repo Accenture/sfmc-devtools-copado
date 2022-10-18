@@ -259,8 +259,8 @@ async function run() {
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     // trying to push
-    let success = false,
-        i = 0;
+    let success = false;
+    let i = 0;
     do {
         try {
             Log.info('git-push changes');
