@@ -258,14 +258,24 @@ async function run() {
     // and commit it to the repo as a backup
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
-    try {
-        Log.info('git-push changes');
-        Log.info('===================');
-        Util.push(CONFIG.mainBranch);
-    } catch (ex) {
-        Log.info('git push failed: ' + ex.message);
-        throw ex;
-    }
+    // trying to push
+    let success = false;
+    let i = 0;
+    do {
+        i++;
+        try {
+            Log.info('git-push changes');
+            Log.info('===================');
+            Util.push(CONFIG.mainBranch);
+            success = true;
+        } catch (ex) {
+            if (ex.message === `Error: Command failed: git push origin "${CONFIG.mainBranch}"`) {
+                Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
+                Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
+                Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
+            }
+        }
+    } while (!success && i <= 50);
     Log.info('');
     Log.info('Finished');
     Log.info('===================');
@@ -811,6 +821,14 @@ class Deploy {
         let gitAddArr;
         let gitDiffArr = [];
         try {
+            Log.info('Switch to source branch to add updates for target');
+            Copado.checkoutSrc(CONFIG.promotionBranch);
+        } catch (ex) {
+            Log.error('Switching failed:' + ex.message);
+            throw ex;
+        }
+
+        try {
             Log.info('');
             Log.info('Retrieve components');
             Log.info('===================');
@@ -840,6 +858,21 @@ class Deploy {
             gitDiffArr = Commit.commit();
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('Switch back to main branch to allow merging promotion branch into it');
+            Copado.checkoutSrc(CONFIG.mainBranch);
+        } catch (ex) {
+            Log.error('Switching failed:' + ex.message);
+            throw ex;
+        }
+        try {
+            Log.info('Merge promotion into main branch');
+            Deploy.merge(CONFIG.promotionBranch);
+        } catch (ex) {
+            // would fail if conflicting with other deployments
+            Log.error('Merge failed: ' + ex.message);
             throw ex;
         }
         return gitDiffArr;
@@ -1027,7 +1060,7 @@ class Deploy {
             throw new Error(
                 'Deployment of BU ' +
                     bu +
-                    ' failed. Other BUs will be deployed, but overall deployment will fail at the end.'
+                    ' failed. Please check the SFMC DevTools logs for more details.'
             );
         }
     }
