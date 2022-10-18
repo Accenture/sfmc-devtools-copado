@@ -294,6 +294,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
             const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
+            // TODO get result ID from Job step related to job execution
+            //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
         } catch (error) {
             this.loadingState(false);
@@ -324,15 +326,13 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 this.updateMetadataGrid(response, jobExecutionId);
             } else if (
                 response.data.payload.copado__Topic_Uri__c.startsWith(
-                    "/events/copado/v1/step-monitor/"
+                    "/events/copado/v1/step-monitor/" // + resultId
                 )
             ) {
                 try {
                     // show progress on screen
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                    if (stepStatus.externalJobId === jobExecutionId) {
-                        this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                    }
+                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
                 } catch {}
             }
         };
