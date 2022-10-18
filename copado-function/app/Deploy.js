@@ -259,8 +259,8 @@ async function run() {
     const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
 
     // trying to push
-    let success = false,
-        i = 0;
+    let success = false;
+    let i = 0;
     do {
         i++;
         try {
@@ -269,7 +269,7 @@ async function run() {
             Util.push(CONFIG.mainBranch);
             success = true;
         } catch (ex) {
-            if (ex.message === 'Error: Command failed: git push origin "master"') {
+            if (ex.message === `Error: Command failed: git push origin "${CONFIG.mainBranch}"`) {
                 Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
                 Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
@@ -871,7 +871,7 @@ class Deploy {
             Log.info('Merge promotion into main branch');
             Deploy.merge(CONFIG.promotionBranch);
         } catch (ex) {
-            // if confict with other deployment this would have failed
+            // would fail if conflicting with other deployments
             Log.error('Merge failed: ' + ex.message);
             throw ex;
         }
