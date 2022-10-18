@@ -871,7 +871,7 @@ class Deploy {
             Log.info('Merge promotion into main branch');
             Deploy.merge(CONFIG.promotionBranch);
         } catch (ex) {
-            // if confict with other deployment this would have failed
+            // would fail if conflicting with other deployments
             Log.error('Merge failed: ' + ex.message);
             throw ex;
         }
