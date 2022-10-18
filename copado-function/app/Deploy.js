@@ -262,6 +262,7 @@ async function run() {
     let success = false,
         i = 0;
     do {
+        i++;
         try {
             Log.info('git-push changes');
             Log.info('===================');
@@ -274,7 +275,6 @@ async function run() {
                 Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
             }
         }
-        i++;
     } while (!success && i <= 50);
     Log.info('');
     Log.info('Finished');
