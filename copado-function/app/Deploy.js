@@ -268,7 +268,7 @@ async function run() {
             Util.push(CONFIG.mainBranch);
             success = true;
         } catch (ex) {
-            if (ex.message === 'Error: Command failed: git push origin "master"') {
+            if (ex.message === `Error: Command failed: git push origin "${CONFIG.mainBranch}"`) {
                 Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
                 Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
