@@ -330,7 +330,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 )
             ) {
                 try {
-                    // show progress on screen
+                    // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
                 } catch {}
