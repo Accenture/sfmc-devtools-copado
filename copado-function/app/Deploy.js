@@ -833,6 +833,7 @@ class Deploy {
             Log.info('Retrieve components');
             Log.info('===================');
             Log.info('');
+            Deploy.replaceMarketValues(commitSelectionArr);
             gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
         } catch (ex) {
             Log.error('Retrieving failed: ' + ex.message);
@@ -1077,6 +1078,37 @@ class Deploy {
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
         );
+    }
+
+    /**
+     * applies market values of target onto name and key of commitSelectionArr
+     *
+     * @param {CommitSelection[]} commitSelectionArr list of items to be added
+     * @returns {void}
+     */
+    static replaceMarketValues(commitSelectionArr) {
+        Log.debug('replacing market values');
+        // prepare market values
+        const replaceMap = {};
+        for (const item in CONFIG.envVariables.source) {
+            if (typeof CONFIG.envVariables.destination[item] !== 'undefined') {
+                replaceMap[CONFIG.envVariables.source[item]] =
+                    CONFIG.envVariables.destination[item];
+            }
+        }
+        // replace market values
+        for (const item of commitSelectionArr) {
+            for (const oldValue in replaceMap) {
+                // name
+                item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
+                // key
+                const key = JSON.parse(item.j).key.replace(
+                    new RegExp(oldValue, 'g'),
+                    replaceMap[oldValue]
+                );
+                item.j = JSON.stringify({ key });
+            }
+        }
     }
 }
 
