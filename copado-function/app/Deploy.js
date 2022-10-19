@@ -260,9 +260,10 @@ async function run() {
     try {
         gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
     } catch (ex) {
-        Log.error('Nothing to deploy: ' + ex.message);
-        Copado.uploadToolLogs();
-        throw ex;
+        Log.warn(
+            'Failed deploy verification, check BU on SFMC to verify manually. Git not updated with the changes on target BU: ' +
+                ex.message
+        );
     }
 
     // trying to push
