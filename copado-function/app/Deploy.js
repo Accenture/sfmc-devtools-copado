@@ -256,7 +256,14 @@ async function run() {
 
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
-    const gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    let gitDiffArr;
+    try {
+        gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
+    } catch (ex) {
+        Log.error('Nothing to deploy: ' + ex.message);
+        Copado.uploadToolLogs();
+        throw ex;
+    }
 
     // trying to push
     let success = false;
