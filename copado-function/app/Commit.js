@@ -763,7 +763,12 @@ class Commit {
             );
             const result = {
                 committed: gitDiffArr,
-                noChangesFound: originalSelection.filter((item) => !gitDiffArr.includes(item)),
+                noChangesFound: originalSelection
+                    .map((item) => item.replace(new RegExp('\\\\', 'g'), '/'))
+                    .filter(
+                        // ensure that "\\" in windows-paths get rewritten to forward slashes again for comparison
+                        (item) => !gitDiffArr.includes(item)
+                    ),
             };
             Log.result(result, 'Commit completed');
         } else {
