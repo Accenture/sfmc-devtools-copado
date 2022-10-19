@@ -257,13 +257,13 @@ async function run() {
     // Retrieve what was deployed to target
     // and commit it to the repo as a backup
     let gitDiffArr;
+    let verificationText;
     try {
         gitDiffArr = await Deploy.retrieveAndCommit(targetBU, commitSelectionArr);
     } catch (ex) {
-        Log.warn(
-            'Failed deploy verification, check BU on SFMC to verify manually. Git not updated with the changes on target BU: ' +
-                ex.message
-        );
+        verificationText =
+            'Failed deploy verification, check BU on SFMC to verify manually. Git not updated with the changes on target BU';
+        Log.warn(verificationText + ': ' + ex.message);
     }
 
     // trying to push
@@ -289,7 +289,10 @@ async function run() {
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
-    Log.result(gitDiffArr, 'Deployment completed');
+    Log.result(
+        gitDiffArr,
+        'Deployment completed' + (verificationText ? ` (${verificationText})` : '')
+    );
 
     Copado.uploadToolLogs();
 }
