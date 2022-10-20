@@ -708,7 +708,11 @@ class Retrieve {
                             ),
                             cb: this._getUserName(userList, item, def.createdNameField),
                             ld: this._convertTimestamp(
-                                this._getAttrValue(item, def.lastmodDateField)
+                                // if no lastmodified date is provided, try showing the created date instead (problem on newly created automations)
+                                this._getAttrValue(item, def.lastmodDateField) !==
+                                    '0001-01-01T00:00:00'
+                                    ? this._getAttrValue(item, def.lastmodDateField)
+                                    : this._getAttrValue(item, def.createdDateField)
                             ),
                             lb: this._getUserName(userList, item, def.lastmodNameField),
                         };
