@@ -42,6 +42,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
+    isMcdevInstalledGlobally: process.env.isMcdevInstalledGlobally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -126,11 +127,13 @@ async function run() {
     }
 
     try {
-        Log.info('');
-        Log.info('Preparing');
-        Log.info('===================');
-        Log.info('');
-        Util.provideMCDevTools();
+        if (!CONFIG.isMcdevInstalledGlobally) {
+            Log.info('');
+            Log.info('Preparing');
+            Log.info('===================');
+            Log.info('');
+            Util.provideMCDevTools();
+        }
 
         Log.info('');
         Log.info('Initialize project');
@@ -644,9 +647,18 @@ class Retrieve {
      */
     static async retrieveChangelog(sourceBU) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
-        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
-        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+        let mcdev;
+        let Definition;
+        let MetadataType;
+        if (CONFIG.isMcdevInstalledGlobally) {
+            mcdev = require('/usr/local/lib/node_modules/mcdev/lib/');
+            Definition = require('/usr/local/lib/node_modules/mcdev/lib/MetadataTypeDefinitions');
+            MetadataType = require('/usr/local/lib/node_modules/mcdev/lib/MetadataTypeInfo');
+        } else {
+            mcdev = require('../tmp/node_modules/mcdev/lib/');
+            Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
+            MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
+        }
         if (!CONFIG.debug) {
             // disable any non-errors originating in mcdev from being printed into the main copado logfile
             mcdev.setLoggingLevel({ silent: true });
