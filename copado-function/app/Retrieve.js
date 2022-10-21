@@ -176,7 +176,7 @@ async function run() {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
-    Log.result(`Found ${metadataJson.length} elements on server`, 'Refresh done');
+    Log.result(`Found ${metadataJson.length} items on server`, 'Refresh done');
     try {
         Log.info('');
         Log.info('Attach JSON');

@@ -291,7 +291,9 @@ async function run() {
     Log.info('Deploy.js done');
     Log.result(
         gitDiffArr,
-        'Deployment completed' + (verificationText ? ` (${verificationText})` : '')
+        'Deployed ',
+        gitDiffArr.length,
+        ' completed' + (verificationText ? ` (${verificationText})` : '')
     );
 
     Copado.uploadToolLogs();
