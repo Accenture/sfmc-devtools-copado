@@ -167,7 +167,11 @@ async function run() {
         commitSelectionArr = Copado.getJsonFile(
             CONFIG.fileSelectionSalesforceId,
             CONFIG.fileSelectionFileName
-        );
+        ).map((commitSelection) => {
+            commitSelection.t = commitSelection.t.split('-')[0];
+            return commitSelection;
+        });
+
         console.log('commitSelectionArr', commitSelectionArr);
     } catch (ex) {
         Log.info('Getting Commit-selection file failed:' + ex.message);
