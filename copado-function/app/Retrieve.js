@@ -702,7 +702,9 @@ class Retrieve {
                         const listEntry = {
                             n: this._getAttrValue(item, def.nameField),
                             k: this._getAttrValue(item, def.keyField),
-                            t: type,
+                            t: this._getAttrValue(item, '_subType')
+                                ? type + '-' + this._getAttrValue(item, '_subType')
+                                : type,
                             cd: this._convertTimestamp(
                                 this._getAttrValue(item, def.createdDateField)
                             ),
