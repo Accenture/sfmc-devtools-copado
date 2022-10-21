@@ -772,7 +772,7 @@ class Commit {
                         (item) => !gitDiffArr.includes(item)
                     ),
             };
-            Log.result(result, `Commited ${result.committed.length} items`);
+            Log.result(result, `Committed ${result.committed.length} items`);
         } else {
             Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git. ' +
