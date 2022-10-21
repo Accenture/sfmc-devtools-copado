@@ -291,7 +291,7 @@ async function run() {
     Log.info('Deploy.js done');
     Log.result(
         gitDiffArr,
-        'Deploying ',
+        'Deployed ',
         gitDiffArr.length,
         ' items' + (verificationText ? ` (${verificationText})` : '')
     );
