@@ -207,6 +207,7 @@ async function run() {
         Commit.addSelectedComponents(gitAddArr);
     } catch (ex) {
         Log.error('git add failed:' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
     try {
@@ -220,6 +221,7 @@ async function run() {
         Util.push(CONFIG.featureBranch);
     } catch (ex) {
         Log.error('git commit / push failed:' + ex.message);
+        Copado.uploadToolLogs();
         throw ex;
     }
     Log.info('');
