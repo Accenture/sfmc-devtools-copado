@@ -42,7 +42,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
-    installLocally: process.env.installLocally === 'true' ? true : false,
+    installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -127,7 +127,7 @@ async function run() {
     }
 
     try {
-        if (CONFIG.installLocally) {
+        if (CONFIG.installMcdevLocally) {
             Log.info('');
             Log.info('Preparing');
             Log.info('===================');
@@ -650,7 +650,7 @@ class Retrieve {
         let mcdev;
         let Definition;
         let MetadataType;
-        if (!CONFIG.installLocally) {
+        if (!CONFIG.installMcdevLocally) {
             mcdev = require('/usr/local/lib/node_modules/mcdev/lib/');
             Definition = require('/usr/local/lib/node_modules/mcdev/lib/MetadataTypeDefinitions');
             MetadataType = require('/usr/local/lib/node_modules/mcdev/lib/MetadataTypeInfo');
