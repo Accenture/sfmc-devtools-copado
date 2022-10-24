@@ -692,12 +692,13 @@ class Retrieve {
                             return;
                         }
                         if (
-                            this._getAttrValue(item, def.nameField).startsWith(
+                            type === 'dataExtension' &&
+                            (this._getAttrValue(item, def.nameField).startsWith(
                                 'QueryStudioResults at '
                             ) ||
-                            '/(_Salesforce)(_[0-9])?$/g'.test(
-                                this._getAttrValue(item, def.nameField)
-                            )
+                                '/(_Salesforce)(_[0-9])?$/g'.test(
+                                    this._getAttrValue(item, def.nameField)
+                                ))
                         ) {
                             return;
                         }
