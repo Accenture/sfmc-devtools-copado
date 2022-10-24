@@ -60,7 +60,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
-    isMcdevInstalledGlobally: process.env.isMcdevInstalledGlobally === 'true' ? true : false,
+    installLocally: process.env.installLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -166,7 +166,7 @@ async function run() {
     }
 
     try {
-        if (!CONFIG.isMcdevInstalledGlobally) {
+        if (CONFIG.installLocally) {
             Log.info('');
             Log.info('Preparing');
             Log.info('===================');
@@ -725,9 +725,9 @@ class Commit {
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.isMcdevInstalledGlobally
-            ? require('/usr/local/lib/node_modules/mcdev/lib/')
-            : require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = CONFIG.installLocally
+            ? require('../tmp/node_modules/mcdev/lib/')
+            : require('/usr/local/lib/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -987,9 +987,9 @@ class Deploy {
      * @returns {Promise.<boolean>} true: files found, false: not
      */
     static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
-        const mcdev = CONFIG.isMcdevInstalledGlobally
-            ? require('/usr/local/lib/node_modules/mcdev/lib/')
-            : require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = CONFIG.installLocally
+            ? require('../tmp/node_modules/mcdev/lib/')
+            : require('/usr/local/lib/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -1071,9 +1071,9 @@ class Deploy {
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.isMcdevInstalledGlobally
-            ? require('/usr/local/lib/node_modules/mcdev/lib/')
-            : require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = CONFIG.installLocally
+            ? require('../tmp/node_modules/mcdev/lib/')
+            : require('/usr/local/lib/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         await mcdev.deploy(bu);
