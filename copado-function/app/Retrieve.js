@@ -697,6 +697,7 @@ class Retrieve {
                 allMetadata.push(
                     ...Object.keys(changelogList[type]).map((key) => {
                         const item = changelogList[type][key];
+                        const salesforceRegex = new RegExp(/(_Salesforce)(_[0-9])?$/gm);
                         if (
                             MetadataType[type].isFiltered(item, true) ||
                             MetadataType[type].isFiltered(item, false)
@@ -708,9 +709,7 @@ class Retrieve {
                             (this._getAttrValue(item, def.nameField).startsWith(
                                 'QueryStudioResults at '
                             ) ||
-                                '/(_Salesforce)(_[0-9])?$/g'.test(
-                                    this._getAttrValue(item, def.nameField)
-                                ))
+                                salesforceRegex.test(this._getAttrValue(item, def.nameField)))
                         ) {
                             return;
                         }
