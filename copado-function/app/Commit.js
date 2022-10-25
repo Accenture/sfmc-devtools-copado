@@ -431,10 +431,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [
-                `npm install ${installer} --foreground-scripts`,
-                'node ./node_modules/mcdev/lib/cli.js --version',
-            ],
+            [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
             'Completed installing SFMC DevTools'
         );
     }
