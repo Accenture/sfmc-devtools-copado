@@ -59,12 +59,11 @@ const CONFIG = {
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
-    localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
-    mcdevVersion: process.env.mcdev_version,
+    mcdevVersion: process.env.mcdev_version || '/usr/local/lib/node_modules/mcdev',
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
@@ -166,13 +165,11 @@ async function run() {
     }
 
     try {
-        if (CONFIG.installMcdevLocally) {
-            Log.info('');
-            Log.info('Preparing');
-            Log.info('===================');
-            Log.info('');
-            Util.provideMCDevTools();
-        }
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('===================');
+        Log.info('');
+        Util.provideMCDevTools();
 
         Log.info('');
         Log.info('Initialize project');
@@ -476,7 +473,7 @@ class Util {
             Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
         }
         let installer;
-        if (CONFIG.localDev) {
+        if (!CONFIG.installMcdevLocally) {
             installer = CONFIG.mcdevVersion;
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
@@ -726,9 +723,7 @@ class Commit {
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -988,9 +983,7 @@ class Deploy {
      * @returns {Promise.<boolean>} true: files found, false: not
      */
     static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -1072,9 +1065,7 @@ class Deploy {
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         await mcdev.deploy(bu);
