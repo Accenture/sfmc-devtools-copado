@@ -42,6 +42,7 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     localDev: process.env.LOCAL_DEV === 'true' ? true : false,
+    installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
@@ -137,11 +138,13 @@ async function run() {
     }
 
     try {
-        Log.info('');
-        Log.info('Preparing');
-        Log.info('===================');
-        Log.info('');
-        Util.provideMCDevTools();
+        if (CONFIG.installMcdevLocally) {
+            Log.info('');
+            Log.info('Preparing');
+            Log.info('===================');
+            Log.info('');
+            Util.provideMCDevTools();
+        }
 
         Log.info('');
         Log.info('Initialize project');
@@ -681,7 +684,9 @@ class Commit {
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = CONFIG.installMcdevLocally
+            ? require('../tmp/node_modules/mcdev/lib/')
+            : require('/usr/local/lib/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
