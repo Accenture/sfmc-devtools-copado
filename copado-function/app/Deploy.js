@@ -752,7 +752,7 @@ class Commit {
                                 .map((item) => JSON.parse(item.j).key)
                         ),
                     ];
-                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                    return mcdev.getFilesToCommit(sourceBU, type.split('-')[0], keyArr);
                 })
             )
         ).flat();
@@ -901,7 +901,7 @@ class Deploy {
         return commitSelectionArr.map(
             (item) =>
                 /** @type {DeltaPkgItem} */ ({
-                    type: item.t,
+                    type: item.t.split('-')[0],
                     name: item.n,
                     externalKey: JSON.parse(item.j).key,
                     gitAction: 'add/update',

@@ -167,10 +167,7 @@ async function run() {
         commitSelectionArr = Copado.getJsonFile(
             CONFIG.fileSelectionSalesforceId,
             CONFIG.fileSelectionFileName
-        ).map((commitSelection) => {
-            commitSelection.t = commitSelection.t.split('-')[0];
-            return commitSelection;
-        });
+        );
 
         console.log('commitSelectionArr', commitSelectionArr);
     } catch (ex) {
@@ -714,7 +711,7 @@ class Commit {
                                 .map((item) => JSON.parse(item.j).key)
                         ),
                     ];
-                    return mcdev.getFilesToCommit(sourceBU, type, keyArr);
+                    return mcdev.getFilesToCommit(sourceBU, type.split('-')[0], keyArr);
                 })
             )
         ).flat();
