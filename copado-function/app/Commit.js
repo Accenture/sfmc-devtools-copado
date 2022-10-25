@@ -411,8 +411,8 @@ class Util {
         let installer;
         if (!CONFIG.installMcdevLocally) {
             Util.execCommand(
-                `Initializing SFMC DevTools (${CONFIG.mcdevVersion})`,
-                [`npm link ${CONFIG.mcdevVersion}`, CONFIG.mcdev_exec + ' --version'],
+                `Initializing SFMC DevTools (packaged version)`,
+                [`npm link mcdev`, 'mcdev --version'],
                 'Completed installing SFMC DevTools'
             );
             return; // we're done here
