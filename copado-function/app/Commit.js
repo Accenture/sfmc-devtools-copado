@@ -410,7 +410,12 @@ class Util {
         }
         let installer;
         if (!CONFIG.installMcdevLocally) {
-            installer = CONFIG.mcdevVersion;
+            Util.execCommand(
+                `Initializing SFMC DevTools (${CONFIG.mcdevVersion})`,
+                [`npm link ${CONFIG.mcdevVersion}`, CONFIG.mcdev_exec + ' --version'],
+                'Completed installing SFMC DevTools'
+            );
+            return; // we're done here
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
 
