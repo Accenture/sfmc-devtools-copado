@@ -267,6 +267,7 @@ async function run() {
         verificationText =
             'Failed deploy verification, check BU on SFMC to verify manually. Git not updated with the changes on target BU';
         Log.warn(verificationText + ': ' + ex.message);
+        gitDiffArr = [];
     }
 
     // trying to push
