@@ -62,8 +62,7 @@ const CONFIG = {
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
-    mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
-    mcdevVersion: process.env.mcdev_version || '/usr/local/lib/node_modules/mcdev',
+    mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
@@ -476,7 +475,10 @@ class Util {
         if (!CONFIG.installMcdevLocally) {
             Util.execCommand(
                 `Initializing SFMC DevTools (packaged version)`,
-                [`npm link mcdev`, 'mcdev --version'],
+                [
+                    `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
+                    'mcdev --version',
+                ],
                 'Completed installing SFMC DevTools'
             );
             return; // we're done here
@@ -493,7 +495,10 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
+            [
+                `npm install ${installer} --foreground-scripts`,
+                'node ./node_modules/mcdev/lib/cli.js --version',
+            ],
             'Completed installing SFMC DevTools'
         );
     }
