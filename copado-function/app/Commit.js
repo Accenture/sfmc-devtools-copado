@@ -318,6 +318,20 @@ class Log {
  */
 class Util {
     /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     *
+     * @param {MetadataItem[]} metadataJson path where downloaded files are
+     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @returns {void}
+     */
+    static saveMetadataFile(metadataJson, metadataFilePath) {
+        const metadataString = JSON.stringify(metadataJson);
+        // Log.debug('Metadata JSON is: ' + metadataString);
+        fs.writeFileSync(metadataFilePath, metadataString);
+    }
+    /**
      * Pushes after a successfull deployment
      *
      * @param {string} destinationBranch name of branch to push to

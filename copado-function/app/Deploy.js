@@ -246,7 +246,7 @@ async function run() {
         ) {
             Log.info('Deploy BUs');
             Log.info('===================');
-            await Deploy.deployBU(targetBU);
+            await Deploy.deployBU(targetBU, commitSelectionArr);
         } else {
             throw new Error('No changes found. Nothing to deploy');
         }
@@ -381,6 +381,20 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     *
+     * @param {MetadataItem[]} metadataJson path where downloaded files are
+     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @returns {void}
+     */
+    static saveMetadataFile(metadataJson, metadataFilePath) {
+        const metadataString = JSON.stringify(metadataJson);
+        // Log.debug('Metadata JSON is: ' + metadataString);
+        fs.writeFileSync(metadataFilePath, metadataString);
+    }
     /**
      * Pushes after a successfull deployment
      *
@@ -1084,15 +1098,30 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
+     * @param commitSelectionArr
      * @returns {void}
      */
-    static async deployBU(bu) {
+    static async deployBU(bu, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         const deployResult = await mcdev.deploy(bu);
-        console.log('deployResult', deployResult);
+        // console.log('deployResult', deployResult);
+        // console.log('deployResult', deployResult[bu].asset);
+        const commitSelectedArrMap = [];
+        commitSelectionArr.map((commitSelection) => {
+            const suffix = '-' + CONFIG.target_mid;
+            const oldKey = JSON.parse(commitSelection.j).key;
+            const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
+            const map = { oldKey, newKey };
+            commitSelectedArrMap.push(map);
+        });
+        // TODO:
+        // check if all values of commitSelectedArrMap for newKey exist in the deployResult
+        // then create a file with commitSelectedArrMap content
+        // then attach this value to the userStoryId
+        console.log('commitSelectedArrMap:', commitSelectedArrMap);
         if (process.exitCode === 1) {
             throw new Error(
                 'Deployment of BU ' +
