@@ -59,11 +59,9 @@ const CONFIG = {
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
-    localDev: process.env.LOCAL_DEV === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     envId: process.env.envId,
     mainBranch: process.env.main_branch,
-    mcdev_exec: 'node ./node_modules/mcdev/lib/cli.js', // !works only after changing the working directory!
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
@@ -166,13 +164,11 @@ async function run() {
     }
 
     try {
-        if (CONFIG.installMcdevLocally) {
-            Log.info('');
-            Log.info('Preparing');
-            Log.info('===================');
-            Log.info('');
-            Util.provideMCDevTools();
-        }
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('===================');
+        Log.info('');
+        Util.provideMCDevTools();
 
         Log.info('');
         Log.info('Initialize project');
@@ -476,8 +472,16 @@ class Util {
             Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
         }
         let installer;
-        if (CONFIG.localDev) {
-            installer = CONFIG.mcdevVersion;
+        if (!CONFIG.installMcdevLocally) {
+            Util.execCommand(
+                `Initializing SFMC DevTools (packaged version)`,
+                [
+                    `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
+                    'mcdev --version',
+                ],
+                'Completed installing SFMC DevTools'
+            );
+            return; // we're done here
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
             // assume branch of mcdev's git repo shall be loaded
 
@@ -491,7 +495,7 @@ class Util {
         }
         Util.execCommand(
             `Initializing SFMC DevTools (${installer})`,
-            [`npm install ${installer} --foreground-scripts`, CONFIG.mcdev_exec + ' --version'],
+            [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
             'Completed installing SFMC DevTools'
         );
     }
@@ -726,9 +730,7 @@ class Commit {
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -988,9 +990,7 @@ class Deploy {
      * @returns {Promise.<boolean>} true: files found, false: not
      */
     static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -1072,9 +1072,7 @@ class Deploy {
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = CONFIG.installMcdevLocally
-            ? require('../tmp/node_modules/mcdev/lib/')
-            : require('/usr/local/lib/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         await mcdev.deploy(bu);
