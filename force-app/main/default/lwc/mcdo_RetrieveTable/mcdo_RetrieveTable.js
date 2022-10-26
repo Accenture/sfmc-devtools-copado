@@ -249,8 +249,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
                         "warning",
                         "sticky"
                     );
-                    // ! do not set loadingState to false here because the user has to retrieve the metadata first
-                    // otherwise, the table will be empty and clicking on it might cause JS errors that break further interaction
+                    this.data = [];
+                    this.visibleData = [...this.data];
                 } else {
                     this.data = this.addIdToData(JSON.parse(result));
                     this.showToastEvent(
@@ -260,8 +260,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
                     this.visibleData = [...this.data];
                     this.sortData(this.sortedBy, this.sortDirection);
-                    this.loadingState(false);
                 }
+                this.loadingState(false);
             });
         } catch (err) {
             this.loadingState(false);
