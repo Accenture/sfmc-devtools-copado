@@ -1091,7 +1091,8 @@ class Deploy {
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
-        await mcdev.deploy(bu);
+        const deployResult = await mcdev.deploy(bu);
+        console.log('deployResult', deployResult);
         if (process.exitCode === 1) {
             throw new Error(
                 'Deployment of BU ' +
