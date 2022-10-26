@@ -49,6 +49,7 @@
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
+const exec = require('node:child_process').exec;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
@@ -616,16 +617,26 @@ class Copado {
      * @returns {void}
      */
     static attachJson(metadataFilePath) {
-        this._attachFile(metadataFilePath, CONFIG.envId, 'Attach JSON ' + metadataFilePath);
+        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + CONFIG.envId);
+        this._attachFile(metadataFilePath, CONFIG.envId);
     }
     /**
      * Finally, attach the resulting metadata JSON.
      *
-     * @param {string} metadataFilePath where we stored the temporary json file
-     * @returns {void}
+     * @param {string} localPath where we stored the temporary json file
+     * @returns {Promise.<void>} promise of log upload
      */
-    static attachLog(metadataFilePath) {
-        this._attachFile(metadataFilePath, null, 'Attach Custom Log ' + metadataFilePath);
+    static async attachLog(localPath) {
+        const command = `copado --uploadfile "${localPath}"`;
+        Log.debug('⚡ ' + command);
+
+        try {
+            exec(command);
+        } catch (ex) {
+            // do not use Log.error here to prevent our copado-function from auto-failing right here
+            Log.info(ex.status + ': ' + ex.message);
+            throw new Error(ex);
+        }
     }
 
     /**
@@ -701,19 +712,22 @@ class Copado {
     /**
      * to be executed at the very end
      *
-     * @returns {void}
+     * @returns {Promise.<void>} promise of uploads
      */
-    static uploadToolLogs() {
-        Log.progress('Getting mcdev logs');
+    static async uploadToolLogs() {
+        Log.debug('Getting mcdev logs');
 
         try {
+            const logsAttached = [];
             for (const file of fs.readdirSync('logs')) {
                 Log.debug('- ' + file);
-                Copado.attachLog('logs/' + file);
+                logsAttached.push(Copado.attachLog('logs/' + file));
             }
-            Log.progress('Attached mcdev logs');
+            const response = await Promise.all(logsAttached);
+            Log.debug('Attached mcdev logs');
+            return response;
         } catch (ex) {
-            Log.info('attaching mcdev logs failed:' + ex.message);
+            Log.debug('attaching mcdev logs failed:' + ex.message);
         }
     }
 }
