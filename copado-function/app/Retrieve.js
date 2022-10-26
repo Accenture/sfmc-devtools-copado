@@ -93,9 +93,11 @@ async function run() {
 
     Log.debug('Environment');
     Log.debug('===================');
-    Util.execCommand(null, 'npm --version', null);
-    Util.execCommand(null, 'node --version', null);
-    Util.execCommand(null, 'git version', null);
+    if (CONFIG.debug) {
+        Util.execCommand(null, 'npm --version', null);
+        Util.execCommand(null, 'node --version', null);
+        Util.execCommand(null, 'git version', null);
+    }
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
     // prevent git errors down the road
@@ -208,7 +210,7 @@ class Log {
      * @returns {void}
      */
     static debug(msg) {
-        if (true == CONFIG.debug) {
+        if (CONFIG.debug) {
             console.log('DEBUG:', msg); // eslint-disable-line no-console
         }
     }
@@ -315,7 +317,7 @@ class Util {
         }
 
         if (null != postMsg) {
-            Log.progress('✔️  ' + postMsg);
+            Log.debug('✔️  ' + postMsg);
         }
     }
 
