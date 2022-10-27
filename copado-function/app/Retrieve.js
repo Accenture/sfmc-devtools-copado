@@ -173,7 +173,7 @@ async function run() {
         Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Retrieve.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
+        Util.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
