@@ -1235,8 +1235,19 @@ class Deploy {
 
         // attach key mappings for future deployments
         // TODO: include replaceMarketValues()
+
+        // Not sure if this is meant to stay:
+        // start here
         Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
         Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
+        // end here
+
+        Util.saveMetadataFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_sfid}.json`);
+        Util.saveMetadataFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
+        Util.saveMetadataFile(
+            commitSelectionArr,
+            `Copado Deploy changes-${CONFIG.target_mid}.json`
+        );
         // attach to user story with target
         for (const userStorySfid of CONFIG.userStoryIds) {
             Copado.attachJson(`keyMapping-${CONFIG.target_sfid}.json`, userStorySfid);
