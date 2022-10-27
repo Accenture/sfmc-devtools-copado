@@ -62,12 +62,13 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
+    // retrieve
+    source_sfid: ,
     envVariables: {
         // retrieve / commit
         source: process.env.envVariablesSource,
@@ -84,6 +85,7 @@ const CONFIG = {
     // deploy
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileUpdatedSelectionSfid: null,
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -629,11 +631,12 @@ class Copado {
      * Finally, attach the resulting metadata JSON to the source environment
      *
      * @param {string} metadataFilePath where we stored the temporary json file
+     * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @returns {void}
      */
-    static attachJson(metadataFilePath) {
-        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + CONFIG.envId);
-        this._attachFile(metadataFilePath, CONFIG.envId);
+    static attachJson(metadataFilePath, parentSfid) {
+        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + parentSfid);
+        this._attachFile(metadataFilePath, parentSfid);
     }
     /**
      * Finally, attach the resulting metadata JSON.
@@ -1205,8 +1208,11 @@ class Deploy {
         if (!commitSelectionArrMap.length) {
             Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
             Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
-            Copado.attachJson('keyMapping.json');
-            Copado.attachJson('Copado Deploy updated changes.json');
+            Copado.attachJson('keyMapping.json', CONFIG.fileUpdatedSelectionSfid);
+            Copado.attachJson(
+                'Copado Deploy updated changes.json',
+                CONFIG.fileUpdatedSelectionSfid
+            );
         }
         if (process.exitCode === 1) {
             throw new Error(

@@ -43,12 +43,13 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
+    // retrieve
+    source_sfid: process.env.envId,
     envVariables: {
         // retrieve / commit
         source: process.env.envVariablesSource,
@@ -185,7 +186,7 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Log.progress('Loading items into Copado');
-        Copado.attachJson(CONFIG.metadataFilePath);
+        Copado.attachJson(CONFIG.metadataFilePath, CONFIG.source_sfid);
     } catch (ex) {
         Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
@@ -527,11 +528,12 @@ class Copado {
      * Finally, attach the resulting metadata JSON to the source environment
      *
      * @param {string} metadataFilePath where we stored the temporary json file
+     * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @returns {void}
      */
-    static attachJson(metadataFilePath) {
-        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + CONFIG.envId);
-        this._attachFile(metadataFilePath, CONFIG.envId);
+    static attachJson(metadataFilePath, parentSfid) {
+        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + parentSfid);
+        this._attachFile(metadataFilePath, parentSfid);
     }
     /**
      * Finally, attach the resulting metadata JSON.
