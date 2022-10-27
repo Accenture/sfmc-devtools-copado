@@ -68,7 +68,7 @@ const CONFIG = {
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     // retrieve
-    source_sfid: ,
+    source_sfid: null,
     envVariables: {
         // retrieve / commit
         source: process.env.envVariablesSource,
@@ -86,6 +86,8 @@ const CONFIG = {
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
     fileUpdatedSelectionSfid: null,
+    target_sfid: process.env.target_sfid,
+    userStoryIds: JSON.parse(process.env.userStoryIds),
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -1208,11 +1210,15 @@ class Deploy {
         if (!commitSelectionArrMap.length) {
             Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
             Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
-            Copado.attachJson('keyMapping.json', CONFIG.fileUpdatedSelectionSfid);
-            Copado.attachJson(
-                'Copado Deploy updated changes.json',
-                CONFIG.fileUpdatedSelectionSfid
-            );
+            // attach to user story with target
+            for (const userStorySfid of CONFIG.userStoryIds) {
+                Copado.attachJson(`keyMapping-${CONFIG.target_sfid}.json`, userStorySfid);
+                Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid);
+                Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null);
+            }
+            // attach to result record
+            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null);
+            Copado.attachJson('Copado Deploy updated changes.json', null);
         }
         if (process.exitCode === 1) {
             throw new Error(
