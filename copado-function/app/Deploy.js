@@ -840,7 +840,7 @@ class Commit {
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             Util.execCommand(
                 'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -n -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const result = {
@@ -963,7 +963,7 @@ class Deploy {
                 commitMsgLines = [CONFIG.commitMessage];
             }
             const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
-            Util.execCommand('Commit', ['git commit ' + commitMsgParam], 'Completed committing');
+            Util.execCommand('Commit', ['git commit -n ' + commitMsgParam], 'Completed committing');
             Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
