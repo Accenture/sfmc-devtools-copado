@@ -1098,7 +1098,7 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
-     * @param commitSelectionArr
+     * @param {Array} commitSelectionArr list of changes
      * @returns {void}
      */
     static async deployBU(bu, commitSelectionArr) {
