@@ -95,6 +95,8 @@ const CONFIG = {
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
     promotionName: process.env.promotionName, // The promotion branch of a PR
     destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    sourceProperties: process.env.propertiesOfUSsInPromotion,
+    sourceProperties2: JSON.parse(process.env.propertiesOfUSsInPromotion),
 };
 
 /**
