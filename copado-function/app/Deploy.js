@@ -1270,7 +1270,6 @@ class Deploy {
      */
     static replaceMarketValues(commitSelectionArr) {
         Log.debug('replacing market values');
-        console.log('before first for');
         // prepare market values
         const replaceMap = {};
         for (const item in CONFIG.envVariables.source) {
@@ -1279,11 +1278,8 @@ class Deploy {
                     CONFIG.envVariables.destination[item];
             }
         }
-        console.log('commitSelectionArr:', commitSelectionArr);
         // replace market values
         for (const item of commitSelectionArr) {
-            console.log('replaceMap:', replaceMap);
-            console.log('item.j:', item.j);
             for (const oldValue in replaceMap) {
                 // name
                 item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
@@ -1299,7 +1295,6 @@ class Deploy {
                 item.j = JSON.stringify(jObj);
             }
         }
-        console.log('after 2 fors');
     }
 }
 
