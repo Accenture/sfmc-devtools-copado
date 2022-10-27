@@ -1179,18 +1179,17 @@ class Deploy {
         for (const i in commitSelectionArr) {
             if (commitSelectionArr[i].t.split('-')[0] === 'asset') {
                 const suffix = '-' + CONFIG.target_mid;
-                const oldKey = JSON.parse(commitSelectionArr[i].j).key;
+                const jObj = JSON.parse(commitSelectionArr[i].j);
+                const oldKey = jObj.key;
                 const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
-                // if (deployResult[bu].asset.hasOwnProperty(newKey)) {
-                if (Object.prototype.hasOwnProperty.call(deployResult[bu].asset, newKey)) {
-                    const map = JSON.parse(commitSelectionArr[i].j);
-                    map.newKey = newKey;
-                    commitSelectionArr[i].j = map;
-                    commitSelectionArrMap.push(map);
+                if (deployResult[bu].asset[newKey]) {
+                    jObj.newKey = newKey;
+                    commitSelectionArr[i].j = JSON.stringify(jObj);
+                    commitSelectionArrMap.push(jObj);
                 } else {
                     // it didn't create the correct new Key
                     Log.error(
-                        `New key for ${commitSelectionArr[i].n} do not match any valid keys.`
+                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
                     );
                     Copado.uploadToolLogs();
                     throw new Error('Wrong new key created.');
