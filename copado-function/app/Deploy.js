@@ -1109,19 +1109,36 @@ class Deploy {
         const deployResult = await mcdev.deploy(bu);
         // console.log('deployResult', deployResult);
         // console.log('deployResult', deployResult[bu].asset);
-        const commitSelectedArrMap = [];
-        commitSelectionArr.map((commitSelection) => {
-            const suffix = '-' + CONFIG.target_mid;
-            const oldKey = JSON.parse(commitSelection.j).key;
-            const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
-            const map = { oldKey, newKey };
-            commitSelectedArrMap.push(map);
-        });
-        // TODO:
-        // check if all values of commitSelectedArrMap for newKey exist in the deployResult
-        // then create a file with commitSelectedArrMap content
-        // then attach this value to the userStoryId
-        console.log('commitSelectedArrMap:', commitSelectedArrMap);
+        const commitSelectionArrMap = [];
+        for (const i in commitSelectionArr) {
+            if (commitSelectionArr[i].t.split('-')[0] === 'asset') {
+                const suffix = '-' + CONFIG.target_mid;
+                const oldKey = JSON.parse(commitSelectionArr[i].j).key;
+                const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
+                // if (deployResult[bu].asset.hasOwnProperty(newKey)) {
+                if (Object.prototype.hasOwnProperty.call(deployResult[bu].asset, newKey)) {
+                    const map = JSON.parse(commitSelectionArr[i].j);
+                    map.newKey = newKey;
+                    commitSelectionArr[i].j = map;
+                    commitSelectionArrMap.push(map);
+                } else {
+                    // it didn't create the correct new Key
+                    Log.error(
+                        `New key for ${commitSelectionArr[i].n} do not match any valid keys.`
+                    );
+                    Copado.uploadToolLogs();
+                    throw new Error('Wrong new key created.');
+                }
+            }
+        }
+        console.log('commitSelectionArr:', commitSelectionArr);
+        console.log('commitSelectedArrMap:', commitSelectionArrMap);
+        if (!commitSelectionArrMap.length) {
+            Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
+            Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
+            Copado.attachJson('keyMapping.json');
+            Copado.attachJson('Copado Deploy updated changes.json');
+        }
         if (process.exitCode === 1) {
             throw new Error(
                 'Deployment of BU ' +
@@ -1153,6 +1170,7 @@ class Deploy {
      */
     static replaceMarketValues(commitSelectionArr) {
         Log.debug('replacing market values');
+        console.log('before first for');
         // prepare market values
         const replaceMap = {};
         for (const item in CONFIG.envVariables.source) {
@@ -1161,8 +1179,11 @@ class Deploy {
                     CONFIG.envVariables.destination[item];
             }
         }
+        console.log('commitSelectionArr:', commitSelectionArr);
         // replace market values
         for (const item of commitSelectionArr) {
+            console.log('replaceMap:', replaceMap);
+            console.log('item.j:', item.j);
             for (const oldValue in replaceMap) {
                 // name
                 item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
@@ -1174,6 +1195,7 @@ class Deploy {
                 item.j = JSON.stringify({ key });
             }
         }
+        console.log('after 2 fors');
     }
 }
 
