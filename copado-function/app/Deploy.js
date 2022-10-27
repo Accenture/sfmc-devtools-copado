@@ -1254,11 +1254,15 @@ class Deploy {
                 // name
                 item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
                 // key
-                const key = JSON.parse(item.j).key.replace(
-                    new RegExp(oldValue, 'g'),
-                    replaceMap[oldValue]
-                );
-                item.j = JSON.stringify({ key });
+                const jObj = JSON.parse(item.j);
+                jObj.key = jObj.key.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
+                if (jObj.newKey) {
+                    jObj.newKey = jObj.newKey.replace(
+                        new RegExp(oldValue, 'g'),
+                        replaceMap[oldValue]
+                    );
+                }
+                item.j = JSON.stringify(jObj);
             }
         }
         console.log('after 2 fors');
