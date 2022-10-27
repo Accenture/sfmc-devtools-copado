@@ -19,6 +19,7 @@
  */
 /**
  * @typedef {object} CommitSelection
+ * @property {string} [u] copado__User_Story__c.Name (US-00000101) only available during Deploy
  * @property {string} t type
  * @property {string} n name
  * @property {string} m ???
@@ -88,6 +89,7 @@ const CONFIG = {
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
+    promotionName: process.env.promotionName, // The promotion branch of a PR
     destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
@@ -235,7 +237,6 @@ async function run() {
         Log.info('Getting Commit-selection file failed:' + ex.message);
         throw ex;
     }
-
     try {
         if (
             await Deploy.createDeltaPackage(
@@ -816,13 +817,13 @@ class Commit {
             }
         }
     }
-
     /**
      * Commits after adding selected components
      *
-     * @returns {string[]} gitDiffArr
+     * @param {string[]} originalSelection list of paths that the user wanted to commit
+     * @returns {void}
      */
-    static commit() {
+    static commit(originalSelection) {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
@@ -842,15 +843,24 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            Log.progress('Commit of target BU files completed');
+            const result = {
+                committed: gitDiffArr,
+                noChangesFound: originalSelection
+                    .map((item) => item.replace(new RegExp('\\\\', 'g'), '/'))
+                    .filter(
+                        // ensure that "\\" in windows-paths get rewritten to forward slashes again for comparison
+                        (item) => !gitDiffArr.includes(item)
+                    ),
+            };
+            Log.result(result, `Committed ${result.committed.length} items`);
         } else {
             Log.error(
-                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit as all selected components have the same content as already exists in Git. ' +
+                    JSON.stringify(originalSelection),
                 'Nothing to commit'
             );
             throw new Error('Nothing to commit');
         }
-        return gitDiffArr;
     }
 }
 /**
@@ -865,8 +875,6 @@ class Deploy {
      * @returns {string[]} gitDiffArr
      */
     static async retrieveAndCommit(targetBU, commitSelectionArr) {
-        CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
-
         let gitAddArr;
         let gitDiffArr = [];
         try {
@@ -905,7 +913,10 @@ class Deploy {
             Log.info('Commit');
             Log.info('===================');
             Log.info('');
-            gitDiffArr = Commit.commit();
+
+            const commitMsgLines = Deploy.getCommitMessage(targetBU, commitSelectionArr);
+            // execute commit
+            gitDiffArr = Deploy.commit(commitMsgLines);
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
             throw ex;
@@ -926,6 +937,61 @@ class Deploy {
             throw ex;
         }
         return gitDiffArr;
+    }
+    /**
+     * Commits after adding selected components
+     *
+     * @param {string[]} [commitMsgLines] paragraphs of commit message
+     * @returns {string[]} gitDiffArr
+     */
+    static commit(commitMsgLines) {
+        // If the following command returns some output,
+        // git commit must be executed. Otherwise there
+        // are no differences between the components retrieved
+        // from the org and selected by the user
+        // and what is already in Git, so commit and push
+        // can be skipped.
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
+            if (!Array.isArray(commitMsgLines)) {
+                commitMsgLines = [CONFIG.commitMessage];
+            }
+            const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
+            Util.execCommand('Commit', ['git commit ' + commitMsgParam], 'Completed committing');
+            Log.progress('Commit of target BU files completed');
+        } else {
+            Log.error(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
+            );
+            throw new Error('Nothing to commit');
+        }
+        return gitDiffArr;
+    }
+
+    /**
+     * helper for Deploy.retrieveAndCommit that creates a multi-line commit msg
+     *
+     * @param {string} targetBU name of BU we deployed to incl. credential name
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @returns {string[]} commitMsgLines
+     */
+    static getCommitMessage(targetBU, commitSelectionArr) {
+        const userStoryNames = [
+            ...new Set(commitSelectionArr.map((item) => item.u).filter(Boolean)),
+        ].sort();
+        const commitMsgLines = [
+            CONFIG.promotionName + ': ' + userStoryNames.join(', '),
+            `Updated BU "${targetBU}" (${CONFIG.target_mid})`,
+        ];
+        console.log('commitMsgLines', commitMsgLines);
+        return commitMsgLines;
     }
 
     /**
@@ -1113,18 +1179,17 @@ class Deploy {
         for (const i in commitSelectionArr) {
             if (commitSelectionArr[i].t.split('-')[0] === 'asset') {
                 const suffix = '-' + CONFIG.target_mid;
-                const oldKey = JSON.parse(commitSelectionArr[i].j).key;
+                const jObj = JSON.parse(commitSelectionArr[i].j);
+                const oldKey = jObj.key;
                 const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
-                // if (deployResult[bu].asset.hasOwnProperty(newKey)) {
-                if (Object.prototype.hasOwnProperty.call(deployResult[bu].asset, newKey)) {
-                    const map = JSON.parse(commitSelectionArr[i].j);
-                    map.newKey = newKey;
-                    commitSelectionArr[i].j = map;
-                    commitSelectionArrMap.push(map);
+                if (deployResult[bu].asset[newKey]) {
+                    jObj.newKey = newKey;
+                    commitSelectionArr[i].j = JSON.stringify(jObj);
+                    commitSelectionArrMap.push(jObj);
                 } else {
                     // it didn't create the correct new Key
                     Log.error(
-                        `New key for ${commitSelectionArr[i].n} do not match any valid keys.`
+                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
                     );
                     Copado.uploadToolLogs();
                     throw new Error('Wrong new key created.');
@@ -1188,11 +1253,15 @@ class Deploy {
                 // name
                 item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
                 // key
-                const key = JSON.parse(item.j).key.replace(
-                    new RegExp(oldValue, 'g'),
-                    replaceMap[oldValue]
-                );
-                item.j = JSON.stringify({ key });
+                const jObj = JSON.parse(item.j);
+                jObj.key = jObj.key.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
+                if (jObj.newKey) {
+                    jObj.newKey = jObj.newKey.replace(
+                        new RegExp(oldValue, 'g'),
+                        replaceMap[oldValue]
+                    );
+                }
+                item.j = JSON.stringify(jObj);
             }
         }
         console.log('after 2 fors');

@@ -21,10 +21,11 @@
  */
 /**
  * @typedef {object} CommitSelection
+ * @property {string} [u] copado__User_Story__c.Name (US-00000101) only available during Deploy
  * @property {string} t type
  * @property {string} n name
  * @property {string} m ???
- * @property {string} j json string with exta info
+ * @property {string} j json string with exta info "{\"key\":\"test-joern-filter-de\"}"
  * @property {'sfmc'} c system
  * @property {'add'} a action
  */
