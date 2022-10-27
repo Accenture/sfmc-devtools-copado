@@ -773,7 +773,8 @@ class Commit {
             if (!typeKeyMap[item.t]) {
                 typeKeyMap[item.t] = [];
             }
-            typeKeyMap[item.t].push(JSON.parse(item.j).key);
+            const jObj = JSON.parse(item.j);
+            typeKeyMap[item.t].push(jObj.newKey || jObj.key);
         }
         console.log('typeKeyMap', typeKeyMap);
         // get unique list of types that need to be retrieved
@@ -788,7 +789,10 @@ class Commit {
                         ...new Set(
                             commitSelectionArr
                                 .filter((item) => item.t === type)
-                                .map((item) => JSON.parse(item.j).key)
+                                .map((item) => {
+                                    const jObj = JSON.parse(item.j);
+                                    return jObj.newKey || jObj.key;
+                                })
                         ),
                     ];
                     return mcdev.getFilesToCommit(sourceBU, type.split('-')[0], keyArr);
@@ -840,7 +844,7 @@ class Commit {
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             Util.execCommand(
                 'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -n -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const result = {
@@ -963,7 +967,7 @@ class Deploy {
                 commitMsgLines = [CONFIG.commitMessage];
             }
             const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
-            Util.execCommand('Commit', ['git commit ' + commitMsgParam], 'Completed committing');
+            Util.execCommand('Commit', ['git commit -n ' + commitMsgParam], 'Completed committing');
             Log.progress('Commit of target BU files completed');
         } else {
             Log.error(

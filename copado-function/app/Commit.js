@@ -799,7 +799,7 @@ class Commit {
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             Util.execCommand(
                 'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -n -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const result = {
