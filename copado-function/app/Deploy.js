@@ -19,6 +19,7 @@
  */
 /**
  * @typedef {object} CommitSelection
+ * @property {string} [u] copado__User_Story__c.Name (US-00000101) only available during Deploy
  * @property {string} t type
  * @property {string} n name
  * @property {string} m ???
@@ -235,7 +236,6 @@ async function run() {
         Log.info('Getting Commit-selection file failed:' + ex.message);
         throw ex;
     }
-
     try {
         if (
             await Deploy.createDeltaPackage(
@@ -802,13 +802,13 @@ class Commit {
             }
         }
     }
-
     /**
      * Commits after adding selected components
      *
-     * @returns {string[]} gitDiffArr
+     * @param {string[]} originalSelection list of paths that the user wanted to commit
+     * @returns {void}
      */
-    static commit() {
+    static commit(originalSelection) {
         // If the following command returns some output,
         // git commit must be executed. Otherwise there
         // are no differences between the components retrieved
@@ -828,15 +828,24 @@ class Commit {
                 ['git commit -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
-            Log.progress('Commit of target BU files completed');
+            const result = {
+                committed: gitDiffArr,
+                noChangesFound: originalSelection
+                    .map((item) => item.replace(new RegExp('\\\\', 'g'), '/'))
+                    .filter(
+                        // ensure that "\\" in windows-paths get rewritten to forward slashes again for comparison
+                        (item) => !gitDiffArr.includes(item)
+                    ),
+            };
+            Log.result(result, `Committed ${result.committed.length} items`);
         } else {
             Log.error(
-                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit as all selected components have the same content as already exists in Git. ' +
+                    JSON.stringify(originalSelection),
                 'Nothing to commit'
             );
             throw new Error('Nothing to commit');
         }
-        return gitDiffArr;
     }
 }
 /**
@@ -851,8 +860,6 @@ class Deploy {
      * @returns {string[]} gitDiffArr
      */
     static async retrieveAndCommit(targetBU, commitSelectionArr) {
-        CONFIG.commitMessage = `Updated BU "${targetBU}" (${CONFIG.target_mid})`;
-
         let gitAddArr;
         let gitDiffArr = [];
         try {
@@ -891,7 +898,10 @@ class Deploy {
             Log.info('Commit');
             Log.info('===================');
             Log.info('');
-            gitDiffArr = Commit.commit();
+
+            const commitMsgLines = Deploy.getCommitMessage(targetBU, commitSelectionArr);
+            // execute commit
+            gitDiffArr = Deploy.commit(commitMsgLines);
         } catch (ex) {
             Log.error('git commit failed:' + ex.message);
             throw ex;
@@ -912,6 +922,61 @@ class Deploy {
             throw ex;
         }
         return gitDiffArr;
+    }
+    /**
+     * Commits after adding selected components
+     *
+     * @param {string[]} [commitMsgLines] paragraphs of commit message
+     * @returns {string[]} gitDiffArr
+     */
+    static commit(commitMsgLines) {
+        // If the following command returns some output,
+        // git commit must be executed. Otherwise there
+        // are no differences between the components retrieved
+        // from the org and selected by the user
+        // and what is already in Git, so commit and push
+        // can be skipped.
+        const gitDiffArr = execSync('git diff --staged --name-only')
+            .toString()
+            .split('\n')
+            .map((item) => item.trim())
+            .filter((item) => !!item);
+        Log.debug('Git diff ended with the result:');
+        Log.debug(gitDiffArr);
+        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
+            if (!Array.isArray(commitMsgLines)) {
+                commitMsgLines = [CONFIG.commitMessage];
+            }
+            const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
+            Util.execCommand('Commit', ['git commit ' + commitMsgParam], 'Completed committing');
+            Log.progress('Commit of target BU files completed');
+        } else {
+            Log.error(
+                'Nothing to commit as all selected components have the same content as already exists in Git.',
+                'Nothing to commit'
+            );
+            throw new Error('Nothing to commit');
+        }
+        return gitDiffArr;
+    }
+
+    /**
+     * helper for Deploy.retrieveAndCommit that creates a multi-line commit msg
+     *
+     * @param {string} targetBU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @returns {string[]} commitMsgLines
+     */
+    static getCommitMessage(targetBU, commitSelectionArr) {
+        const userStoryNames = [
+            ...new Set(commitSelectionArr.map((item) => item.u).filter(Boolean)),
+        ].sort();
+        const commitMsgLines = [
+            CONFIG.target_mid + ': ' + userStoryNames.join(', '),
+            `Updated BU "${targetBU}"`,
+        ];
+        console.log('commitMsgLines', commitMsgLines);
+        return commitMsgLines;
     }
 
     /**
