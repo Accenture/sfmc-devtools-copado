@@ -1207,7 +1207,7 @@ class Deploy {
         }
         console.log('commitSelectionArr:', commitSelectionArr);
         console.log('commitSelectedArrMap:', commitSelectionArrMap);
-        if (!commitSelectionArrMap.length) {
+        if (commitSelectionArrMap.length) {
             Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
             Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
             // attach to user story with target
