@@ -251,7 +251,12 @@ async function run() {
         ) {
             Log.info('Deploy BUs');
             Log.info('===================');
-            await Deploy.deployBU(targetBU, commitSelectionArr);
+            const deployResult = await Deploy.deployBU(targetBU);
+
+            // do what Deploy.createDeltaPackage did: apply templating to deploy definitions
+            Deploy.replaceMarketValues(commitSelectionArr);
+            // do what Deploy.deployBU did: auto-replace asset keys if needed
+            Deploy.replaceAssetKeys(targetBU, commitSelectionArr, deployResult);
         } else {
             throw new Error('No changes found. Nothing to deploy');
         }
@@ -899,7 +904,7 @@ class Deploy {
             Log.info('Retrieve components');
             Log.info('===================');
             Log.info('');
-            Deploy.replaceMarketValues(commitSelectionArr);
+            // Deploy.replaceMarketValues(commitSelectionArr);
             gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
         } catch (ex) {
             Log.error('Retrieving failed: ' + ex.message);
@@ -1016,7 +1021,7 @@ class Deploy {
                 /** @type {DeltaPkgItem} */ ({
                     type: item.t.split('-')[0],
                     name: item.n,
-                    externalKey: JSON.parse(item.j).key,
+                    externalKey: JSON.parse(item.j).newKey || JSON.parse(item.j).key,
                     gitAction: 'add/update',
                     _credential: CONFIG.credentialNameSource,
                     _businessUnit: sourceBU,
@@ -1173,10 +1178,9 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
-     * @param commitSelectionArr
-     * @returns {void}
+     * @returns {object} deployResult
      */
-    static async deployBU(bu, commitSelectionArr) {
+    static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
@@ -1184,13 +1188,34 @@ class Deploy {
         const deployResult = await mcdev.deploy(bu);
         // console.log('deployResult', deployResult);
         // console.log('deployResult', deployResult[bu].asset);
+
+        if (process.exitCode === 1) {
+            throw new Error(
+                'Deployment of BU ' +
+                    bu +
+                    ' failed. Please check the SFMC DevTools logs for more details.'
+            );
+        }
+        return deployResult;
+    }
+    /**
+     *
+     * @param {string} bu name of BU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {object} deployResult result of deployment
+     * @returns {void}
+     */
+    static replaceAssetKeys(bu, commitSelectionArr, deployResult) {
         const commitSelectionArrMap = [];
         for (const i in commitSelectionArr) {
             if (commitSelectionArr[i].t.split('-')[0] === 'asset') {
                 const suffix = '-' + CONFIG.target_mid;
                 const jObj = JSON.parse(commitSelectionArr[i].j);
-                const oldKey = jObj.key;
-                const newKey = oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
+                // decide what the new key is; depends on potentially applied templating
+                const oldKey = jObj.newKey || jObj.key;
+                const newKey = oldKey.endsWith(suffix)
+                    ? oldKey
+                    : oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
                 if (deployResult[bu].asset[newKey]) {
                     jObj.newKey = newKey;
                     commitSelectionArr[i].j = JSON.stringify(jObj);
@@ -1207,26 +1232,20 @@ class Deploy {
         }
         console.log('commitSelectionArr:', commitSelectionArr);
         console.log('commitSelectedArrMap:', commitSelectionArrMap);
-        if (!commitSelectionArrMap.length) {
-            Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
-            Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
-            // attach to user story with target
-            for (const userStorySfid of CONFIG.userStoryIds) {
-                Copado.attachJson(`keyMapping-${CONFIG.target_sfid}.json`, userStorySfid);
-                Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid);
-                Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null);
-            }
-            // attach to result record
-            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null);
-            Copado.attachJson('Copado Deploy updated changes.json', null);
+
+        // attach key mappings for future deployments
+        // TODO: include replaceMarketValues()
+        Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
+        Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
+        // attach to user story with target
+        for (const userStorySfid of CONFIG.userStoryIds) {
+            Copado.attachJson(`keyMapping-${CONFIG.target_sfid}.json`, userStorySfid);
+            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid);
+            Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null);
         }
-        if (process.exitCode === 1) {
-            throw new Error(
-                'Deployment of BU ' +
-                    bu +
-                    ' failed. Please check the SFMC DevTools logs for more details.'
-            );
-        }
+        // attach to result record
+        Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null);
+        Copado.attachJson('Copado Deploy updated changes.json', null);
     }
     /**
      * Merge from branch into target branch
