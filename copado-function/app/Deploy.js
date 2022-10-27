@@ -89,6 +89,7 @@ const CONFIG = {
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
+    promotionName: process.env.promotionName, // The promotion branch of a PR
     destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
 };
 
@@ -963,7 +964,7 @@ class Deploy {
     /**
      * helper for Deploy.retrieveAndCommit that creates a multi-line commit msg
      *
-     * @param {string} targetBU
+     * @param {string} targetBU name of BU we deployed to incl. credential name
      * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @returns {string[]} commitMsgLines
      */
@@ -972,8 +973,8 @@ class Deploy {
             ...new Set(commitSelectionArr.map((item) => item.u).filter(Boolean)),
         ].sort();
         const commitMsgLines = [
-            CONFIG.target_mid + ': ' + userStoryNames.join(', '),
-            `Updated BU "${targetBU}"`,
+            CONFIG.promotionName + ': ' + userStoryNames.join(', '),
+            `Updated BU "${targetBU}" (${CONFIG.target_mid})`,
         ];
         console.log('commitMsgLines', commitMsgLines);
         return commitMsgLines;
