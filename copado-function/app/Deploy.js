@@ -312,6 +312,7 @@ async function run() {
             success = true;
         } catch (ex) {
             if (ex.message === `Error: Command failed: git push origin "${CONFIG.mainBranch}"`) {
+                Log.progress('Merging changes from parallel deployments');
                 Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
                 Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
