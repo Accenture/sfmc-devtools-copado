@@ -57,7 +57,7 @@ const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
     credentialNameTarget: process.env.credentialNameTarget,
-    credentials: JSON.parse(process.env.credentials),
+    credentials: process.env.credentials,
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -92,7 +92,8 @@ const CONFIG = {
     promotionName: process.env.promotionName, // The promotion name of a PR
     target_mid: process.env.target_mid,
     target_sfid: process.env.target_sfid,
-    userStoryIds: JSON.parse(process.env.userStoryIds),
+    userStoryIds: process.env.userStoryIds,
+    sourceProperties: process.env.propertiesOfUSsInPromotion,
 };
 
 /**
@@ -105,6 +106,24 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
+    try {
+        CONFIG.credentials = JSON.parse(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('Could not parse credentials');
+        throw ex;
+    }
+    try {
+        CONFIG.userStoryIds = JSON.parse(CONFIG.userStoryIds);
+    } catch (ex) {
+        Log.error('Could not parse userStoryIds');
+        throw ex;
+    }
+    try {
+        CONFIG.sourceProperties = JSON.parse(CONFIG.sourceProperties);
+    } catch (ex) {
+        Log.error('Could not parse sourceProperties');
+        throw ex;
+    }
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 

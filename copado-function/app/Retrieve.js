@@ -38,7 +38,7 @@ const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
     credentialNameTarget: null,
-    credentials: JSON.parse(process.env.credentials),
+    credentials: process.env.credentials,
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -85,6 +85,12 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
+    try {
+        CONFIG.credentials = JSON.parse(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('Could not parse credentials');
+        throw ex;
+    }
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
