@@ -637,10 +637,11 @@ class Copado {
      * @param {string} localPath where we stored the temporary json file
      * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static attachJson(localPath, parentSfid, async = false) {
-        this._attachFile(localPath, async, parentSfid);
+    static attachJson(localPath, parentSfid, async = false, preMsg) {
+        this._attachFile(localPath, async, parentSfid, preMsg);
     }
     /**
      * Finally, attach the resulting metadata JSON. Always runs asynchronously

@@ -161,7 +161,7 @@ async function run() {
 
     try {
         Log.info('');
-        Log.info('Retrieve components');
+        Log.progress('Retrieving components');
         Log.info('===================');
         Log.info('');
         metadataJson = await Retrieve.retrieveChangelog(sourceBU);
@@ -187,8 +187,12 @@ async function run() {
         Log.info('Attach JSON');
         Log.info('===================');
         Log.info('');
-        Log.progress('Loading items into Copado');
-        Copado.attachJson(CONFIG.metadataFilePath, CONFIG.source_sfid);
+        Copado.attachJson(
+            CONFIG.metadataFilePath,
+            CONFIG.source_sfid,
+            false,
+            'Loading items into Copado'
+        );
     } catch (ex) {
         Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
@@ -531,10 +535,11 @@ class Copado {
      * @param {string} localPath where we stored the temporary json file
      * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static attachJson(localPath, parentSfid, async = false) {
-        this._attachFile(localPath, async, parentSfid);
+    static attachJson(localPath, parentSfid, async = false, preMsg) {
+        this._attachFile(localPath, async, parentSfid, preMsg);
     }
     /**
      * Finally, attach the resulting metadata JSON. Always runs asynchronously
