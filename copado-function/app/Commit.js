@@ -326,12 +326,12 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {object} jsObj path where downloaded files are
      * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveJsonFile(jsObj, localPath, beautify) {
+    static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }

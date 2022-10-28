@@ -394,12 +394,12 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {object} jsObj path where downloaded files are
      * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveJsonFile(jsObj, localPath, beautify) {
+    static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }
@@ -1234,8 +1234,8 @@ class Deploy {
         }
 
         // save files to tmp/ folder, allowing us to attach it to SF records
-        Util.saveJsonFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
-        Util.saveJsonFile(commitSelectionArr, `Copado Deploy changes-${CONFIG.target_mid}.json`);
+        Util.saveJsonFile(`keyMapping-${CONFIG.target_mid}.json`, commitSelectionArrMap);
+        Util.saveJsonFile(`Copado Deploy changes-${CONFIG.target_mid}.json`, commitSelectionArr);
         // attach to user story with target
         for (const userStorySfid of CONFIG.userStoryIds) {
             Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid, true);
