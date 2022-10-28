@@ -4,6 +4,20 @@
 @SuppressWarnings('PMD.AvoidGlobalModifier')
 global with sharing class mcdo_GetPropertiesOfUSsInPromotion implements copado.ParameterExpressionCallable {
     global String execute(Id contextId) {
+        Map<Id, Id> firstEnvironmentPerPromotion = getFirstEnvironmentPerPromotion(contextId);
+        // now allProperties[] have all the properties of all the source environments of all the user stories
+        copado__System_Property__c[] allProperties = [
+            SELECT copado__API_Name__c, copado__Value__c
+            FROM copado__System_Property__c
+            WHERE copado__ParentId__c IN :firstEnvironmentPerPromotion.values()
+        ];
+        System.debug('allProperties=' + allProperties);
+        return JSON.serialize(allProperties);
+    }
+
+    // PRIVATE
+
+    private Map<Id, Id> getFirstEnvironmentPerPromotion(Id contextId) {
         copado__JobStep__c step = [
             SELECT
                 copado__JobExecution__r.copado__Promotion__c,
@@ -48,14 +62,6 @@ global with sharing class mcdo_GetPropertiesOfUSsInPromotion implements copado.P
             }
         }
         System.debug(firstEnvironmentPerPromotion);
-
-        // now allProperties[] have all the properties of all the source environments of all the user stories
-        copado__System_Property__c[] allProperties = [
-            SELECT copado__API_Name__c, copado__Value__c
-            FROM copado__System_Property__c
-            WHERE copado__ParentId__c IN :firstEnvironmentPerPromotion.values()
-        ];
-        System.debug('allProperties=' + allProperties);
-        return JSON.serialize(allProperties);
+        return firstEnvironmentPerPromotion;
     }
 }
