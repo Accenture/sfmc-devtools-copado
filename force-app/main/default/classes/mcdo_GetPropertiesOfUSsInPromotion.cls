@@ -55,19 +55,7 @@ global with sharing class mcdo_GetPropertiesOfUSsInPromotion implements copado.P
             FROM copado__System_Property__c
             WHERE copado__ParentId__c IN :firstEnvironmentPerPromotion.values()
         ];
-
-        // for debugging purposes only:
-        // for (copado__System_Property__c p : allProperties) {
-        //     System.debug(
-        //         'p:' +
-        //         p.copado__Environment__r.Name +
-        //         ' ' +
-        //         p.copado__ParentId__c +
-        //         ' ' +
-        //         p
-        //     );
-        // }
-
+        System.debug('allProperties=' + allProperties);
         return JSON.serialize(allProperties);
     }
 }
