@@ -51,11 +51,7 @@ global with sharing class mcdo_GetPropertiesOfUSsInPromotion implements copado.P
 
         // now allProperties[] have all the properties of all the source environments of all the user stories
         copado__System_Property__c[] allProperties = [
-            SELECT
-                copado__ParentId__c,
-                copado__Environment__r.Name,
-                copado__API_Name__c,
-                copado__Value__c
+            SELECT copado__API_Name__c, copado__Value__c
             FROM copado__System_Property__c
             WHERE copado__ParentId__c IN :firstEnvironmentPerPromotion.values()
         ];
