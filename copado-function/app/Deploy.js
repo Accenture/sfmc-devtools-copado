@@ -93,7 +93,7 @@ const CONFIG = {
     target_mid: process.env.target_mid,
     target_sfid: process.env.target_sfid,
     userStoryIds: process.env.userStoryIds,
-    sourceProperties: process.env.propertiesOfUSsInPromotion,
+    sourceProperties: process.env.sourceProperties,
 };
 
 /**
