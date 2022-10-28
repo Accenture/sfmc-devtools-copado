@@ -436,12 +436,12 @@ class Util {
         let installer;
         if (!CONFIG.installMcdevLocally) {
             Util.execCommand(
-                `Initializing SFMC DevTools (packaged version)`,
+                `Initializing Accenture SFMC DevTools (packaged version)`,
                 [
                     `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
                     'mcdev --version',
                 ],
-                'Completed installing SFMC DevTools'
+                'Completed installing Accenture SFMC DevTools'
             );
             return; // we're done here
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
@@ -456,9 +456,9 @@ class Util {
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
         Util.execCommand(
-            `Initializing SFMC DevTools (${installer})`,
+            `Initializing Accenture SFMC DevTools (${installer})`,
             [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
-            'Completed installing SFMC DevTools'
+            'Completed installing Accenture SFMC DevTools'
         );
     }
     /**
