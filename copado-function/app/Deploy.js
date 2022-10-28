@@ -125,6 +125,9 @@ async function run() {
         throw ex;
     }
     Util.convertEnvVariables(CONFIG.envVariables);
+    CONFIG.sourceProperties = Util.convertSourceProperties(CONFIG.sourceProperties);
+    CONFIG.source_mid = CONFIG.sourceProperties.mid;
+    CONFIG.credentialNameSource = CONFIG.sourceProperties.credential_name;
     Log.debug(CONFIG);
 
     // ensure we got SFMC credentials for our source BU
@@ -557,6 +560,19 @@ class Util {
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
+    }
+    /**
+     * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     *
+     * @param {object[]} properties directly from config
+     * @returns {Object.<string, string>} properties converted into normal json
+     */
+    static convertSourceProperties(properties) {
+        const response = {};
+        for (const item of properties) {
+            response[item.copado__API_Name__c] = item.copado__Value__c;
+        }
+        return response;
     }
     /**
      * helper that takes care of converting all environment variabels found in config to a proper key-based format
