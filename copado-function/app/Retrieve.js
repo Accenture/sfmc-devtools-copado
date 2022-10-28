@@ -427,7 +427,7 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        Log.progress('Provide authentication');
+        Log.info('Provide authentication');
         Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
@@ -592,15 +592,15 @@ class Copado {
      * download file to CWD with the name that was stored in Salesforce
      *
      * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static downloadFile(fileSFID) {
+    static _downloadFile(fileSFID, preMsg) {
         if (fileSFID) {
-            Util.execCommand(
-                `Download ${fileSFID}.`,
-                `copado --downloadfiles "${fileSFID}"`,
-                'Completed download'
-            );
+            if (!preMsg) {
+                preMsg = `Download ${fileSFID}.`;
+            }
+            Util.execCommand(preMsg, `copado --downloadfiles "${fileSFID}"`, 'Completed download');
         } else {
             throw new Error('fileSalesforceId is not set');
         }
@@ -611,10 +611,11 @@ class Copado {
      *
      * @param {string} fileSFID salesforce ID of the file to download
      * @param {string} fileName name of the file the download will be saved as
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {CommitSelection[]} commitSelectionArr
      */
-    static getJsonFile(fileSFID, fileName) {
-        this.downloadFile(fileSFID);
+    static getJsonFile(fileSFID, fileName, preMsg) {
+        this._downloadFile(fileSFID, preMsg);
         return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
