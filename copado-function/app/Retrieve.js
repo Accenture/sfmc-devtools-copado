@@ -43,12 +43,13 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
+    // retrieve
+    source_sfid: process.env.envId,
     envVariables: {
         // retrieve / commit
         source: process.env.envVariablesSource,
@@ -173,7 +174,7 @@ async function run() {
         Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Retrieve.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
+        Util.saveJsonFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
@@ -185,7 +186,7 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Log.progress('Loading items into Copado');
-        Copado.attachJson(CONFIG.metadataFilePath);
+        Copado.attachJson(CONFIG.metadataFilePath, CONFIG.source_sfid);
     } catch (ex) {
         Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
@@ -280,6 +281,20 @@ class Log {
  * helper class
  */
 class Util {
+    /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     *
+     * @param {object} jsObj path where downloaded files are
+     * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
+     * @returns {void}
+     */
+    static saveJsonFile(jsObj, localPath, beautify) {
+        const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
+        fs.writeFileSync(localPath, jsonString, 'utf8');
+    }
     /**
      * Pushes after a successfull deployment
      *
@@ -409,8 +424,7 @@ class Util {
      */
     static provideMCDevCredentials(credentials) {
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
-        Log.progress('Completed providing authentication');
+        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -512,30 +526,22 @@ class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
      *
-     * @param {string} metadataFilePath where we stored the temporary json file
+     * @param {string} localPath where we stored the temporary json file
+     * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
      * @returns {void}
      */
-    static attachJson(metadataFilePath) {
-        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + CONFIG.envId);
-        this._attachFile(metadataFilePath, CONFIG.envId);
+    static attachJson(localPath, parentSfid, async = false) {
+        this._attachFile(localPath, async, parentSfid);
     }
     /**
-     * Finally, attach the resulting metadata JSON.
+     * Finally, attach the resulting metadata JSON. Always runs asynchronously
      *
      * @param {string} localPath where we stored the temporary json file
      * @returns {Promise.<void>} promise of log upload
      */
     static async attachLog(localPath) {
-        const command = `copado --uploadfile "${localPath}"`;
-        Log.debug('⚡ ' + command);
-
-        try {
-            exec(command);
-        } catch (ex) {
-            // do not use Log.error here to prevent our copado-function from auto-failing right here
-            Log.info(ex.status + ': ' + ex.message);
-            throw new Error(ex);
-        }
+        this._attachFile(localPath, true);
     }
 
     /**
@@ -543,24 +549,39 @@ class Copado {
      *
      * @private
      * @param {string} localPath where we stored the temporary json file
-     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
-     * @param {string} [preMsg] optional message to display before uploading
-     * @param {string} [postMsg] optional message to display after uploading
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [parentSfid] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading synchronously
+     * @param {string} [postMsg] optional message to display after uploading synchronously
      */
     static _attachFile(
         localPath,
-        parentId,
-        preMsg = 'Attaching file',
-        postMsg = 'Completed attaching file'
+        async = false,
+        parentSfid,
+        preMsg,
+        postMsg = 'Completed uploading file'
     ) {
-        if (parentId) {
-            preMsg += ` to ${parentId}`;
+        const command =
+            `copado --uploadfile "${localPath}"` +
+            (parentSfid ? ` --parentid "${parentSfid}"` : '');
+        Log.debug('⚡ ' + command);
+        if (async) {
+            try {
+                exec(command);
+            } catch (ex) {
+                // do not use Log.error here to prevent our copado-function from auto-failing right here
+                Log.info(ex.status + ': ' + ex.message);
+                throw new Error(ex);
+            }
+        } else {
+            if (!preMsg) {
+                preMsg = 'Uploading file ' + localPath;
+                if (parentSfid) {
+                    preMsg += ` to ${parentSfid}`;
+                }
+            }
+            Util.execCommand(preMsg, [command], postMsg);
         }
-        Util.execCommand(
-            preMsg,
-            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
-            postMsg
-        );
     }
     /**
      * download file to CWD with the name that was stored in Salesforce
@@ -804,21 +825,6 @@ class Retrieve {
         } else {
             return obj[key];
         }
-    }
-
-    /**
-     * After components have been retrieved,
-     * find all retrieved components and build a json containing as much
-     * metadata as possible.
-     *
-     * @param {MetadataItem[]} metadataJson path where downloaded files are
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
-     * @returns {void}
-     */
-    static saveMetadataFile(metadataJson, metadataFilePath) {
-        const metadataString = JSON.stringify(metadataJson);
-        // Log.debug('Metadata JSON is: ' + metadataString);
-        fs.writeFileSync(metadataFilePath, metadataString);
     }
 }
 

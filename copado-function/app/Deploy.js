@@ -62,12 +62,13 @@ const CONFIG = {
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    envId: process.env.envId,
     mainBranch: process.env.main_branch,
     mcdevVersion: process.env.mcdev_version,
     metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
+    // retrieve
+    source_sfid: null,
     envVariables: {
         // retrieve / commit
         source: process.env.envVariablesSource,
@@ -84,6 +85,9 @@ const CONFIG = {
     // deploy
     fileSelectionSalesforceId: process.env.metadata_file,
     fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileUpdatedSelectionSfid: null,
+    target_sfid: process.env.target_sfid,
+    userStoryIds: JSON.parse(process.env.userStoryIds),
     target_mid: process.env.target_mid,
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     git_depth: 100, // set a default git depth of 100 commits
@@ -247,7 +251,12 @@ async function run() {
         ) {
             Log.info('Deploy BUs');
             Log.info('===================');
-            await Deploy.deployBU(targetBU);
+            const deployResult = await Deploy.deployBU(targetBU);
+
+            // do what Deploy.createDeltaPackage did: apply templating to deploy definitions
+            Deploy.replaceMarketValues(commitSelectionArr);
+            // do what Deploy.deployBU did: auto-replace asset keys if needed
+            Deploy.replaceAssetKeys(targetBU, commitSelectionArr, deployResult);
         } else {
             throw new Error('No changes found. Nothing to deploy');
         }
@@ -383,6 +392,20 @@ class Log {
  */
 class Util {
     /**
+     * After components have been retrieved,
+     * find all retrieved components and build a json containing as much
+     * metadata as possible.
+     *
+     * @param {object} jsObj path where downloaded files are
+     * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
+     * @returns {void}
+     */
+    static saveJsonFile(jsObj, localPath, beautify) {
+        const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
+        fs.writeFileSync(localPath, jsonString, 'utf8');
+    }
+    /**
      * Pushes after a successfull deployment
      *
      * @param {string} destinationBranch name of branch to push to
@@ -511,8 +534,7 @@ class Util {
      */
     static provideMCDevCredentials(credentials) {
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
-        Log.progress('Completed providing authentication');
+        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -614,30 +636,22 @@ class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
      *
-     * @param {string} metadataFilePath where we stored the temporary json file
+     * @param {string} localPath where we stored the temporary json file
+     * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
      * @returns {void}
      */
-    static attachJson(metadataFilePath) {
-        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + CONFIG.envId);
-        this._attachFile(metadataFilePath, CONFIG.envId);
+    static attachJson(localPath, parentSfid, async = false) {
+        this._attachFile(localPath, async, parentSfid);
     }
     /**
-     * Finally, attach the resulting metadata JSON.
+     * Finally, attach the resulting metadata JSON. Always runs asynchronously
      *
      * @param {string} localPath where we stored the temporary json file
      * @returns {Promise.<void>} promise of log upload
      */
     static async attachLog(localPath) {
-        const command = `copado --uploadfile "${localPath}"`;
-        Log.debug('⚡ ' + command);
-
-        try {
-            exec(command);
-        } catch (ex) {
-            // do not use Log.error here to prevent our copado-function from auto-failing right here
-            Log.info(ex.status + ': ' + ex.message);
-            throw new Error(ex);
-        }
+        this._attachFile(localPath, true);
     }
 
     /**
@@ -645,24 +659,39 @@ class Copado {
      *
      * @private
      * @param {string} localPath where we stored the temporary json file
-     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
-     * @param {string} [preMsg] optional message to display before uploading
-     * @param {string} [postMsg] optional message to display after uploading
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [parentSfid] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading synchronously
+     * @param {string} [postMsg] optional message to display after uploading synchronously
      */
     static _attachFile(
         localPath,
-        parentId,
-        preMsg = 'Attaching file',
-        postMsg = 'Completed attaching file'
+        async = false,
+        parentSfid,
+        preMsg,
+        postMsg = 'Completed uploading file'
     ) {
-        if (parentId) {
-            preMsg += ` to ${parentId}`;
+        const command =
+            `copado --uploadfile "${localPath}"` +
+            (parentSfid ? ` --parentid "${parentSfid}"` : '');
+        Log.debug('⚡ ' + command);
+        if (async) {
+            try {
+                exec(command);
+            } catch (ex) {
+                // do not use Log.error here to prevent our copado-function from auto-failing right here
+                Log.info(ex.status + ': ' + ex.message);
+                throw new Error(ex);
+            }
+        } else {
+            if (!preMsg) {
+                preMsg = 'Uploading file ' + localPath;
+                if (parentSfid) {
+                    preMsg += ` to ${parentSfid}`;
+                }
+            }
+            Util.execCommand(preMsg, [command], postMsg);
         }
-        Util.execCommand(
-            preMsg,
-            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
-            postMsg
-        );
     }
     /**
      * download file to CWD with the name that was stored in Salesforce
@@ -759,7 +788,8 @@ class Commit {
             if (!typeKeyMap[item.t]) {
                 typeKeyMap[item.t] = [];
             }
-            typeKeyMap[item.t].push(JSON.parse(item.j).key);
+            const jObj = JSON.parse(item.j);
+            typeKeyMap[item.t].push(jObj.newKey || jObj.key);
         }
         console.log('typeKeyMap', typeKeyMap);
         // get unique list of types that need to be retrieved
@@ -774,7 +804,10 @@ class Commit {
                         ...new Set(
                             commitSelectionArr
                                 .filter((item) => item.t === type)
-                                .map((item) => JSON.parse(item.j).key)
+                                .map((item) => {
+                                    const jObj = JSON.parse(item.j);
+                                    return jObj.newKey || jObj.key;
+                                })
                         ),
                     ];
                     return mcdev.getFilesToCommit(sourceBU, type.split('-')[0], keyArr);
@@ -826,7 +859,7 @@ class Commit {
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             Util.execCommand(
                 'Commit',
-                ['git commit -m "' + CONFIG.commitMessage + '"'],
+                ['git commit -n -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );
             const result = {
@@ -876,7 +909,6 @@ class Deploy {
             Log.info('Retrieve components');
             Log.info('===================');
             Log.info('');
-            Deploy.replaceMarketValues(commitSelectionArr);
             gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
         } catch (ex) {
             Log.error('Retrieving failed: ' + ex.message);
@@ -949,7 +981,7 @@ class Deploy {
                 commitMsgLines = [CONFIG.commitMessage];
             }
             const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
-            Util.execCommand('Commit', ['git commit ' + commitMsgParam], 'Completed committing');
+            Util.execCommand('Commit', ['git commit -n ' + commitMsgParam], 'Completed committing');
             Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
@@ -993,7 +1025,7 @@ class Deploy {
                 /** @type {DeltaPkgItem} */ ({
                     type: item.t.split('-')[0],
                     name: item.n,
-                    externalKey: JSON.parse(item.j).key,
+                    externalKey: JSON.parse(item.j).newKey || JSON.parse(item.j).key,
                     gitAction: 'add/update',
                     _credential: CONFIG.credentialNameSource,
                     _businessUnit: sourceBU,
@@ -1056,7 +1088,7 @@ class Deploy {
         // * override config in git repo
         try {
             fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + '.BAK');
-            fs.writeFileSync(CONFIG.configFilePath, JSON.stringify(config), 'utf8');
+            Util.saveJsonFile(CONFIG.configFilePath, config, 'utf8');
         } catch (ex) {
             Log.error('Updating updateMarketLists failed: ' + ex.message);
             throw ex;
@@ -1150,14 +1182,17 @@ class Deploy {
      * In case of errors, the deployment is not stopped.
      *
      * @param {string} bu name of BU
-     * @returns {void}
+     * @returns {object} deployResult
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
         const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
-        await mcdev.deploy(bu);
+        const deployResult = await mcdev.deploy(bu);
+        // console.log('deployResult', deployResult);
+        // console.log('deployResult', deployResult[bu].asset);
+
         if (process.exitCode === 1) {
             throw new Error(
                 'Deployment of BU ' +
@@ -1165,6 +1200,56 @@ class Deploy {
                     ' failed. Please check the SFMC DevTools logs for more details.'
             );
         }
+        return deployResult;
+    }
+    /**
+     *
+     * @param {string} bu name of BU
+     * @param {CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {object} deployResult result of deployment
+     * @returns {void}
+     */
+    static replaceAssetKeys(bu, commitSelectionArr, deployResult) {
+        const commitSelectionArrMap = [];
+        for (const i in commitSelectionArr) {
+            if (commitSelectionArr[i].t.split('-')[0] === 'asset') {
+                const suffix = '-' + CONFIG.target_mid;
+                const jObj = JSON.parse(commitSelectionArr[i].j);
+                // decide what the new key is; depends on potentially applied templating
+                const oldKey = jObj.newKey || jObj.key;
+                const newKey = oldKey.endsWith(suffix)
+                    ? oldKey
+                    : oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
+                if (deployResult[bu].asset[newKey]) {
+                    jObj.newKey = newKey;
+                    commitSelectionArr[i].j = JSON.stringify(jObj);
+                    commitSelectionArrMap.push(jObj);
+                } else {
+                    // it didn't create the correct new Key
+                    Log.error(
+                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
+                    );
+                    Copado.uploadToolLogs();
+                    throw new Error('Wrong new key created.');
+                }
+            }
+        }
+
+        // save files to tmp/ folder, allowing us to attach it to SF records
+        Util.saveJsonFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
+        Util.saveJsonFile(commitSelectionArr, `Copado Deploy changes-${CONFIG.target_mid}.json`);
+        // attach to user story with target
+        for (const userStorySfid of CONFIG.userStoryIds) {
+            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid, true);
+            Copado.attachJson(
+                `Copado Deploy changes-${CONFIG.target_mid}.json`,
+                userStorySfid,
+                true
+            );
+        }
+        // attach to result record
+        Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null, true);
+        Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null, true);
     }
     /**
      * Merge from branch into target branch
@@ -1203,11 +1288,12 @@ class Deploy {
                 // name
                 item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
                 // key
-                const key = JSON.parse(item.j).key.replace(
+                const jObj = JSON.parse(item.j);
+                jObj.newKey = (jObj.newKey || jObj.key).replace(
                     new RegExp(oldValue, 'g'),
                     replaceMap[oldValue]
                 );
-                item.j = JSON.stringify({ key });
+                item.j = JSON.stringify(jObj);
             }
         }
     }
