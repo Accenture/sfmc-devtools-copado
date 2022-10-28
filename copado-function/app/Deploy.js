@@ -182,7 +182,7 @@ async function run() {
         Log.info('Merge branch');
         Log.info('===================');
         Log.info('');
-        Deploy.merge(CONFIG.promotionBranch);
+        Deploy.merge(CONFIG.promotionBranch, CONFIG.mainBranch);
     } catch (ex) {
         // if confict with other deployment this would have failed
         Log.error('Merge failed: ' + ex.message);
@@ -751,7 +751,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Create / checkout branch ' + workingBranch,
+            'Switching to branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );
@@ -966,7 +966,7 @@ class Deploy {
         }
         try {
             Log.info('Merge promotion into main branch');
-            Deploy.merge(CONFIG.promotionBranch);
+            Deploy.merge(CONFIG.promotionBranch, CONFIG.mainBranch);
         } catch (ex) {
             // would fail if conflicting with other deployments
             Log.error('Merge failed: ' + ex.message);
@@ -999,7 +999,11 @@ class Deploy {
                 commitMsgLines = [CONFIG.commitMessage];
             }
             const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
-            Util.execCommand('Commit', ['git commit -n ' + commitMsgParam], 'Completed committing');
+            Util.execCommand(
+                'Committing changes',
+                ['git commit -n ' + commitMsgParam],
+                'Completed committing'
+            );
             Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
@@ -1273,12 +1277,13 @@ class Deploy {
      * Merge from branch into target branch
      *
      * @param {string} promotionBranch commit id to merge
+     * @param {string} currentBranch should be master in most cases
      * @returns {void}
      */
-    static merge(promotionBranch) {
+    static merge(promotionBranch, currentBranch) {
         // Merge and commit changes.
         Util.execCommand(
-            'Merge commit ' + promotionBranch,
+            `Merge ${promotionBranch} into ${currentBranch}`,
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
         );

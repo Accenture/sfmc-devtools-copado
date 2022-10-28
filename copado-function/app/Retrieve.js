@@ -635,7 +635,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Create / checkout branch ' + workingBranch,
+            'Switching to branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );
