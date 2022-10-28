@@ -49,7 +49,7 @@ const CONFIG = {
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     // retrieve
-    source_sfid: process.env.envId,
+    source_sfid: process.env.source_sfid,
     // commit
     commitMessage: null,
     featureBranch: null,
