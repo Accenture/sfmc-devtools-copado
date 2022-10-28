@@ -566,31 +566,22 @@ class Copado {
     /**
      * Finally, attach the resulting metadata JSON to the source environment
      *
-     * @param {string} metadataFilePath where we stored the temporary json file
+     * @param {string} localPath where we stored the temporary json file
      * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
      * @returns {void}
      */
-    static attachJson(metadataFilePath, parentSfid) {
-        Log.debug('Attach JSON ' + metadataFilePath + ' to ' + parentSfid);
-        this._attachFile(metadataFilePath, parentSfid);
+    static attachJson(localPath, parentSfid, async = false) {
+        this._attachFile(localPath, async, parentSfid);
     }
     /**
-     * Finally, attach the resulting metadata JSON.
+     * Finally, attach the resulting metadata JSON. Always runs asynchronously
      *
      * @param {string} localPath where we stored the temporary json file
      * @returns {Promise.<void>} promise of log upload
      */
     static async attachLog(localPath) {
-        const command = `copado --uploadfile "${localPath}"`;
-        Log.debug('⚡ ' + command);
-
-        try {
-            exec(command);
-        } catch (ex) {
-            // do not use Log.error here to prevent our copado-function from auto-failing right here
-            Log.info(ex.status + ': ' + ex.message);
-            throw new Error(ex);
-        }
+        this._attachFile(localPath, true);
     }
 
     /**
@@ -598,24 +589,39 @@ class Copado {
      *
      * @private
      * @param {string} localPath where we stored the temporary json file
-     * @param {string} [parentId] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
-     * @param {string} [preMsg] optional message to display before uploading
-     * @param {string} [postMsg] optional message to display after uploading
+     * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [parentSfid] optionally specify SFID of record to which we want to attach the file. Current Result record if omitted
+     * @param {string} [preMsg] optional message to display before uploading synchronously
+     * @param {string} [postMsg] optional message to display after uploading synchronously
      */
     static _attachFile(
         localPath,
-        parentId,
-        preMsg = 'Attaching file',
-        postMsg = 'Completed attaching file'
+        async = false,
+        parentSfid,
+        preMsg,
+        postMsg = 'Completed uploading file'
     ) {
-        if (parentId) {
-            preMsg += ` to ${parentId}`;
+        const command =
+            `copado --uploadfile "${localPath}"` +
+            (parentSfid ? ` --parentid "${parentSfid}"` : '');
+        Log.debug('⚡ ' + command);
+        if (async) {
+            try {
+                exec(command);
+            } catch (ex) {
+                // do not use Log.error here to prevent our copado-function from auto-failing right here
+                Log.info(ex.status + ': ' + ex.message);
+                throw new Error(ex);
+            }
+        } else {
+            if (!preMsg) {
+                preMsg = 'Uploading file ' + localPath;
+                if (parentSfid) {
+                    preMsg += ` to ${parentSfid}`;
+                }
+            }
+            Util.execCommand(preMsg, [command], postMsg);
         }
-        Util.execCommand(
-            preMsg,
-            [`copado --uploadfile "${localPath}"` + (parentId ? ` --parentid "${parentId}"` : '')],
-            postMsg
-        );
     }
     /**
      * download file to CWD with the name that was stored in Salesforce
