@@ -1,9 +1,7 @@
 // Note: This class have been used as Dynamic Expression class for Marketing Cloud functions - Hence marked Global
 @SuppressWarnings('PMD.AvoidGlobalModifier')
 global with sharing class mcdo_ChildEnvironmentVariables implements copado.ParameterExpressionCallable {
-
     // GLOBAL
-  
 
     private Map<String, List<EnvironmentVariablesRecord>> envVariablesByEnvName = new Map<String, List<EnvironmentVariablesRecord>>();
 
@@ -30,7 +28,7 @@ global with sharing class mcdo_ChildEnvironmentVariables implements copado.Param
             );
         }
 
-        for (copado__Environment__c eachEnvironment : getmcdo_ChildEnvironments(environmentId)) {
+        for (copado__Environment__c eachEnvironment : getChildEnvironments(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
             if (envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
                 environmentVariables = envVariablesByEnvName.get(eachEnvironment.Name);
@@ -54,7 +52,7 @@ global with sharing class mcdo_ChildEnvironmentVariables implements copado.Param
         ];
     }
 
-    private List<copado__Environment__c> getmcdo_ChildEnvironments(Id environmentId) {
+    private List<copado__Environment__c> getChildEnvironments(Id environmentId) {
         return [
             SELECT Id, Name
             FROM copado__Environment__c
@@ -62,7 +60,7 @@ global with sharing class mcdo_ChildEnvironmentVariables implements copado.Param
             WITH SECURITY_ENFORCED
         ];
     }
- 
+
     // WRAPPER
 
     public class EnvironmentVariablesRecord {
