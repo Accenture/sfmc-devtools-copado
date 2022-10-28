@@ -378,8 +378,6 @@ class Log {
      * @returns {void}
      */
     static progress(msg) {
-        Log.debug(msg);
-
         msg = JSON.stringify(msg);
         execSync(`copado --progress ${msg}`);
     }
@@ -673,8 +671,8 @@ class Copado {
         const command =
             `copado --uploadfile "${localPath}"` +
             (parentSfid ? ` --parentid "${parentSfid}"` : '');
-        Log.debug('⚡ ' + command);
         if (async) {
+            Log.debug('⚡ ' + command); // also done in Util.execCommand
             try {
                 exec(command);
             } catch (ex) {
