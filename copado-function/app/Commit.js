@@ -51,14 +51,6 @@ const CONFIG = {
     tmpDirectory: '../tmp',
     // retrieve
     source_sfid: null,
-    envVariables: {
-        // retrieve / commit
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
-        // deploy
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
-    },
     // commit
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
@@ -66,12 +58,22 @@ const CONFIG = {
     fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
     recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
+    envVariables: {
+        source: null,
+        sourceChildren: null,
+        destination: null,
+        destinationChildren: null,
+    },
     deltaPackageLog: null,
+    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    fileUpdatedSelectionSfid: null,
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    sourceBranch: null, // The promotion branch of a PR
     promotionBranch: null, // The promotion branch of a PR
-    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionName: null, // The promotion name of a PR
+    target_mid: null,
+    target_sfid: null,
+    userStoryIds: null,
 };
 
 /**

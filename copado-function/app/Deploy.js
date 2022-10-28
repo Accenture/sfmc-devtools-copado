@@ -69,32 +69,30 @@ const CONFIG = {
     tmpDirectory: '../tmp',
     // retrieve
     source_sfid: null,
-    envVariables: {
-        // retrieve / commit
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
-        // deploy
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
-    },
     // commit
     commitMessage: null,
     featureBranch: null,
     recreateFeatureBranch: null,
 
     // deploy
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
-    fileUpdatedSelectionSfid: null,
-    target_sfid: process.env.target_sfid,
-    userStoryIds: JSON.parse(process.env.userStoryIds),
-    target_mid: process.env.target_mid,
+    envVariables: {
+        source: process.env.envVariablesSource,
+        sourceChildren: process.env.envVariablesSourceChildren,
+        destination: process.env.envVariablesDestination,
+        destinationChildren: process.env.envVariablesDestinationChildren,
+    },
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
+    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileUpdatedSelectionSfid: null,
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
-    promotionName: process.env.promotionName, // The promotion branch of a PR
-    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionName: process.env.promotionName, // The promotion name of a PR
+    target_mid: process.env.target_mid,
+    target_sfid: process.env.target_sfid,
+    userStoryIds: JSON.parse(process.env.userStoryIds),
 };
 
 /**
