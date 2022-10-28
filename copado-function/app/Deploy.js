@@ -909,7 +909,6 @@ class Deploy {
             Log.info('Retrieve components');
             Log.info('===================');
             Log.info('');
-            // Deploy.replaceMarketValues(commitSelectionArr);
             gitAddArr = await Commit.retrieveCommitSelection(targetBU, commitSelectionArr);
         } catch (ex) {
             Log.error('Retrieving failed: ' + ex.message);
