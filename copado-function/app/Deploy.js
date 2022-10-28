@@ -1238,19 +1238,8 @@ class Deploy {
                 }
             }
         }
-        console.log('commitSelectionArr:', commitSelectionArr);
-        console.log('commitSelectedArrMap:', commitSelectionArrMap);
 
-        // attach key mappings for future deployments
-        // TODO: include replaceMarketValues()
-
-        // Not sure if this is meant to stay:
-        // start here
-        Util.saveMetadataFile(commitSelectionArrMap, 'keyMapping.json');
-        Util.saveMetadataFile(commitSelectionArr, 'Copado Deploy updated changes.json');
-        // end here
-
-        Util.saveMetadataFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_sfid}.json`);
+        // save files to tmp/ folder, allowing us to attach it to SF records
         Util.saveMetadataFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
         Util.saveMetadataFile(
             commitSelectionArr,
@@ -1258,13 +1247,16 @@ class Deploy {
         );
         // attach to user story with target
         for (const userStorySfid of CONFIG.userStoryIds) {
-            Copado.attachJson(`keyMapping-${CONFIG.target_sfid}.json`, userStorySfid);
-            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid);
-            Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null);
+            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid, true);
+            Copado.attachJson(
+                `Copado Deploy changes-${CONFIG.target_mid}.json`,
+                userStorySfid,
+                true
+            );
         }
         // attach to result record
-        Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null);
-        Copado.attachJson('Copado Deploy updated changes.json', null);
+        Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null, true);
+        Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null, true);
     }
     /**
      * Merge from branch into target branch
