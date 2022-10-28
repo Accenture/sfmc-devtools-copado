@@ -174,7 +174,7 @@ async function run() {
         Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Util.saveMetadataFile(metadataJson, CONFIG.metadataFilePath);
+        Util.saveJsonFile(metadataJson, CONFIG.metadataFilePath);
     } catch (ex) {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
@@ -286,14 +286,14 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {MetadataItem[]} metadataJson path where downloaded files are
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
+     * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveMetadataFile(metadataJson, metadataFilePath) {
-        const metadataString = JSON.stringify(metadataJson);
-        // Log.debug('Metadata JSON is: ' + metadataString);
-        fs.writeFileSync(metadataFilePath, metadataString);
+    static saveJsonFile(jsObj, localPath, beautify) {
+        const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
+        fs.writeFileSync(localPath, jsonString, 'utf8');
     }
     /**
      * Pushes after a successfull deployment
@@ -424,8 +424,7 @@ class Util {
      */
     static provideMCDevCredentials(credentials) {
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
-        Log.progress('Completed providing authentication');
+        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.

@@ -398,14 +398,14 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {MetadataItem[]} metadataJson path where downloaded files are
-     * @param {string} metadataFilePath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
+     * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveMetadataFile(metadataJson, metadataFilePath) {
-        const metadataString = JSON.stringify(metadataJson);
-        // Log.debug('Metadata JSON is: ' + metadataString);
-        fs.writeFileSync(metadataFilePath, metadataString);
+    static saveJsonFile(jsObj, localPath, beautify) {
+        const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
+        fs.writeFileSync(localPath, jsonString, 'utf8');
     }
     /**
      * Pushes after a successfull deployment
@@ -536,8 +536,7 @@ class Util {
      */
     static provideMCDevCredentials(credentials) {
         Log.progress('Provide authentication');
-        fs.writeFileSync('.mcdev-auth.json', JSON.stringify(credentials));
-        Log.progress('Completed providing authentication');
+        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
@@ -1092,7 +1091,7 @@ class Deploy {
         // * override config in git repo
         try {
             fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + '.BAK');
-            fs.writeFileSync(CONFIG.configFilePath, JSON.stringify(config), 'utf8');
+            Util.saveJsonFile(CONFIG.configFilePath, config, 'utf8');
         } catch (ex) {
             Log.error('Updating updateMarketLists failed: ' + ex.message);
             throw ex;
@@ -1240,11 +1239,8 @@ class Deploy {
         }
 
         // save files to tmp/ folder, allowing us to attach it to SF records
-        Util.saveMetadataFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
-        Util.saveMetadataFile(
-            commitSelectionArr,
-            `Copado Deploy changes-${CONFIG.target_mid}.json`
-        );
+        Util.saveJsonFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
+        Util.saveJsonFile(commitSelectionArr, `Copado Deploy changes-${CONFIG.target_mid}.json`);
         // attach to user story with target
         for (const userStorySfid of CONFIG.userStoryIds) {
             Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid, true);
