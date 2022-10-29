@@ -91,8 +91,6 @@ const CONFIG = {
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
     promotionName: process.env.promotionName, // The promotion name of a PR
     target_mid: process.env.target_mid,
-    target_sfid: process.env.target_sfid,
-    userStoryIds: process.env.userStoryIds,
     sourceProperties: process.env.sourceProperties,
 };
 
@@ -110,12 +108,6 @@ async function run() {
         CONFIG.credentials = JSON.parse(CONFIG.credentials);
     } catch (ex) {
         Log.error('Could not parse credentials');
-        throw ex;
-    }
-    try {
-        CONFIG.userStoryIds = JSON.parse(CONFIG.userStoryIds);
-    } catch (ex) {
-        Log.error('Could not parse userStoryIds');
         throw ex;
     }
     try {
