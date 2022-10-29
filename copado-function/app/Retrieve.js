@@ -38,7 +38,7 @@ const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
     credentialNameTarget: null,
-    credentials: JSON.parse(process.env.credentials),
+    credentials: process.env.credentials,
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -49,15 +49,7 @@ const CONFIG = {
     source_mid: process.env.source_mid,
     tmpDirectory: '../tmp',
     // retrieve
-    source_sfid: process.env.envId,
-    envVariables: {
-        // retrieve / commit
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
-        // deploy
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
-    },
+    source_sfid: process.env.source_sfid,
     // commit
     commitMessage: null,
     featureBranch: null,
@@ -65,12 +57,20 @@ const CONFIG = {
     fileSelectionFileName: null,
     recreateFeatureBranch: null,
     // deploy
+    envVariables: {
+        source: null,
+        sourceChildren: null,
+        destination: null,
+        destinationChildren: null,
+    },
     deltaPackageLog: null,
+    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    fileUpdatedSelectionSfid: null,
     git_depth: null, // set a default git depth of 100 commits
     merge_strategy: null, // set default merge strategy
-    sourceBranch: null, // The promotion branch of a PR
     promotionBranch: null, // The promotion branch of a PR
-    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionName: null, // The promotion name of a PR
+    target_mid: null,
 };
 
 /**
@@ -83,6 +83,12 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
+    try {
+        CONFIG.credentials = JSON.parse(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('Could not parse credentials');
+        throw ex;
+    }
     Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
@@ -159,7 +165,7 @@ async function run() {
 
     try {
         Log.info('');
-        Log.info('Retrieve components');
+        Log.progress('Retrieving components');
         Log.info('===================');
         Log.info('');
         metadataJson = await Retrieve.retrieveChangelog(sourceBU);
@@ -174,7 +180,7 @@ async function run() {
         Log.info('Saving metadata JSON to disk');
         Log.info('===================');
         Log.info('');
-        Util.saveJsonFile(metadataJson, CONFIG.metadataFilePath);
+        Util.saveJsonFile(CONFIG.metadataFilePath, metadataJson);
     } catch (ex) {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
@@ -185,8 +191,12 @@ async function run() {
         Log.info('Attach JSON');
         Log.info('===================');
         Log.info('');
-        Log.progress('Loading items into Copado');
-        Copado.attachJson(CONFIG.metadataFilePath, CONFIG.source_sfid);
+        Copado.attachJson(
+            CONFIG.metadataFilePath,
+            CONFIG.source_sfid,
+            false,
+            'Loading items into Copado'
+        );
     } catch (ex) {
         Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
@@ -270,8 +280,6 @@ class Log {
      * @returns {void}
      */
     static progress(msg) {
-        Log.debug(msg);
-
         msg = JSON.stringify(msg);
         execSync(`copado --progress ${msg}`);
     }
@@ -286,12 +294,12 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {object} jsObj path where downloaded files are
      * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveJsonFile(jsObj, localPath, beautify) {
+    static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }
@@ -391,12 +399,12 @@ class Util {
         let installer;
         if (!CONFIG.installMcdevLocally) {
             Util.execCommand(
-                `Initializing SFMC DevTools (packaged version)`,
+                `Initializing Accenture SFMC DevTools (packaged version)`,
                 [
                     `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
                     'mcdev --version',
                 ],
-                'Completed installing SFMC DevTools'
+                'Completed installing Accenture SFMC DevTools'
             );
             return; // we're done here
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
@@ -411,9 +419,9 @@ class Util {
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
         Util.execCommand(
-            `Initializing SFMC DevTools (${installer})`,
+            `Initializing Accenture SFMC DevTools (${installer})`,
             [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
-            'Completed installing SFMC DevTools'
+            'Completed installing Accenture SFMC DevTools'
         );
     }
     /**
@@ -423,7 +431,7 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        Log.progress('Provide authentication');
+        Log.info('Provide authentication');
         Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
@@ -529,10 +537,11 @@ class Copado {
      * @param {string} localPath where we stored the temporary json file
      * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static attachJson(localPath, parentSfid, async = false) {
-        this._attachFile(localPath, async, parentSfid);
+    static attachJson(localPath, parentSfid, async = false, preMsg) {
+        this._attachFile(localPath, async, parentSfid, preMsg);
     }
     /**
      * Finally, attach the resulting metadata JSON. Always runs asynchronously
@@ -564,8 +573,8 @@ class Copado {
         const command =
             `copado --uploadfile "${localPath}"` +
             (parentSfid ? ` --parentid "${parentSfid}"` : '');
-        Log.debug('⚡ ' + command);
         if (async) {
+            Log.debug('⚡ ' + command); // also done in Util.execCommand
             try {
                 exec(command);
             } catch (ex) {
@@ -587,15 +596,15 @@ class Copado {
      * download file to CWD with the name that was stored in Salesforce
      *
      * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static downloadFile(fileSFID) {
+    static _downloadFile(fileSFID, preMsg) {
         if (fileSFID) {
-            Util.execCommand(
-                `Download ${fileSFID}.`,
-                `copado --downloadfiles "${fileSFID}"`,
-                'Completed download'
-            );
+            if (!preMsg) {
+                preMsg = `Download ${fileSFID}.`;
+            }
+            Util.execCommand(preMsg, `copado --downloadfiles "${fileSFID}"`, 'Completed download');
         } else {
             throw new Error('fileSalesforceId is not set');
         }
@@ -606,10 +615,11 @@ class Copado {
      *
      * @param {string} fileSFID salesforce ID of the file to download
      * @param {string} fileName name of the file the download will be saved as
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {CommitSelection[]} commitSelectionArr
      */
-    static getJsonFile(fileSFID, fileName) {
-        this.downloadFile(fileSFID);
+    static getJsonFile(fileSFID, fileName, preMsg) {
+        this._downloadFile(fileSFID, preMsg);
         return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
@@ -623,7 +633,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Create / checkout branch ' + workingBranch,
+            'Switching to branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );

@@ -57,7 +57,7 @@ const CONFIG = {
     // credentials
     credentialNameSource: process.env.credentialNameSource,
     credentialNameTarget: process.env.credentialNameTarget,
-    credentials: JSON.parse(process.env.credentials),
+    credentials: process.env.credentials,
     // generic
     configFilePath: '.mcdevrc.json',
     debug: process.env.debug === 'true' ? true : false,
@@ -69,32 +69,29 @@ const CONFIG = {
     tmpDirectory: '../tmp',
     // retrieve
     source_sfid: null,
-    envVariables: {
-        // retrieve / commit
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
-        // deploy
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
-    },
     // commit
     commitMessage: null,
     featureBranch: null,
     recreateFeatureBranch: null,
 
     // deploy
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
-    fileUpdatedSelectionSfid: null,
-    target_sfid: process.env.target_sfid,
-    userStoryIds: JSON.parse(process.env.userStoryIds),
-    target_mid: process.env.target_mid,
+    envVariables: {
+        source: process.env.envVariablesSource,
+        sourceChildren: process.env.envVariablesSourceChildren,
+        destination: process.env.envVariablesDestination,
+        destinationChildren: process.env.envVariablesDestinationChildren,
+    },
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
+    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionSalesforceId: process.env.metadata_file,
+    fileUpdatedSelectionSfid: null,
     git_depth: 100, // set a default git depth of 100 commits
     merge_strategy: process.env.merge_strategy, // set default merge strategy
     promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
-    promotionName: process.env.promotionName, // The promotion branch of a PR
-    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
+    promotionName: process.env.promotionName, // The promotion name of a PR
+    target_mid: process.env.target_mid,
+    sourceProperties: process.env.sourceProperties,
 };
 
 /**
@@ -107,7 +104,22 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
+    try {
+        CONFIG.credentials = JSON.parse(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('Could not parse credentials');
+        throw ex;
+    }
+    try {
+        CONFIG.sourceProperties = JSON.parse(CONFIG.sourceProperties);
+    } catch (ex) {
+        Log.error('Could not parse sourceProperties');
+        throw ex;
+    }
     Util.convertEnvVariables(CONFIG.envVariables);
+    CONFIG.sourceProperties = Util.convertSourceProperties(CONFIG.sourceProperties);
+    CONFIG.source_mid = CONFIG.sourceProperties.mid;
+    CONFIG.credentialNameSource = CONFIG.sourceProperties.credential_name;
     Log.debug(CONFIG);
 
     // ensure we got SFMC credentials for our source BU
@@ -165,7 +177,7 @@ async function run() {
         Log.info('Merge branch');
         Log.info('===================');
         Log.info('');
-        Deploy.merge(CONFIG.promotionBranch);
+        Deploy.merge(CONFIG.promotionBranch, CONFIG.mainBranch);
     } catch (ex) {
         // if confict with other deployment this would have failed
         Log.error('Merge failed: ' + ex.message);
@@ -234,7 +246,8 @@ async function run() {
         Log.info('');
         commitSelectionArr = Copado.getJsonFile(
             CONFIG.fileSelectionSalesforceId,
-            CONFIG.fileSelectionFileName
+            CONFIG.fileSelectionFileName,
+            'Retrieving list of selected items'
         );
         console.log('commitSelectionArr', commitSelectionArr);
     } catch (ex) {
@@ -291,6 +304,7 @@ async function run() {
             success = true;
         } catch (ex) {
             if (ex.message === `Error: Command failed: git push origin "${CONFIG.mainBranch}"`) {
+                Log.progress('Merging changes from parallel deployments');
                 Util.execCommand(null, ['git fetch origin "' + CONFIG.mainBranch + '"'], null);
                 Util.execCommand(null, ['git reset --hard origin/' + CONFIG.mainBranch], null);
                 Util.execCommand(null, ['git merge "' + CONFIG.promotionBranch + '"'], null);
@@ -380,8 +394,6 @@ class Log {
      * @returns {void}
      */
     static progress(msg) {
-        Log.debug(msg);
-
         msg = JSON.stringify(msg);
         execSync(`copado --progress ${msg}`);
     }
@@ -396,12 +408,12 @@ class Util {
      * find all retrieved components and build a json containing as much
      * metadata as possible.
      *
-     * @param {object} jsObj path where downloaded files are
      * @param {string} localPath filename & path to where we store the final json for copado
+     * @param {object} jsObj path where downloaded files are
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveJsonFile(jsObj, localPath, beautify) {
+    static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }
@@ -501,12 +513,12 @@ class Util {
         let installer;
         if (!CONFIG.installMcdevLocally) {
             Util.execCommand(
-                `Initializing SFMC DevTools (packaged version)`,
+                `Initializing Accenture SFMC DevTools (packaged version)`,
                 [
                     `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
                     'mcdev --version',
                 ],
-                'Completed installing SFMC DevTools'
+                'Completed installing Accenture SFMC DevTools'
             );
             return; // we're done here
         } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
@@ -521,9 +533,9 @@ class Util {
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
         Util.execCommand(
-            `Initializing SFMC DevTools (${installer})`,
+            `Initializing Accenture SFMC DevTools (${installer})`,
             [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
-            'Completed installing SFMC DevTools'
+            'Completed installing Accenture SFMC DevTools'
         );
     }
     /**
@@ -533,7 +545,7 @@ class Util {
      * @returns {void}
      */
     static provideMCDevCredentials(credentials) {
-        Log.progress('Provide authentication');
+        Log.info('Provide authentication');
         Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
@@ -541,6 +553,19 @@ class Util {
         // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
+    }
+    /**
+     * helper that takes care of converting all environment variabels found in config to a proper key-based format
+     *
+     * @param {object[]} properties directly from config
+     * @returns {Object.<string, string>} properties converted into normal json
+     */
+    static convertSourceProperties(properties) {
+        const response = {};
+        for (const item of properties) {
+            response[item.copado__API_Name__c] = item.copado__Value__c;
+        }
+        return response;
     }
     /**
      * helper that takes care of converting all environment variabels found in config to a proper key-based format
@@ -593,7 +618,7 @@ class Util {
         }
         const response = {};
         for (const item of envChildVarArr) {
-            response[item.environmentName] = this._convertEnvVars(item.environmentVariables);
+            response[item.id] = this._convertEnvVars(item.environmentVariables);
         }
         return response;
     }
@@ -639,10 +664,11 @@ class Copado {
      * @param {string} localPath where we stored the temporary json file
      * @param {string} [parentSfid] record to which we attach the json. defaults to result record if not provided
      * @param {boolean} [async] optional flag to indicate if the upload should be asynchronous
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static attachJson(localPath, parentSfid, async = false) {
-        this._attachFile(localPath, async, parentSfid);
+    static attachJson(localPath, parentSfid, async = false, preMsg) {
+        this._attachFile(localPath, async, parentSfid, preMsg);
     }
     /**
      * Finally, attach the resulting metadata JSON. Always runs asynchronously
@@ -674,8 +700,8 @@ class Copado {
         const command =
             `copado --uploadfile "${localPath}"` +
             (parentSfid ? ` --parentid "${parentSfid}"` : '');
-        Log.debug('⚡ ' + command);
         if (async) {
+            Log.debug('⚡ ' + command); // also done in Util.execCommand
             try {
                 exec(command);
             } catch (ex) {
@@ -697,15 +723,15 @@ class Copado {
      * download file to CWD with the name that was stored in Salesforce
      *
      * @param {string} fileSFID salesforce ID of the file to download
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    static downloadFile(fileSFID) {
+    static _downloadFile(fileSFID, preMsg) {
         if (fileSFID) {
-            Util.execCommand(
-                `Download ${fileSFID}.`,
-                `copado --downloadfiles "${fileSFID}"`,
-                'Completed download'
-            );
+            if (!preMsg) {
+                preMsg = `Download ${fileSFID}.`;
+            }
+            Util.execCommand(preMsg, `copado --downloadfiles "${fileSFID}"`, 'Completed download');
         } else {
             throw new Error('fileSalesforceId is not set');
         }
@@ -716,10 +742,11 @@ class Copado {
      *
      * @param {string} fileSFID salesforce ID of the file to download
      * @param {string} fileName name of the file the download will be saved as
+     * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {CommitSelection[]} commitSelectionArr
      */
-    static getJsonFile(fileSFID, fileName) {
-        this.downloadFile(fileSFID);
+    static getJsonFile(fileSFID, fileName, preMsg) {
+        this._downloadFile(fileSFID, preMsg);
         return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
@@ -733,7 +760,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Create / checkout branch ' + workingBranch,
+            'Switching to branch ' + workingBranch,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );
@@ -948,7 +975,7 @@ class Deploy {
         }
         try {
             Log.info('Merge promotion into main branch');
-            Deploy.merge(CONFIG.promotionBranch);
+            Deploy.merge(CONFIG.promotionBranch, CONFIG.mainBranch);
         } catch (ex) {
             // would fail if conflicting with other deployments
             Log.error('Merge failed: ' + ex.message);
@@ -981,7 +1008,11 @@ class Deploy {
                 commitMsgLines = [CONFIG.commitMessage];
             }
             const commitMsgParam = commitMsgLines.map((line) => '-m "' + line + '"').join(' ');
-            Util.execCommand('Commit', ['git commit -n ' + commitMsgParam], 'Completed committing');
+            Util.execCommand(
+                'Committing changes',
+                ['git commit -n ' + commitMsgParam],
+                'Completed committing'
+            );
             Log.progress('Commit of target BU files completed');
         } else {
             Log.error(
@@ -1236,31 +1267,21 @@ class Deploy {
         }
 
         // save files to tmp/ folder, allowing us to attach it to SF records
-        Util.saveJsonFile(commitSelectionArrMap, `keyMapping-${CONFIG.target_mid}.json`);
-        Util.saveJsonFile(commitSelectionArr, `Copado Deploy changes-${CONFIG.target_mid}.json`);
-        // attach to user story with target
-        for (const userStorySfid of CONFIG.userStoryIds) {
-            Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, userStorySfid, true);
-            Copado.attachJson(
-                `Copado Deploy changes-${CONFIG.target_mid}.json`,
-                userStorySfid,
-                true
-            );
-        }
+        Util.saveJsonFile(`Copado Deploy changes-${CONFIG.target_mid}.json`, commitSelectionArr);
         // attach to result record
-        Copado.attachJson(`keyMapping-${CONFIG.target_mid}.json`, null, true);
         Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null, true);
     }
     /**
      * Merge from branch into target branch
      *
      * @param {string} promotionBranch commit id to merge
+     * @param {string} currentBranch should be master in most cases
      * @returns {void}
      */
-    static merge(promotionBranch) {
+    static merge(promotionBranch, currentBranch) {
         // Merge and commit changes.
         Util.execCommand(
-            'Merge commit ' + promotionBranch,
+            `Merge ${promotionBranch} into ${currentBranch}`,
             ['git merge "' + promotionBranch + '"'],
             'Completed merging commit'
         );
