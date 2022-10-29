@@ -71,8 +71,6 @@ const CONFIG = {
     promotionBranch: null, // The promotion branch of a PR
     promotionName: null, // The promotion name of a PR
     target_mid: null,
-    target_sfid: null,
-    userStoryIds: null,
 };
 
 /**
