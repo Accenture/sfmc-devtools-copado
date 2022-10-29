@@ -140,11 +140,6 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
-
-        Log.info('');
-        Log.info('Initialize project');
-        Log.info('===================');
-        Log.info('');
         Util.provideMCDevCredentials(CONFIG.credentials);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
@@ -202,7 +197,6 @@ async function run() {
         throw ex;
     }
     Log.info('');
-    Log.info('Finished');
     Log.info('===================');
     Log.info('');
     Log.info('Retrieve.js done');
@@ -462,7 +456,6 @@ class Util {
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvVars(envVarArr) {
-        console.log('_convertEnvVars', envVarArr);
         if (!envVarArr) {
             return envVarArr;
         }
@@ -482,7 +475,6 @@ class Util {
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvChildVars(envChildVarArr) {
-        console.log('_convertEnvChildVars', envChildVarArr);
         if (!envChildVarArr) {
             return envChildVarArr;
         }

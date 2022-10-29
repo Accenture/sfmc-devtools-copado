@@ -190,11 +190,6 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
-
-        Log.info('');
-        Log.info('Initialize project');
-        Log.info('===================');
-        Log.info('');
         Util.provideMCDevCredentials(CONFIG.credentials);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
@@ -249,7 +244,6 @@ async function run() {
             CONFIG.fileSelectionFileName,
             'Retrieving list of selected items'
         );
-        console.log('commitSelectionArr', commitSelectionArr);
     } catch (ex) {
         Log.info('Getting Commit-selection file failed:' + ex.message);
         throw ex;
@@ -312,7 +306,6 @@ async function run() {
         }
     } while (!success && i <= 50);
     Log.info('');
-    Log.info('Finished');
     Log.info('===================');
     Log.info('');
     Log.info('Deploy.js done');
@@ -589,7 +582,6 @@ class Util {
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvVars(envVarArr) {
-        console.log('_convertEnvVars', envVarArr);
         if (!envVarArr) {
             return envVarArr;
         }
@@ -609,7 +601,6 @@ class Util {
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvChildVars(envChildVarArr) {
-        console.log('_convertEnvChildVars', envChildVarArr);
         if (!envChildVarArr) {
             return envChildVarArr;
         }
@@ -818,10 +809,8 @@ class Commit {
             const jObj = JSON.parse(item.j);
             typeKeyMap[item.t].push(jObj.newKey || jObj.key);
         }
-        console.log('typeKeyMap', typeKeyMap);
         // get unique list of types that need to be retrieved
         const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
-        console.log('typeArr', typeArr);
         // download all types of which
         await mcdev.retrieve(sourceBU, typeKeyMap, null, false);
         const fileArr = (
@@ -841,7 +830,6 @@ class Commit {
                 })
             )
         ).flat();
-        console.log('fileArr', fileArr);
         return fileArr;
     }
     /**
@@ -1039,7 +1027,6 @@ class Deploy {
             CONFIG.promotionName + ': ' + userStoryNames.join(', '),
             `Updated BU "${targetBU}" (${CONFIG.target_mid})`,
         ];
-        console.log('commitMsgLines', commitMsgLines);
         return commitMsgLines;
     }
 
@@ -1151,8 +1138,6 @@ class Deploy {
             // versionRange = 'HEAD^..HEAD';
             // Log.debug('Create delta package using version range ' + versionRange);
         }
-        console.log('commitSelectionArr', commitSelectionArr);
-        console.log('deltaPkgItems', deltaPkgItems);
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
             diffArr: deltaPkgItems,
@@ -1221,8 +1206,6 @@ class Deploy {
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         const deployResult = await mcdev.deploy(bu);
-        // console.log('deployResult', deployResult);
-        // console.log('deployResult', deployResult[bu].asset);
 
         if (process.exitCode === 1) {
             throw new Error(
