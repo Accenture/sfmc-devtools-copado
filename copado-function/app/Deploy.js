@@ -626,7 +626,7 @@ class Util {
         }
         const response = {};
         for (const item of envChildVarArr) {
-            response[item.environmentName] = this._convertEnvVars(item.environmentVariables);
+            response[item.id] = this._convertEnvVars(item.environmentVariables);
         }
         return response;
     }
