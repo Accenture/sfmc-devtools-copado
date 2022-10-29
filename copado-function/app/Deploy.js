@@ -1276,14 +1276,6 @@ class Deploy {
 
         // save files to tmp/ folder, allowing us to attach it to SF records
         Util.saveJsonFile(`Copado Deploy changes-${CONFIG.target_mid}.json`, commitSelectionArr);
-        // attach to user story with target
-        // for (const userStorySfid of CONFIG.userStoryIds) {
-        //     Copado.attachJson(
-        //         `Copado Deploy changes-${CONFIG.target_mid}.json`,
-        //         userStorySfid,
-        //         true
-        //     );
-        // }
         // attach to result record
         Copado.attachJson(`Copado Deploy changes-${CONFIG.target_mid}.json`, null, true);
     }
