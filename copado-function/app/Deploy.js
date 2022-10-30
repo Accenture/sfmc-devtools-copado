@@ -92,6 +92,7 @@ const CONFIG = {
     promotionName: process.env.promotionName, // The promotion name of a PR
     target_mid: process.env.target_mid,
     sourceProperties: process.env.sourceProperties,
+    deployNTimes: process.env.deployNTimes === 'true' ? true : false,
 };
 
 /**
@@ -1082,6 +1083,21 @@ class Deploy {
         // ensure the system knows what we name our market lists for deployment
         config.options.deployment.sourceTargetMapping = {};
         config.options.deployment.sourceTargetMapping[deploySourceList] = deployTargetList;
+
+        // set up corresponding markets and remove other entries
+        config.markets = {};
+        config.markets['source'] = marketVariables.source;
+        config.markets['target'] = marketVariables.destination;
+
+        if (CONFIG.deployNTimes) {
+            // add markets for child BUs
+            for (const childSfid in CONFIG.envVariables.destinationChildren) {
+                config.markets[childSfid] = CONFIG.envVariables.destinationChildren[childSfid];
+            }
+        }
+        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
+        // TODO: deal with enterprise BU deployments (shared DEs)
+
         // remove potentially existing entries and ensure these 2 lists exist
         config.marketList = {};
         for (const listName of [deploySourceList, deployTargetList]) {
@@ -1089,13 +1105,15 @@ class Deploy {
         }
         // add marketList entries for the 2 bu-market combos
         config.marketList[deploySourceList][sourceBU] = 'source';
-        config.marketList[deployTargetList][targetBU] = 'target';
-        // set up corresponding markets and remove other entries
-        config.markets = {};
-        config.markets['source'] = marketVariables.source;
-        config.markets['target'] = marketVariables.destination;
-        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
-        // TODO: deal with enterprise BU deployments (shared DEs)
+        if (CONFIG.deployNTimes) {
+            // add list of markets variables for the child BUs to the target BU to deploy components more than once to the same BU
+            config.marketList[deployTargetList][targetBU] = Object.keys(
+                CONFIG.envVariables.destinationChildren
+            );
+        } else {
+            // standard 1:1 deployment
+            config.marketList[deployTargetList][targetBU] = 'target';
+        }
 
         console.log(
             'config.options.deployment.sourceTargetMapping',
