@@ -92,7 +92,7 @@ const CONFIG = {
     promotionName: process.env.promotionName, // The promotion name of a PR
     target_mid: process.env.target_mid,
     sourceProperties: process.env.sourceProperties,
-    deploy1toN: true, // TODO: define somehow in Copado GUI! ; process.env.deploy1toN === 'true' ? true : false,
+    deployNTimes: process.env.deployNTimes === 'true' ? true : false,
 };
 
 /**
@@ -1089,7 +1089,7 @@ class Deploy {
         config.markets['source'] = marketVariables.source;
         config.markets['target'] = marketVariables.destination;
 
-        if (CONFIG.deploy1toN) {
+        if (CONFIG.deployNTimes) {
             // add markets for child BUs
             for (const childSfid in CONFIG.envVariables.destinationChildren) {
                 config.markets[childSfid] = CONFIG.envVariables.destinationChildren[childSfid];
@@ -1105,7 +1105,7 @@ class Deploy {
         }
         // add marketList entries for the 2 bu-market combos
         config.marketList[deploySourceList][sourceBU] = 'source';
-        if (CONFIG.deploy1toN) {
+        if (CONFIG.deployNTimes) {
             // add list of markets variables for the child BUs to the target BU to deploy components more than once to the same BU
             config.marketList[deployTargetList][targetBU] = Object.keys(
                 CONFIG.envVariables.destinationChildren
