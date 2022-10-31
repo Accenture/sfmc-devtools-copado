@@ -305,7 +305,7 @@ class Util {
      */
     static push(destinationBranch) {
         Util.execCommand(
-            'Push branch ' + destinationBranch,
+            `Pushing updates to ${destinationBranch} branch`,
             ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
         );
@@ -625,7 +625,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Switching to branch ' + workingBranch,
+            `Switching to ${workingBranch} branch`,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );
