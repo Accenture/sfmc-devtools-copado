@@ -1,0 +1,11 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<CustomField xmlns="http://soap.sforce.com/2006/04/metadata">
+    <fullName>mcdo_Is_Enterprise_BU__c</fullName>
+    <defaultValue>false</defaultValue>
+    <description>if custom &quot;Parent BUs&quot; are created, shared DataExtensions still live on the real ParentBU. To manage 1:n deployments of these, we want to get environment variables from the country/market BUs and not from these custom &quot;Parent BUs&quot;. Please note that in such a scenario one would create multiple environments for the same EID/MID, 1 for match each custom &quot;Parent BU&quot;</description>
+    <externalId>false</externalId>
+    <inlineHelpText>If activated, it is tried to retrieve Child Environment Variables not from direct children but from the children of the 1 child that this BU has. Only required if you have custom &quot;Parent BUs&quot; created for your DEV/QA/PROD setup and did not use the actual ParentBU for integrations.</inlineHelpText>
+    <label>Is Enterprise BU</label>
+    <trackTrending>false</trackTrending>
+    <type>Checkbox</type>
+</CustomField>

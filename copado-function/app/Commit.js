@@ -338,7 +338,7 @@ class Util {
      */
     static push(destinationBranch) {
         Util.execCommand(
-            'Push branch ' + destinationBranch,
+            `Pushing updates to ${destinationBranch} branch`,
             ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
         );
@@ -659,7 +659,7 @@ class Copado {
      */
     static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
-            'Switching to branch ' + workingBranch,
+            `Switching to ${workingBranch} branch`,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
             'Completed creating/checking out branch'
         );
@@ -674,12 +674,12 @@ class Copado {
     static deleteBranch(featureBranch) {
         // delete feature branch on origin code in here
         Util.execCommand(
-            'Deleting server branch ' + featureBranch,
+            `Deleting branch ${featureBranch} on server`,
             [`git push origin --delete ${featureBranch}`],
             'Completed deleting server branch ' + featureBranch
         );
         Util.execCommand(
-            'Deleting local branch ' + featureBranch,
+            `Deleting branch ${featureBranch} locally`,
             [`git branch --delete --force ${featureBranch}`],
             'Completed deleting local branch ' + featureBranch
         );
@@ -799,7 +799,7 @@ class Commit {
         Log.debug(gitDiffArr);
         if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
             Util.execCommand(
-                'Committing changes',
+                'Committing changes to branch',
                 ['git commit -n -m "' + CONFIG.commitMessage + '"'],
                 'Completed committing'
             );

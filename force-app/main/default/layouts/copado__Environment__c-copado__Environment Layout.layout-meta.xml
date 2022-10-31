@@ -66,6 +66,10 @@
             </layoutItems>
             <layoutItems>
                 <behavior>Edit</behavior>
+                <field>mcdo_Is_Enterprise_BU__c</field>
+            </layoutItems>
+            <layoutItems>
+                <behavior>Edit</behavior>
                 <field>copado__Latest_Deployment__c</field>
             </layoutItems>
         </layoutColumns>
