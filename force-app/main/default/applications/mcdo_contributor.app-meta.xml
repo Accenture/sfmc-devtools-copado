@@ -1,17 +1,17 @@
-<?xml version="1.0" encoding="UTF-8"?>
+<?xml version="1.0" encoding="UTF-8" ?>
 <CustomApplication xmlns="http://soap.sforce.com/2006/04/metadata">
     <brand>
         <headerColor>#0070D2</headerColor>
-        <logo>sfmcdevtoolssquare261</logo>
+        <logo>mcdo_sfmcdevtoolssquare261</logo>
         <logoVersion>1</logoVersion>
         <shouldOverrideOrgTheme>false</shouldOverrideOrgTheme>
     </brand>
-    <description>used to contribute to https://github.com/Accenture/sfmc-devtools-copado</description>
+    <description
+    >used to contribute to https://github.com/Accenture/sfmc-devtools-copado</description>
     <formFactors>Small</formFactors>
     <formFactors>Large</formFactors>
     <isNavAutoTempTabsDisabled>false</isNavAutoTempTabsDisabled>
     <isNavPersonalizationDisabled>false</isNavPersonalizationDisabled>
-    <isNavTabPersistenceDisabled>false</isNavTabPersistenceDisabled>
     <label>Copado MCDev Contributor</label>
     <navType>Standard</navType>
     <tabs>copado__Function__c</tabs>
@@ -29,5 +29,5 @@
     <tabs>copado__License_Manager</tabs>
     <tabs>copado__Git_Repository__c</tabs>
     <uiType>Lightning</uiType>
-    <utilityBar>Copado_MCDev_UtilityBar</utilityBar>
+    <utilityBar>mcdo_MCDev_UtilityBar</utilityBar>
 </CustomApplication>
