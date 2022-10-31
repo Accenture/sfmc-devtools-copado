@@ -6,6 +6,8 @@ global with sharing class mcdo_ChildEnvironmentVariables implements copado.Param
     private Map<String, List<EnvironmentVariablesRecord>> envVariablesByEnvName = new Map<String, List<EnvironmentVariablesRecord>>();
 
     global String execute(Id environmentId) {
+        environmentId = getParentEnvironmentId(environmentId);
+
         List<Environment> result = new List<Environment>();
         for (
             copado__Environmental_Variable__c environmentVariable : getEnvironmentVariables(
@@ -59,6 +61,41 @@ global with sharing class mcdo_ChildEnvironmentVariables implements copado.Param
             WHERE mcdo_Parent_Environment__c = :environmentId
             WITH SECURITY_ENFORCED
         ];
+    }
+
+    // used in case of stacked parent BUs - but only if the current env has mcdo_Is_Enterprise_BU__c==true
+    private Id getParentEnvironmentId(Id environmentId) {
+        copado__Environment__c currentEnv = [
+            SELECT Id, mcdo_Is_Enterprise_BU__c
+            FROM copado__Environment__c
+            WHERE Id = :environmentId
+            WITH SECURITY_ENFORCED
+        ];
+        if (currentEnv.mcdo_Is_Enterprise_BU__c) {
+            // check if there is only one child
+            List<copado__Environment__c> children = [
+                SELECT Id, Name
+                FROM copado__Environment__c
+                WHERE mcdo_Parent_Environment__c = :environmentId
+                WITH SECURITY_ENFORCED
+            ];
+            if (!children.isEmpty() && children.size() == 1) {
+                // check if child has children itself
+                Id childEnvId = children[0].Id;
+                List<copado__Environment__c> childrenOfChild = [
+                    SELECT Id, Name
+                    FROM copado__Environment__c
+                    WHERE mcdo_Parent_Environment__c = :childEnvId
+                    WITH SECURITY_ENFORCED
+                ];
+                if (!childrenOfChild.isEmpty() && childrenOfChild.size() > 0) {
+                    // if 1..n children are found, we want the rest of the code show variables for those environments instead
+                    return childEnvId;
+                }
+            }
+        }
+        // fallback; return what we've already had in the beginning
+        return environmentId;
     }
 
     // WRAPPER
