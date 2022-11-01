@@ -752,6 +752,7 @@ class Retrieve {
                         const listEntry = {
                             n: this._getAttrValue(item, def.nameField),
                             k: this._getAttrValue(item, def.keyField),
+                            p: this._getAttrValue(item, 'r__folder_Path'),
                             t: this._getAttrValue(item, '_subType')
                                 ? type + '-' + this._getAttrValue(item, '_subType')
                                 : type,
