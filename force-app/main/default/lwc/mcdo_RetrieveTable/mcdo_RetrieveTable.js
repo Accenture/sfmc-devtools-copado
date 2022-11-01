@@ -94,6 +94,12 @@ export default class mcdo_RetrieveTable extends LightningElement {
             sortable: true
         },
         {
+            label: "Directory",
+            fieldName: "p",
+            type: "string",
+            sortable: true
+        },
+        {
             label: "Last Modified By",
             fieldName: "lb",
             type: "string",
@@ -192,20 +198,21 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     /**
      * helper for commit action to pass on what was selected
+     * reference: https://docs.copado.com/articles/#!copado-ci-cd-publication/executing-a-copado-action
      */
     _handleRequestMessage() {
         const selectedChanges = this.allSelectedRows.map((item) => {
             return {
-                m: "",
-                a: "add",
-                c: "sfmc",
-                n: item.n,
-                t: item.t,
-                cd: item.cd,
-                cb: item.cb,
-                ld: item.ld,
-                lb: item.lb,
-                j: '{"key":"' + item.k + '"}'
+                m: item.p, // module directory e.g. force-app/main/default (could be used for SFMC dir instead)
+                a: "add", // git action
+                c: "sfmc", // component
+                n: item.n, // metadata name
+                t: item.t, // metadata type
+                cd: item.cd, // metadata created datetime
+                cb: item.cb, // metadata created by name
+                ld: item.ld, // metadata last modified datetime
+                lb: item.lb, // metadata last modified by name
+                j: '{"key":"' + item.k + '"}' // additional info (used for metadata key)
             };
         });
 
@@ -504,6 +511,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 (row) =>
                     regex.test(row.n) ||
                     regex.test(row.t) ||
+                    regex.test(row.p) ||
                     regex.test(row.cd) ||
                     regex.test(row.cb) ||
                     regex.test(row.ld) ||
