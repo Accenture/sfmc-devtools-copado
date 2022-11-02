@@ -84,6 +84,11 @@
         <field>copado__Pipeline_Action__c.copado__Platform__c</field>
         <readable>true</readable>
     </fieldPermissions>
+    <fieldPermissions>
+        <editable>false</editable>
+        <field>copado__Result__c.mcdo_Duration_minutes__c</field>
+        <readable>true</readable>
+    </fieldPermissions>
     <hasActivationRequired>false</hasActivationRequired>
     <label>Copado Marketing Cloud</label>
     <objectPermissions>
