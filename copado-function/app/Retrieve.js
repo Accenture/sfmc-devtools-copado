@@ -41,6 +41,7 @@ const CONFIG = {
     credentials: process.env.credentials,
     // generic
     configFilePath: '.mcdevrc.json',
+    repoUrl: process.env.repoUrl,
     debug: process.env.debug === 'true' ? true : false,
     installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
     mainBranch: process.env.main_branch,
@@ -141,7 +142,7 @@ async function run() {
         Log.info('');
         Util.provideMCDevTools();
         Util.provideMCDevCredentials(CONFIG.credentials);
-        Copado.mcdevInit();
+        Copado.mcdevInit(CONFIG.repoUrl);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
         throw ex;
