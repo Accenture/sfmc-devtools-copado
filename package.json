@@ -6,6 +6,19 @@
     "peerDependencies": {
         "mcdev": ">=4.1.4"
     },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/Accenture/sfmc-devtools-copado.git"
+    },
+    "homepage": "https://github.com/Accenture/sfmc-devtools-copado#readme",
+    "bugs": {
+        "url": "https://github.com/Accenture/sfmc-devtools-copado/issues",
+        "email": "joern.berkefeld@accenture.com"
+    },
+    "funding": {
+        "type": "corporate",
+        "url": "https://github.com/Accenture/sfmc-devtools-copado"
+    },
     "scripts": {
         "lint": "eslint **/{aura,lwc}/**",
         "test": "npm run test:unit",
