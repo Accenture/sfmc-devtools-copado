@@ -141,8 +141,8 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
-        Util.provideMCDevCredentials(CONFIG.credentials);
-        Copado.mcdevInit(CONFIG.repoUrl);
+        // Util.provideMCDevCredentials(CONFIG.credentials);
+        Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
     } catch (ex) {
         Log.error('initializing failed: ' + ex.message);
         throw ex;
@@ -525,10 +525,14 @@ class Util {
  * methods to handle interaction with the copado platform
  */
 class Copado {
-    static mcdevInit(url) {
+    static mcdevInit(credentials, credentialName, url) {
         Util.execCommand(
             `Initializing mcdev`,
-            ['mcdev init', `git remote add origin ${url}`, `git push -u origin master`],
+            [
+                `mcdev init --y.credentialsName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${url}" --y.account_id ${credentials[credentialName].account_id}`,
+                `git remote add origin ${url}`,
+                `git push -u origin master`,
+            ],
             'Mcdev initialized!'
         );
     }
