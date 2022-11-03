@@ -1159,7 +1159,6 @@ class Deploy {
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
             diffArr: deltaPkgItems,
-            skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
         if (!deltaPackageLog?.length) {

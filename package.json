@@ -6,7 +6,7 @@
     "author": "Accenture: joern.berkefeld, daniel.ventura, uwe.voellger, Copado: nahuel.rabe, david.venegas",
     "license": "MIT",
     "peerDependencies": {
-        "mcdev": ">=4.1.4"
+        "mcdev": ">=4.1.5"
     },
     "repository": {
         "type": "git",
