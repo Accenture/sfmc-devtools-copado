@@ -1086,17 +1086,26 @@ class Deploy {
 
         // set up corresponding markets and remove other entries
         config.markets = {};
-        config.markets['source'] = marketVariables.source;
-        config.markets['target'] = marketVariables.destination;
 
         if (CONFIG.deployNTimes) {
-            // add markets for child BUs
+            // add market for source child BU
+            if (Object.keys(CONFIG.envVariables.sourceChildren).length !== 1) {
+                throw new Error(
+                    'Expected exactly one source child BU when "deployNTimes" is active in pipeline but found ' +
+                        Object.keys(CONFIG.envVariables.sourceChildren).length
+                );
+            }
+            for (const childSfid in CONFIG.envVariables.sourceChildren) {
+                config.markets[childSfid] = CONFIG.envVariables.sourceChildren[childSfid];
+            }
+            // add markets for target child BUs
             for (const childSfid in CONFIG.envVariables.destinationChildren) {
                 config.markets[childSfid] = CONFIG.envVariables.destinationChildren[childSfid];
             }
+        } else {
+            config.markets['source'] = marketVariables.source;
+            config.markets['target'] = marketVariables.destination;
         }
-        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
-        // TODO: deal with enterprise BU deployments (shared DEs)
 
         // remove potentially existing entries and ensure these 2 lists exist
         config.marketList = {};
@@ -1104,14 +1113,17 @@ class Deploy {
             config.marketList[listName] = {};
         }
         // add marketList entries for the 2 bu-market combos
-        config.marketList[deploySourceList][sourceBU] = 'source';
         if (CONFIG.deployNTimes) {
             // add list of markets variables for the child BUs to the target BU to deploy components more than once to the same BU
+            config.marketList[deploySourceList][sourceBU] = Object.keys(
+                CONFIG.envVariables.sourceChildren
+            );
             config.marketList[deployTargetList][targetBU] = Object.keys(
                 CONFIG.envVariables.destinationChildren
             );
         } else {
             // standard 1:1 deployment
+            config.marketList[deploySourceList][sourceBU] = 'source';
             config.marketList[deployTargetList][targetBU] = 'target';
         }
 
