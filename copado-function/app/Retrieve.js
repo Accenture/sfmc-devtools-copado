@@ -41,6 +41,7 @@
      credentials: process.env.credentials,
      // generic
      configFilePath: '.mcdevrc.json',
+     repoUrl: process.env.repoUrl,
      debug: process.env.debug === 'true' ? true : false,
      installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
      mainBranch: process.env.main_branch,
@@ -61,7 +62,7 @@
          source: null,
          sourceChildren: null,
          destination: null,
-         destinationChildren: null,
+         destinationChildren: null
      },
      deltaPackageLog: null,
      destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
@@ -70,7 +71,7 @@
      merge_strategy: null, // set default merge strategy
      promotionBranch: null, // The promotion branch of a PR
      promotionName: null, // The promotion name of a PR
-     target_mid: null,
+     target_mid: null
  };
  
  /**
@@ -114,7 +115,7 @@
      } catch {
          try {
              Util.execCommand(null, [
-                 'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+                 'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory)
              ]);
          } catch {
              Log.error('Could not set tmp directoy as safe directory');
@@ -123,16 +124,16 @@
      // actually change working directory
      process.chdir(CONFIG.tmpDirectory);
      Log.debug(process.cwd());
-     try {
-         Log.info('');
-         Log.info('Clone repository');
-         Log.info('===================');
-         Log.info('');
-         Copado.checkoutSrc(CONFIG.mainBranch);
-     } catch (ex) {
-         Log.error('Cloning failed:' + ex.message);
-         throw ex;
-     }
+    //  try {
+    //      Log.info('');
+    //      Log.info('Clone repository');
+    //      Log.info('===================');
+    //      Log.info('');
+    //      Copado.checkoutSrc(CONFIG.mainBranch);
+    //  } catch (ex) {
+    //      Log.error('Cloning failed:' + ex.message);
+    //      throw ex;
+    //  }
  
      try {
          Log.info('');
@@ -140,7 +141,8 @@
          Log.info('===================');
          Log.info('');
          Util.provideMCDevTools();
-         Util.provideMCDevCredentials(CONFIG.credentials);
+         // Util.provideMCDevCredentials(CONFIG.credentials);
+         Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
      } catch (ex) {
          Log.error('initializing failed: ' + ex.message);
          throw ex;
@@ -396,7 +398,7 @@
                  `Initializing Accenture SFMC DevTools (packaged version)`,
                  [
                      `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
-                     'mcdev --version',
+                     'mcdev --version'
                  ],
                  'Completed installing Accenture SFMC DevTools'
              );
@@ -487,6 +489,7 @@
          }
          return response;
      }
+ 
      /**
       * Determines the retrieve folder from MC Dev configuration (.mcdev.json)
       *
@@ -523,6 +526,28 @@
   * methods to handle interaction with the copado platform
   */
  class Copado {
+     /**
+      *
+      * @param credentials
+      * @param credentialName
+      * @param url
+      */
+     static mcdevInit(credentials, credentialName, url) {
+         Util.execCommand(
+             `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${url}", ${credentials[credentialName].account_id}`,
+             [
+                 `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "no" --y.gitPush "yes"`
+             ],
+             'Mcdev initialized!'
+         );
+ 
+         // Util.execCommand(
+         //     `Initializing mcdev`,
+         //     [`git remote add origin ${url}`, `git push -u origin master`],
+         //     'Mcdev initialized!'
+         // );
+     }
+ 
      /**
       * Finally, attach the resulting metadata JSON to the source environment
       *
@@ -708,8 +733,8 @@
                  createdDateField: 'CreatedDate',
                  createdNameField: 'CreatedBy',
                  lastmodDateField: 'LastSaveDate',
-                 lastmodNameField: 'LastSavedBy',
-             },
+                 lastmodNameField: 'LastSavedBy'
+             }
          };
          // get userid>name mapping
          const retrieve = await mcdev.retrieve(sourceBU, ['accountUser'], null, true);
@@ -767,7 +792,7 @@
                                      ? this._getAttrValue(item, def.lastmodDateField)
                                      : this._getAttrValue(item, def.createdDateField)
                              ),
-                             lb: this._getUserName(userList, item, def.lastmodNameField),
+                             lb: this._getUserName(userList, item, def.lastmodNameField)
                          };
                          return listEntry;
                      })
