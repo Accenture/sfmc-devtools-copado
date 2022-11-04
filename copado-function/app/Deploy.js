@@ -262,7 +262,7 @@ async function run() {
             const deployResult = await Deploy.deployBU(targetBU);
 
             // do what Deploy.createDeltaPackage did: apply templating to deploy definitions
-            Deploy.replaceMarketValues(commitSelectionArr);
+            commitSelectionArr = Deploy.replaceMarketValues(commitSelectionArr);
             // do what Deploy.deployBU did: auto-replace asset keys if needed
             Deploy.replaceAssetKeys(targetBU, commitSelectionArr, deployResult);
         } else {
@@ -1310,28 +1310,52 @@ class Deploy {
      */
     static replaceMarketValues(commitSelectionArr) {
         Log.debug('replacing market values');
+        const commitSelectionArrNew = [];
         // prepare market values
-        const replaceMap = {};
-        for (const item in CONFIG.envVariables.source) {
-            if (typeof CONFIG.envVariables.destination[item] !== 'undefined') {
-                replaceMap[CONFIG.envVariables.source[item]] =
-                    CONFIG.envVariables.destination[item];
+        const replaceMapList = [];
+        if (CONFIG.deployNTimes) {
+            for (const sfid in CONFIG.envVariables.destinationChildren) {
+                const replaceMap = {};
+                const sourceSfid = Object.keys(CONFIG.envVariables.sourceChildren)[0];
+                for (const item in CONFIG.envVariables.sourceChildren[sourceSfid]) {
+                    if (
+                        typeof CONFIG.envVariables.destinationChildren[sfid][item] !== 'undefined'
+                    ) {
+                        replaceMap[CONFIG.envVariables.sourceChildren[sourceSfid][item]] =
+                            CONFIG.envVariables.destinationChildren[sfid][item];
+                    }
+                }
+                replaceMapList.push(replaceMap);
             }
-        }
-        // replace market values
-        for (const item of commitSelectionArr) {
-            for (const oldValue in replaceMap) {
-                // name
-                item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
-                // key
-                const jObj = JSON.parse(item.j);
-                jObj.newKey = (jObj.newKey || jObj.key).replace(
-                    new RegExp(oldValue, 'g'),
-                    replaceMap[oldValue]
-                );
-                item.j = JSON.stringify(jObj);
+        } else {
+            const replaceMap = {};
+            for (const item in CONFIG.envVariables.source) {
+                if (typeof CONFIG.envVariables.destination[item] !== 'undefined') {
+                    replaceMap[CONFIG.envVariables.source[item]] =
+                        CONFIG.envVariables.destination[item];
+                }
             }
+            replaceMapList.push(replaceMap);
         }
+        for (const replaceMap of replaceMapList) {
+            const commitSelectionArrClone = JSON.parse(JSON.stringify(commitSelectionArr));
+            // replace market values
+            for (const item of commitSelectionArrClone) {
+                for (const oldValue in replaceMap) {
+                    // name
+                    item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
+                    // key
+                    const jObj = JSON.parse(item.j);
+                    jObj.newKey = (jObj.newKey || jObj.key).replace(
+                        new RegExp(oldValue, 'g'),
+                        replaceMap[oldValue]
+                    );
+                    item.j = JSON.stringify(jObj);
+                }
+            }
+            commitSelectionArrNew.push(...commitSelectionArrClone);
+        }
+        return commitSelectionArrNew;
     }
 }
 
