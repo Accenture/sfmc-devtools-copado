@@ -1115,9 +1115,11 @@ class Deploy {
         // add marketList entries for the 2 bu-market combos
         if (CONFIG.deployNTimes) {
             // add list of markets variables for the child BUs to the target BU to deploy components more than once to the same BU
+            // needs to be a string, not array of string for the source BU
             config.marketList[deploySourceList][sourceBU] = Object.keys(
                 CONFIG.envVariables.sourceChildren
-            );
+            )[0];
+            // can be array of strings or string for the target BU
             config.marketList[deployTargetList][targetBU] = Object.keys(
                 CONFIG.envVariables.destinationChildren
             );
