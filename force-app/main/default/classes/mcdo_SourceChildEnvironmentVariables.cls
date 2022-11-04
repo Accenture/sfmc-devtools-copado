@@ -7,11 +7,12 @@ global with sharing class mcdo_SourceChildEnvironmentVariables implements copado
 
     global String execute(Id contextId) {
         Map<Id, Id> firstEnvironmentPerPromotion = getFirstEnvironmentPerPromotion(contextId);
+        Id environmentId = getParentEnvironmentId(firstEnvironmentPerPromotion.values()[0]);
 
         List<Environment> result = new List<Environment>();
         for (
             copado__Environmental_Variable__c environmentVariable : getEnvironmentVariables(
-                firstEnvironmentPerPromotion.values()
+                environmentId
             )
         ) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
@@ -30,11 +31,7 @@ global with sharing class mcdo_SourceChildEnvironmentVariables implements copado
             );
         }
 
-        for (
-            copado__Environment__c eachEnvironment : getChildEnvironments(
-                firstEnvironmentPerPromotion.values()
-            )
-        ) {
+        for (copado__Environment__c eachEnvironment : getChildEnvironments(environmentId)) {
             List<EnvironmentVariablesRecord> environmentVariables = new List<EnvironmentVariablesRecord>();
             if (envVariablesByEnvName.containsKey(eachEnvironment.Name)) {
                 environmentVariables = envVariablesByEnvName.get(eachEnvironment.Name);
@@ -48,23 +45,21 @@ global with sharing class mcdo_SourceChildEnvironmentVariables implements copado
 
     // PRIVATE
 
-    private List<copado__Environmental_Variable__c> getEnvironmentVariables(
-        List<Id> environmentId
-    ) {
+    private List<copado__Environmental_Variable__c> getEnvironmentVariables(Id environmentId) {
         return [
             SELECT Id, Name, copado__Value__c, copado__Scope__c, copado__Environment__r.name
             FROM copado__Environmental_Variable__c
-            WHERE copado__Environment__r.mcdo_Parent_Environment__c IN :environmentId
+            WHERE copado__Environment__r.mcdo_Parent_Environment__c = :environmentId
             WITH SECURITY_ENFORCED
             ORDER BY Name
         ];
     }
 
-    private List<copado__Environment__c> getChildEnvironments(List<Id> environmentId) {
+    private List<copado__Environment__c> getChildEnvironments(Id environmentId) {
         return [
             SELECT Id, Name
             FROM copado__Environment__c
-            WHERE mcdo_Parent_Environment__c IN :environmentId
+            WHERE mcdo_Parent_Environment__c = :environmentId
             WITH SECURITY_ENFORCED
         ];
     }
@@ -115,6 +110,41 @@ global with sharing class mcdo_SourceChildEnvironmentVariables implements copado
         System.debug(firstEnvironmentPerPromotion);
         return firstEnvironmentPerPromotion;
     }
+    // used in case of stacked parent BUs - but only if the current env has mcdo_Is_Enterprise_BU__c==true
+    private Id getParentEnvironmentId(Id environmentId) {
+        copado__Environment__c currentEnv = [
+            SELECT Id, mcdo_Is_Enterprise_BU__c
+            FROM copado__Environment__c
+            WHERE Id = :environmentId
+            WITH SECURITY_ENFORCED
+        ];
+        if (currentEnv.mcdo_Is_Enterprise_BU__c) {
+            // check if there is only one child
+            List<copado__Environment__c> children = [
+                SELECT Id, Name
+                FROM copado__Environment__c
+                WHERE mcdo_Parent_Environment__c = :environmentId
+                WITH SECURITY_ENFORCED
+            ];
+            if (!children.isEmpty() && children.size() == 1) {
+                // check if child has children itself
+                Id childEnvId = children[0].Id;
+                List<copado__Environment__c> childrenOfChild = [
+                    SELECT Id, Name
+                    FROM copado__Environment__c
+                    WHERE mcdo_Parent_Environment__c = :childEnvId
+                    WITH SECURITY_ENFORCED
+                ];
+                if (!childrenOfChild.isEmpty() && childrenOfChild.size() > 0) {
+                    // if 1..n children are found, we want the rest of the code show variables for those environments instead
+                    return childEnvId;
+                }
+            }
+        }
+        // fallback; return what we've already had in the beginning
+        return environmentId;
+    }
+
     // WRAPPER
 
     public class EnvironmentVariablesRecord {
