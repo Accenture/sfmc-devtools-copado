@@ -1316,13 +1316,12 @@ class Deploy {
         if (CONFIG.deployNTimes) {
             for (const sfid in CONFIG.envVariables.destinationChildren) {
                 const replaceMap = {};
-                for (const item in CONFIG.envVariables.sourceChildren[
-                    Object.keys(CONFIG.envVariables.sourceChildren)[0]
-                ]) {
+                const sourceSfid = Object.keys(CONFIG.envVariables.sourceChildren)[0];
+                for (const item in CONFIG.envVariables.sourceChildren[sourceSfid]) {
                     if (
                         typeof CONFIG.envVariables.destinationChildren[sfid][item] !== 'undefined'
                     ) {
-                        replaceMap[CONFIG.envVariables.sourceChildren[item]] =
+                        replaceMap[CONFIG.envVariables.sourceChildren[sourceSfid][item]] =
                             CONFIG.envVariables.destinationChildren[sfid][item];
                     }
                 }
@@ -1339,8 +1338,9 @@ class Deploy {
             replaceMapList.push(replaceMap);
         }
         for (const replaceMap of replaceMapList) {
+            const commitSelectionArrClone = JSON.parse(JSON.stringify(commitSelectionArr));
             // replace market values
-            for (const item of commitSelectionArr) {
+            for (const item of commitSelectionArrClone) {
                 for (const oldValue in replaceMap) {
                     // name
                     item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
@@ -1353,7 +1353,7 @@ class Deploy {
                     item.j = JSON.stringify(jObj);
                 }
             }
-            commitSelectionArrNew.push(...commitSelectionArr);
+            commitSelectionArrNew.push(...commitSelectionArrClone);
         }
         return commitSelectionArrNew;
     }
