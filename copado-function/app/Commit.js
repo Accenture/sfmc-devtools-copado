@@ -812,7 +812,12 @@ class Commit {
                         (item) => !gitDiffArr.includes(item)
                     ),
             };
-            Log.result(result, `Committed ${result.committed.length} items`);
+            Log.result(
+                result,
+                `Committed ${
+                    result.committed.filter((item) => item.endsWith('.json')).length
+                } items with ${result.committed.length} files`
+            );
         } else {
             Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git. ' +

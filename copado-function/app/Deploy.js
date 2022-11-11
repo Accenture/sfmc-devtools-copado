@@ -312,7 +312,9 @@ async function run() {
     Log.info('Deploy.js done');
     Log.result(
         gitDiffArr,
-        `Deployed ${gitDiffArr.length} items ` + (verificationText ? ` (${verificationText})` : '')
+        `Deployed ${gitDiffArr.filter((item) => item.endsWith('.json')).length} items with ${
+            gitDiffArr.length
+        } files` + (verificationText ? ` (${verificationText})` : '')
     );
 
     Copado.uploadToolLogs();
