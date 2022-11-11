@@ -201,20 +201,29 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * reference: https://docs.copado.com/articles/#!copado-ci-cd-publication/executing-a-copado-action
      */
     _handleRequestMessage() {
-        const selectedChanges = this.allSelectedRows.map((item) => {
-            return {
-                m: item.p, // module directory e.g. force-app/main/default (could be used for SFMC dir instead)
-                a: "add", // git action
-                c: "sfmc", // component
-                n: item.n, // metadata name
-                t: item.t, // metadata type
-                cd: item.cd, // metadata created datetime
-                cb: item.cb, // metadata created by name
-                ld: item.ld, // metadata last modified datetime
-                lb: item.lb, // metadata last modified by name
-                j: '{"key":"' + item.k + '"}' // additional info (used for metadata key)
-            };
-        });
+        const uniqueIDs = [];
+        const selectedChanges = this.allSelectedRows
+            .map((item) => {
+                if (uniqueIDs.includes(`${item.p}/${item.k};${item.t};${item.n}`)) {
+                    // ensure have the same uniqueness rules as Copado Deployer v20
+                    return null;
+                }
+                uniqueIDs.push(`${item.p}/${item.k};${item.t};${item.n}`);
+
+                return {
+                    m: item.p + "/" + item.k, // "module directory"; we include path AND key to ensure it becomes part of Copado's unique key, avoiding duplicate-errors
+                    a: "add", // git action
+                    c: "sfmc", // component
+                    n: item.n, // metadata name
+                    t: item.t, // metadata type
+                    cd: item.cd, // metadata created datetime
+                    cb: item.cb, // metadata created by name
+                    ld: item.ld, // metadata last modified datetime
+                    lb: item.lb, // metadata last modified by name
+                    j: '{"key":"' + item.k + '"}' // additional info (used for metadata key)
+                };
+            })
+            .filter(Boolean);
 
         const payload = {
             type: "changes",
