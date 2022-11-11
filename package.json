@@ -2,11 +2,11 @@
     "name": "mcdev-copado",
     "private": true,
     "version": "1.1.2",
-    "description": "Salesforce code & Copado functions that bring Accenture SFMC DevTools functionality to Copado Multi-Cloud",
+    "description": "Salesforce code & Copado functions that bring Accenture SFMC DevTools functionality to 'Copado Deployer' v20",
     "author": "Accenture: joern.berkefeld, daniel.ventura, uwe.voellger, Copado: nahuel.rabe, david.venegas",
     "license": "MIT",
     "peerDependencies": {
-        "mcdev": ">=4.1.4"
+        "mcdev": ">=4.1.12"
     },
     "repository": {
         "type": "git",
@@ -32,12 +32,7 @@
         "prettier:verify": "prettier --list-different \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
         "postinstall": "husky install",
         "precommit": "lint-staged",
-        "lint-cf": "eslint copado-function/app/**/*.js",
-        "cop_retrieve": "node copado-function/app/Retrieve.js",
-        "cop_commit": "node copado-function/app/Commit.js",
-        "cop_deploy": "node copado-function/app/Deploy.js",
-        "cop_promote": "node copado-function/app/Promote.js",
-        "upgrade": "npm-check --update"
+        "lint-cf": "eslint copado-function/app/**/*.js"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^1.5.0",
@@ -55,7 +50,6 @@
         "eslint-plugin-unicorn": "44.0.2",
         "husky": "^8.0.1",
         "lint-staged": "^13.0.3",
-        "npm-check": "6.0.1",
         "prettier": "2.7.1",
         "prettier-eslint": "15.0.1",
         "prettier-plugin-apex": "^1.11.0"

@@ -83,7 +83,7 @@ const CONFIG = {
     },
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
-    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionFileName: 'Copado Deploy changes', // do not change - defined by Copado Managed Package!
     fileSelectionSalesforceId: process.env.metadata_file,
     fileUpdatedSelectionSfid: null,
     git_depth: 100, // set a default git depth of 100 commits
@@ -1174,7 +1174,6 @@ class Deploy {
         const deltaPackageLog = await mcdev.createDeltaPkg({
             range: versionRange,
             diffArr: deltaPkgItems,
-            skipInteraction: true,
         });
         Log.debug('deltaPackageLog: ' + JSON.stringify(deltaPackageLog));
         if (!deltaPackageLog?.length) {
