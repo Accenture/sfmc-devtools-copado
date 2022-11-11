@@ -294,7 +294,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {object} data with an id field added
      */
     addIdToData(data) {
-        return data.map((row, index) => {
+        return data.map((row) => {
             row.id = `${row.t}.${row.k}`;
             return row;
         });
@@ -321,8 +321,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
             );
 
             // if previously Rows have been selected, set them as selected again
-            if (self.selectedRows.length > 0) {
-                self.selectedRows = self.selectedRows.map(({ id }) => id);
+            if (this.selectedRows.length > 0) {
+                this.selectedRows = this.selectedRows.map(({ id }) => id);
             }
         }
     }
@@ -349,7 +349,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                } catch {}
+                } catch {
+                    // ignore
+                }
             }
         };
 
