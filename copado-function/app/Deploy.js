@@ -83,7 +83,7 @@ const CONFIG = {
     },
     deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
     destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
-    fileSelectionFileName: 'Copado Deploy changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionFileName: 'Copado Deploy changes', // do not change - defined by Copado Managed Package!
     fileSelectionSalesforceId: process.env.metadata_file,
     fileUpdatedSelectionSfid: null,
     git_depth: 100, // set a default git depth of 100 commits
@@ -262,7 +262,7 @@ async function run() {
             const deployResult = await Deploy.deployBU(targetBU);
 
             // do what Deploy.createDeltaPackage did: apply templating to deploy definitions
-            Deploy.replaceMarketValues(commitSelectionArr);
+            commitSelectionArr = Deploy.replaceMarketValues(commitSelectionArr);
             // do what Deploy.deployBU did: auto-replace asset keys if needed
             Deploy.replaceAssetKeys(targetBU, commitSelectionArr, deployResult);
         } else {
@@ -1086,17 +1086,26 @@ class Deploy {
 
         // set up corresponding markets and remove other entries
         config.markets = {};
-        config.markets['source'] = marketVariables.source;
-        config.markets['target'] = marketVariables.destination;
 
         if (CONFIG.deployNTimes) {
-            // add markets for child BUs
+            // add market for source child BU
+            if (Object.keys(CONFIG.envVariables.sourceChildren).length !== 1) {
+                throw new Error(
+                    'Expected exactly one source child BU when "deployNTimes" is active in pipeline but found ' +
+                        Object.keys(CONFIG.envVariables.sourceChildren).length
+                );
+            }
+            for (const childSfid in CONFIG.envVariables.sourceChildren) {
+                config.markets[childSfid] = CONFIG.envVariables.sourceChildren[childSfid];
+            }
+            // add markets for target child BUs
             for (const childSfid in CONFIG.envVariables.destinationChildren) {
                 config.markets[childSfid] = CONFIG.envVariables.destinationChildren[childSfid];
             }
+        } else {
+            config.markets['source'] = marketVariables.source;
+            config.markets['target'] = marketVariables.destination;
         }
-        // TODO: deal with parent BU deployments (sourceChildren / destinationChildren)
-        // TODO: deal with enterprise BU deployments (shared DEs)
 
         // remove potentially existing entries and ensure these 2 lists exist
         config.marketList = {};
@@ -1104,14 +1113,19 @@ class Deploy {
             config.marketList[listName] = {};
         }
         // add marketList entries for the 2 bu-market combos
-        config.marketList[deploySourceList][sourceBU] = 'source';
         if (CONFIG.deployNTimes) {
             // add list of markets variables for the child BUs to the target BU to deploy components more than once to the same BU
+            // needs to be a string, not array of string for the source BU
+            config.marketList[deploySourceList][sourceBU] = Object.keys(
+                CONFIG.envVariables.sourceChildren
+            )[0];
+            // can be array of strings or string for the target BU
             config.marketList[deployTargetList][targetBU] = Object.keys(
                 CONFIG.envVariables.destinationChildren
             );
         } else {
             // standard 1:1 deployment
+            config.marketList[deploySourceList][sourceBU] = 'source';
             config.marketList[deployTargetList][targetBU] = 'target';
         }
 
@@ -1295,28 +1309,52 @@ class Deploy {
      */
     static replaceMarketValues(commitSelectionArr) {
         Log.debug('replacing market values');
+        const commitSelectionArrNew = [];
         // prepare market values
-        const replaceMap = {};
-        for (const item in CONFIG.envVariables.source) {
-            if (typeof CONFIG.envVariables.destination[item] !== 'undefined') {
-                replaceMap[CONFIG.envVariables.source[item]] =
-                    CONFIG.envVariables.destination[item];
+        const replaceMapList = [];
+        if (CONFIG.deployNTimes) {
+            for (const sfid in CONFIG.envVariables.destinationChildren) {
+                const replaceMap = {};
+                const sourceSfid = Object.keys(CONFIG.envVariables.sourceChildren)[0];
+                for (const item in CONFIG.envVariables.sourceChildren[sourceSfid]) {
+                    if (
+                        typeof CONFIG.envVariables.destinationChildren[sfid][item] !== 'undefined'
+                    ) {
+                        replaceMap[CONFIG.envVariables.sourceChildren[sourceSfid][item]] =
+                            CONFIG.envVariables.destinationChildren[sfid][item];
+                    }
+                }
+                replaceMapList.push(replaceMap);
             }
-        }
-        // replace market values
-        for (const item of commitSelectionArr) {
-            for (const oldValue in replaceMap) {
-                // name
-                item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
-                // key
-                const jObj = JSON.parse(item.j);
-                jObj.newKey = (jObj.newKey || jObj.key).replace(
-                    new RegExp(oldValue, 'g'),
-                    replaceMap[oldValue]
-                );
-                item.j = JSON.stringify(jObj);
+        } else {
+            const replaceMap = {};
+            for (const item in CONFIG.envVariables.source) {
+                if (typeof CONFIG.envVariables.destination[item] !== 'undefined') {
+                    replaceMap[CONFIG.envVariables.source[item]] =
+                        CONFIG.envVariables.destination[item];
+                }
             }
+            replaceMapList.push(replaceMap);
         }
+        for (const replaceMap of replaceMapList) {
+            const commitSelectionArrClone = JSON.parse(JSON.stringify(commitSelectionArr));
+            // replace market values
+            for (const item of commitSelectionArrClone) {
+                for (const oldValue in replaceMap) {
+                    // name
+                    item.n = item.n.replace(new RegExp(oldValue, 'g'), replaceMap[oldValue]);
+                    // key
+                    const jObj = JSON.parse(item.j);
+                    jObj.newKey = (jObj.newKey || jObj.key).replace(
+                        new RegExp(oldValue, 'g'),
+                        replaceMap[oldValue]
+                    );
+                    item.j = JSON.stringify(jObj);
+                }
+            }
+            commitSelectionArrNew.push(...commitSelectionArrClone);
+        }
+        return commitSelectionArrNew;
     }
 }
 
