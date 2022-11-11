@@ -815,8 +815,8 @@ class Commit {
             Log.result(
                 result,
                 `Committed ${
-                    result.committed.filter((file) => file.endsWith('.json')).length
-                } items`
+                    result.committed.filter((item) => item.endsWith('.json')).length
+                } items with ${result.committed.length} files`
             );
         } else {
             Log.error(
