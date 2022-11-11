@@ -55,7 +55,7 @@ const CONFIG = {
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionFileName: 'Copado Commit changes', // do not change - defined by Copado Managed Package!
     recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     envVariables: {

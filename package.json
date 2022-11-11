@@ -2,11 +2,11 @@
     "name": "mcdev-copado",
     "private": true,
     "version": "1.1.2",
-    "description": "Salesforce code & Copado functions that bring Accenture SFMC DevTools functionality to Copado Multi-Cloud",
+    "description": "Salesforce code & Copado functions that bring Accenture SFMC DevTools functionality to 'Copado Deployer' v20",
     "author": "Accenture: joern.berkefeld, daniel.ventura, uwe.voellger, Copado: nahuel.rabe, david.venegas",
     "license": "MIT",
     "peerDependencies": {
-        "mcdev": ">=4.1.4"
+        "mcdev": ">=4.1.12"
     },
     "repository": {
         "type": "git",
