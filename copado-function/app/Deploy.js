@@ -246,7 +246,7 @@ async function run() {
             'Retrieving list of selected items'
         );
     } catch (ex) {
-        Log.info('Getting Commit-selection file failed:' + ex.message);
+        Log.error('Getting Commit-selection file failed:' + ex.message);
         throw ex;
     }
     try {
