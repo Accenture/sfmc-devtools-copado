@@ -1283,7 +1283,9 @@ class Deploy {
                         `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
                     );
                     Copado.uploadToolLogs();
-                    throw new Error('Wrong new key created.');
+                    throw new Error(
+                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
+                    );
                 }
             }
         }
