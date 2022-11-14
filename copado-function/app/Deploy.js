@@ -1279,11 +1279,10 @@ class Deploy {
                     commitSelectionArr[i].j = JSON.stringify(jObj);
                     commitSelectionArrMap.push(jObj);
                 } else {
-                    const errorMessage = `New key for ${commitSelectionArr[i].n} does not match any valid keys.`;
                     // it didn't create the correct new Key
-                    Log.error(errorMessage);
-                    Copado.uploadToolLogs();
-                    throw new Error(errorMessage);
+                    throw new Error(
+                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
+                    );
                 }
             }
         }
