@@ -185,6 +185,32 @@ async function run() {
         throw ex;
     }
 
+    /**
+     * @type {CommitSelection[]}
+     */
+    let commitSelectionArr;
+    try {
+        Log.info('');
+        Log.info(
+            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
+        );
+        Log.info('===================');
+        Log.info('');
+        commitSelectionArr = Copado.getJsonFile(
+            CONFIG.fileSelectionSalesforceId,
+            CONFIG.fileSelectionFileName,
+            'Retrieving list of selected items'
+        );
+        if (!Array.isArray(commitSelectionArr) || commitSelectionArr.length === 0) {
+            throw new Error(
+                'Copado has not registered any files ready for deployment. Please check if you committed all files.'
+            );
+        }
+    } catch (ex) {
+        Log.error('Getting Deploy-selection file failed:' + ex.message);
+        throw ex;
+    }
+
     try {
         Log.info('');
         Log.info('Preparing');
@@ -229,26 +255,6 @@ async function run() {
         throw ex;
     }
 
-    /**
-     * @type {CommitSelection[]}
-     */
-    let commitSelectionArr;
-    try {
-        Log.info('');
-        Log.info(
-            `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
-        );
-        Log.info('===================');
-        Log.info('');
-        commitSelectionArr = Copado.getJsonFile(
-            CONFIG.fileSelectionSalesforceId,
-            CONFIG.fileSelectionFileName,
-            'Retrieving list of selected items'
-        );
-    } catch (ex) {
-        Log.error('Getting Commit-selection file failed:' + ex.message);
-        throw ex;
-    }
     try {
         if (
             await Deploy.createDeltaPackage(

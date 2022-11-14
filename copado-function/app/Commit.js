@@ -145,19 +145,6 @@ async function run() {
         Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
-
-    try {
-        Log.info('');
-        Log.info('Preparing');
-        Log.info('===================');
-        Log.info('');
-        Util.provideMCDevTools();
-        Util.provideMCDevCredentials(CONFIG.credentials);
-    } catch (ex) {
-        Log.error('initializing failed: ' + ex.message);
-        throw ex;
-    }
-
     /**
      * @type {CommitSelection[]}
      */
@@ -174,8 +161,25 @@ async function run() {
             CONFIG.fileSelectionFileName,
             'Retrieving list of selected items'
         );
+        if (!Array.isArray(commitSelectionArr) || commitSelectionArr.length === 0) {
+            throw new Error(
+                'Copado has not registered any files selected for commit. Please go back and select at least one item in the Commit page.'
+            );
+        }
     } catch (ex) {
         Log.error('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('===================');
+        Log.info('');
+        Util.provideMCDevTools();
+        Util.provideMCDevCredentials(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('initializing failed: ' + ex.message);
         throw ex;
     }
 
