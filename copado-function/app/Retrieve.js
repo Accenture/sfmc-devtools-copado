@@ -495,6 +495,7 @@ class Util {
      * @returns {string} retrieve folder
      */
     static getBuName(credName, mid) {
+        let credBuName;
         if (!credName) {
             throw new Error('System Property "credentialName" not set');
         }
@@ -512,11 +513,12 @@ class Util {
             );
             if (myBuNameArr.length === 1) {
                 Log.debug('BU Name is: ' + credName + '/' + myBuNameArr[0]);
-                return credName + '/' + myBuNameArr[0];
+                credBuName = credName + '/' + myBuNameArr[0];
             } else {
                 throw new Error(`MID ${mid} not found for ${credName}`);
             }
         }
+        return credBuName;
     }
 }
 /**
