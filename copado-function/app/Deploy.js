@@ -1270,22 +1270,20 @@ class Deploy {
                 const jObj = JSON.parse(commitSelectionArr[i].j);
                 // decide what the new key is; depends on potentially applied templating
                 const oldKey = jObj.newKey || jObj.key;
-                const newKey = oldKey.endsWith(suffix)
-                    ? oldKey
-                    : oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
+                const newKey =
+                    CONFIG.source_mid === CONFIG.target_mid || oldKey.endsWith(suffix)
+                        ? oldKey
+                        : oldKey.slice(0, Math.max(0, 36 - suffix.length)) + suffix;
                 if (deployResult[bu].asset[newKey]) {
                     jObj.newKey = newKey;
                     commitSelectionArr[i].j = JSON.stringify(jObj);
                     commitSelectionArrMap.push(jObj);
                 } else {
+                    const errorMessage = `New key for ${commitSelectionArr[i].n} does not match any valid keys.`;
                     // it didn't create the correct new Key
-                    Log.error(
-                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
-                    );
+                    Log.error(errorMessage);
                     Copado.uploadToolLogs();
-                    throw new Error(
-                        `New key for ${commitSelectionArr[i].n} does not match any valid keys.`
-                    );
+                    throw new Error(errorMessage);
                 }
             }
         }
