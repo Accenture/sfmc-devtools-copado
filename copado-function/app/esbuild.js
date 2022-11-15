@@ -1,6 +1,8 @@
 /* eslint-disable unicorn/prefer-top-level-await */
 const esbuild = require('esbuild');
 const path = require('node:path');
+const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injector');
+
 (async () => {
     // console.log(process.cwd());
     // console.log(path.resolve(__dirname));
@@ -15,6 +17,8 @@ const path = require('node:path');
             outdir: '../dist',
             absWorkingDir: path.resolve(__dirname),
             metafile: true,
+            plugins: [esbuildPluginVersionInjector()],
+            target: ['es2020', 'node14.16'],
         });
     } catch (ex) {
         console.error('Build failed:', ex.message);

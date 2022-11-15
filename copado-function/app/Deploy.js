@@ -54,6 +54,7 @@ const exec = require('node:child_process').exec;
 const resolve = require('node:path').resolve;
 
 const CONFIG = {
+    mcdevCopadoVersion: '[VI]{{inject}}[/VI]',
     // credentials
     credentialNameSource: process.env.credentialNameSource,
     credentialNameTarget: process.env.credentialNameTarget,
