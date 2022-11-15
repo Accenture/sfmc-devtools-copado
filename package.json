@@ -33,11 +33,6 @@
         "postinstall": "husky install",
         "precommit": "lint-staged",
         "lint-cf": "eslint copado-function/app/**/*.js",
-        "cop_mcdevinit": "node copado-function/app/McdevInit.js",
-        "cop_retrieve": "node copado-function/app/Retrieve.js",
-        "cop_commit": "node copado-function/app/Commit.js",
-        "cop_deploy": "node copado-function/app/Deploy.js",
-        "cop_promote": "node copado-function/app/Promote.js",
         "upgrade": "npm-check --update"
     },
     "devDependencies": {

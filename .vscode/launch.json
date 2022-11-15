@@ -9,7 +9,7 @@
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_mcdevinit",
+      "name": "debug: mcdev.init",
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
       "command": "node McdevInit.js",
