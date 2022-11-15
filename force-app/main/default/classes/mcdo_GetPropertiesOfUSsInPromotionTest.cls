@@ -11,6 +11,7 @@ public class mcdo_GetPropertiesOfUSsInPromotionTest {
         insert permissions;	
         
         System.runAs(standardUser) {
+            assignLicense(standardUser.Id); // this will assign the necessary licences to that user Id.
             createDefaultTestData();
         }
     }
@@ -22,37 +23,35 @@ public class mcdo_GetPropertiesOfUSsInPromotionTest {
             FROM copado__JobStep__c
             WHERE Name = 'stepWithoutAPromotion'
         ];
-        
+        Boolean wasExceptionThrown = false;
         mcdo_GetPropertiesOfUSsInPromotion mcdo_gpousip = new mcdo_GetPropertiesOfUSsInPromotion();       
         Test.startTest();
-        String result = mcdo_gpousip.execute(jobStep[0].Id);
+        try{
+            String result = mcdo_gpousip.execute(jobStep[0].Id);
+        }catch(Exception er){
+            wasExceptionThrown = true;
+        }
         Test.stopTest();
+        //Assert that an exception was thrown
+        System.assert(wasExceptionThrown, 'An Exception was not thrown');
     }    
     
     @IsTest
-    private static void executeTest() {        
+    private static void executeTest() { 
         copado__JobStep__c[] jobStep = [
             SELECT Id
             FROM copado__JobStep__c
             WHERE Name = 'stepWithAPromotion'
-        ];
-        
-        mcdo_GetPropertiesOfUSsInPromotion mcdo_gpousip = new mcdo_GetPropertiesOfUSsInPromotion();       
+        ];    
+        mcdo_GetPropertiesOfUSsInPromotion mcdo_gpousip = new mcdo_GetPropertiesOfUSsInPromotion();
         Test.startTest();
         String result = mcdo_gpousip.execute(jobStep[0].Id);
         Test.stopTest();
+        System.assertEquals('[]', result);
     }    
     
     private static void createDefaultTestData() {
-        
-        // copado__System_Property__c[] systemProperty = [
-        //     SELECT copado__ParentId__c
-        //     FROM copado__System_Property__c
-        // ];
-        // System.debug(systemProperty);
-        // System.debug(systemProperty[0]);
-        // System.debug(systemProperty[0].copado__ParentId__c);
-        
+
         copado__JobTemplate__c template = new copado__JobTemplate__c();
             template.Name = 'MC_Retrieve_Action';
             template.copado__Version__c = 1;
@@ -64,8 +63,20 @@ public class mcdo_GetPropertiesOfUSsInPromotionTest {
                 copado__Type__c = 'Manual');
         insert jobStep1;
              
-        copado__Promotion__c promotion = new copado__Promotion__c();
+        copado__Deployment_Flow__c pipeline = new copado__Deployment_Flow__c(copado__Active__c=true);
+        insert pipeline;
+        
+        copado__Project__c project = new copado__Project__c(copado__Deployment_Flow__c=pipeline.id);
+        insert project;
+        
+        copado__Promotion__c promotion = new copado__Promotion__c(copado__Project__c = project.id);
         insert promotion;
+        
+        copado__User_Story__c userStory = new copado__User_Story__c(copado__Project__c=project.id);
+        insert userStory;
+        
+        copado__Promoted_User_Story__c promotedUserStory = new copado__Promoted_User_Story__c(copado__Promotion__c=promotion.id, copado__User_Story__c=userStory.id);
+        insert promotedUserStory;
         
         copado__JobExecution__c jobExecution = new copado__JobExecution__c(copado__Promotion__c=promotion.id);
         insert jobExecution;
@@ -76,4 +87,14 @@ public class mcdo_GetPropertiesOfUSsInPromotionTest {
 	 	        copado__JobExecution__c=jobExecution.Id);
         insert jobStep2;
     }
+
+    public static void assignLicense(Id userId) {
+        copado.GlobalAPI copadoGlobalAPI = new copado.GlobalAPI();
+        copado.GlobalAPI.UserLicense userLicense = new copado.GlobalAPI.UserLicense();
+        userLicense.isCCMEnabled = true;
+        userLicense.isCopadoEnabled = true;
+        userLicense.userId = userId;
+        copadoGlobalAPI.upsertCopadoLicense(userLicense);
+    }
+
 }
