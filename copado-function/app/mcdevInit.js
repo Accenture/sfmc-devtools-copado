@@ -90,7 +90,6 @@ async function run() {
         Log.error('Could not parse credentials');
         throw ex;
     }
-    Util.convertEnvVariables(CONFIG.envVariables);
     Log.debug(CONFIG);
 
     // ensure we got SFMC credentials for our source BU
