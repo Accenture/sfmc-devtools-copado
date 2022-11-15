@@ -9,6 +9,15 @@
     },
     {
       "type": "node-terminal",
+      "name": "debug: mcdev.init",
+      "request": "launch",
+      "runtimeArgs": ["--preserve-symlinks"],
+      "command": "node McdevInit.js",
+      "cwd": "${workspaceFolder}/copado-function/app",
+      "envFile": "${workspaceFolder}/copado-function/app/environments/McdevInit.env",
+    },
+    {
+      "type": "node-terminal",
       "name": "debug: cop_retrieve",
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
