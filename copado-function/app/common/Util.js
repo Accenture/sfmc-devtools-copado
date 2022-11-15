@@ -111,7 +111,6 @@ class Util {
      * @returns {void}
      */
     static provideMCDevTools() {
-        console.log('Util.CONFIG:', CONFIG);
         if (fs.existsSync('package.json')) {
             Log.debug('package.json found, assuming npm was already initialized');
         } else {
