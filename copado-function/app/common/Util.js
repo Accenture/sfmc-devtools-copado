@@ -39,7 +39,7 @@ class Util {
      * @returns {void}
      */
     push(destinationBranch) {
-        Util.execCommand(
+        this.execCommand(
             `Pushing updates to ${destinationBranch} branch`,
             ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
@@ -123,11 +123,11 @@ class Util {
         if (fs.existsSync('package.json')) {
             Log.debug('package.json found, assuming npm was already initialized');
         } else {
-            Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
+            this.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
         }
         let installer;
         if (!CONFIG.installMcdevLocally) {
-            Util.execCommand(
+            this.execCommand(
                 `Initializing Accenture SFMC DevTools (packaged version)`,
                 [
                     `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
@@ -147,7 +147,7 @@ class Util {
             // default, install via npm at specified version
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
-        Util.execCommand(
+        this.execCommand(
             `Initializing Accenture SFMC DevTools (${installer})`,
             [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
             'Completed installing Accenture SFMC DevTools'
@@ -161,11 +161,11 @@ class Util {
      */
     provideMCDevCredentials(credentials) {
         Log.info('Provide authentication');
-        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
+        this.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
-        // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
+        // this.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
     }
@@ -191,9 +191,9 @@ class Util {
     convertEnvVariables(envVariables) {
         Object.keys(envVariables).map((key) => {
             if (key.endsWith('Children')) {
-                envVariables[key] = Util._convertEnvChildVars(envVariables[key]);
+                envVariables[key] = this._convertEnvChildVars(envVariables[key]);
             } else {
-                envVariables[key] = Util._convertEnvVars(envVariables[key]);
+                envVariables[key] = this._convertEnvVars(envVariables[key]);
             }
         });
     }
