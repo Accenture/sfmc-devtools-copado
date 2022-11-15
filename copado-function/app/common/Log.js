@@ -1,24 +1,17 @@
 'use strict';
 
 const execSync = require('node:child_process').execSync;
-let CONFIG;
+const CONFIG = require('./Config');
+
 /**
  * logger class
  */
 class Log {
     /**
-     * constructor
-     *
-     * @param {object} _CONFIG central configuration
-     */
-    constructor(_CONFIG) {
-        CONFIG = _CONFIG;
-    }
-    /**
      * @param {string} msg your log message
      * @returns {void}
      */
-    debug(msg) {
+    static debug(msg) {
         if (CONFIG.debug) {
             console.log('DEBUG:', msg); // eslint-disable-line no-console
         }
@@ -27,14 +20,14 @@ class Log {
      * @param {string} msg your log message
      * @returns {void}
      */
-    warn(msg) {
+    static warn(msg) {
         console.log('⚠', msg); // eslint-disable-line no-console
     }
     /**
      * @param {string} msg your log message
      * @returns {void}
      */
-    info(msg) {
+    static info(msg) {
         console.log(msg); // eslint-disable-line no-console
     }
     /**
@@ -44,7 +37,7 @@ class Log {
      * @param {string} [msg] optional progress message
      * @returns {void}
      */
-    error(error, msg = 'Error') {
+    static error(error, msg = 'Error') {
         console.log('❌', error); // eslint-disable-line no-console
 
         // running JSON.stringify escapes potentially existing double quotes in msg
@@ -60,7 +53,7 @@ class Log {
      * @param {string} [msg] optional progress message
      * @returns {void}
      */
-    result(json, msg = 'Result attached') {
+    static result(json, msg = 'Result attached') {
         if (typeof json !== 'string') {
             json = JSON.stringify(json);
         }
@@ -75,7 +68,7 @@ class Log {
      * @param {string} msg your log message
      * @returns {void}
      */
-    progress(msg) {
+    static progress(msg) {
         msg = JSON.stringify(msg);
         execSync(`copado --progress ${msg}`);
     }

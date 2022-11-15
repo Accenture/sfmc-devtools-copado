@@ -3,21 +3,12 @@ const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 
 const TYPES = require('../types/mcdev-copado.d');
-const _Log = require('./Log');
-let CONFIG;
-let Log;
+const CONFIG = require('./Config');
+const Log = require('./Log');
 /**
  * helper class
  */
 class Util {
-    /**
-     *
-     * @param {object} _CONFIG central configuration
-     */
-    constructor(_CONFIG) {
-        CONFIG = _CONFIG;
-        Log = new _Log(CONFIG);
-    }
     /**
      * After components have been retrieved,
      * find all retrieved components and build a json containing as much
@@ -28,7 +19,7 @@ class Util {
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    saveJsonFile(localPath, jsObj, beautify) {
+    static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }
@@ -38,8 +29,8 @@ class Util {
      * @param {string} destinationBranch name of branch to push to
      * @returns {void}
      */
-    push(destinationBranch) {
-        this.execCommand(
+    static push(destinationBranch) {
+        Util.execCommand(
             `Pushing updates to ${destinationBranch} branch`,
             ['git push origin "' + destinationBranch + '"'],
             'Completed pushing branch'
@@ -53,7 +44,7 @@ class Util {
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {void}
      */
-    execCommand(preMsg, command, postMsg) {
+    static execCommand(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
@@ -83,7 +74,7 @@ class Util {
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {number} exit code
      */
-    execCommandReturnStatus(preMsg, command, postMsg) {
+    static execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
@@ -119,15 +110,16 @@ class Util {
      *
      * @returns {void}
      */
-    provideMCDevTools() {
+    static provideMCDevTools() {
+        console.log('Util.CONFIG:', CONFIG);
         if (fs.existsSync('package.json')) {
             Log.debug('package.json found, assuming npm was already initialized');
         } else {
-            this.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
+            Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
         }
         let installer;
         if (!CONFIG.installMcdevLocally) {
-            this.execCommand(
+            Util.execCommand(
                 `Initializing Accenture SFMC DevTools (packaged version)`,
                 [
                     `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
@@ -147,7 +139,7 @@ class Util {
             // default, install via npm at specified version
             installer = `mcdev@${CONFIG.mcdevVersion}`;
         }
-        this.execCommand(
+        Util.execCommand(
             `Initializing Accenture SFMC DevTools (${installer})`,
             [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
             'Completed installing Accenture SFMC DevTools'
@@ -159,13 +151,13 @@ class Util {
      * @param {object} credentials contains source and target credentials
      * @returns {void}
      */
-    provideMCDevCredentials(credentials) {
+    static provideMCDevCredentials(credentials) {
         Log.info('Provide authentication');
-        this.saveJsonFile('.mcdev-auth.json', credentials, true);
+        Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
         // The following command fails for an unknown reason.
         // As workaround, provide directly the authentication file. This is also faster.
-        // this.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
+        // Util.execCommand("Initializing MC project with credential name " + credentialName + " for tenant " + tenant,
         //            "cd /tmp && " + mcdev + " init --y.credentialsName " + credentialName + " --y.clientId " + clientId + " --y.clientSecret " + clientSecret + " --y.tenant " + tenant + " --y.gitRemoteUrl " + remoteUrl,
         //            "Completed initializing MC project");
     }
@@ -175,7 +167,7 @@ class Util {
      * @param {object[]} properties directly from config
      * @returns {Object.<string, string>} properties converted into normal json
      */
-    convertSourceProperties(properties) {
+    static convertSourceProperties(properties) {
         const response = {};
         for (const item of properties) {
             response[item.copado__API_Name__c] = item.copado__Value__c;
@@ -188,12 +180,12 @@ class Util {
      * @param {object} envVariables directly from config
      * @returns {void}
      */
-    convertEnvVariables(envVariables) {
+    static convertEnvVariables(envVariables) {
         Object.keys(envVariables).map((key) => {
             if (key.endsWith('Children')) {
-                envVariables[key] = this._convertEnvChildVars(envVariables[key]);
+                envVariables[key] = Util._convertEnvChildVars(envVariables[key]);
             } else {
-                envVariables[key] = this._convertEnvVars(envVariables[key]);
+                envVariables[key] = Util._convertEnvVars(envVariables[key]);
             }
         });
     }
@@ -203,7 +195,7 @@ class Util {
      * @param {TYPES.EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
-    _convertEnvVars(envVarArr) {
+    static _convertEnvVars(envVarArr) {
         if (!envVarArr) {
             return envVarArr;
         }
@@ -222,7 +214,7 @@ class Util {
      * @param {TYPES.EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
-    _convertEnvChildVars(envChildVarArr) {
+    static _convertEnvChildVars(envChildVarArr) {
         if (!envChildVarArr) {
             return envChildVarArr;
         }
@@ -231,7 +223,7 @@ class Util {
         }
         const response = {};
         for (const item of envChildVarArr) {
-            response[item.id] = this._convertEnvVars(item.environmentVariables);
+            response[item.id] = Util._convertEnvVars(item.environmentVariables);
         }
         return response;
     }
@@ -242,7 +234,7 @@ class Util {
      * @param {string} mid -
      * @returns {string} retrieve folder
      */
-    getBuName(credName, mid) {
+    static getBuName(credName, mid) {
         let credBuName;
         if (!credName) {
             throw new Error('System Property "credentialName" not set');

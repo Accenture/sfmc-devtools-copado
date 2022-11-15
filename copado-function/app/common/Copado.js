@@ -3,25 +3,13 @@ const fs = require('node:fs');
 const exec = require('node:child_process').exec;
 
 const TYPES = require('../types/mcdev-copado.d');
-const _Log = require('./Log');
-const _Util = require('./Util');
-let CONFIG;
-let Log;
-let Util;
+const Log = require('./Log');
+const Util = require('./Util');
 
 /**
  * methods to handle interaction with the copado platform
  */
 class Copado {
-    /**
-     *
-     * @param {object} _CONFIG central configuration
-     */
-    constructor(_CONFIG) {
-        CONFIG = _CONFIG;
-        Log = new _Log(CONFIG);
-        Util = new _Util(CONFIG);
-    }
     /**
      * Finally, attach the resulting metadata JSON to the source environment
      *
@@ -31,8 +19,8 @@ class Copado {
      * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    attachJson(localPath, parentSfid, async = false, preMsg) {
-        this._attachFile(localPath, async, parentSfid, preMsg);
+    static attachJson(localPath, parentSfid, async = false, preMsg) {
+        Copado._attachFile(localPath, async, parentSfid, preMsg);
     }
     /**
      * Finally, attach the resulting metadata JSON. Always runs asynchronously
@@ -40,8 +28,8 @@ class Copado {
      * @param {string} localPath where we stored the temporary json file
      * @returns {Promise.<void>} promise of log upload
      */
-    async attachLog(localPath) {
-        this._attachFile(localPath, true);
+    static async attachLog(localPath) {
+        Copado._attachFile(localPath, true);
     }
 
     /**
@@ -54,7 +42,7 @@ class Copado {
      * @param {string} [preMsg] optional message to display before uploading synchronously
      * @param {string} [postMsg] optional message to display after uploading synchronously
      */
-    _attachFile(
+    static _attachFile(
         localPath,
         async = false,
         parentSfid,
@@ -90,7 +78,7 @@ class Copado {
      * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {void}
      */
-    _downloadFile(fileSFID, preMsg) {
+    static _downloadFile(fileSFID, preMsg) {
         if (fileSFID) {
             if (!preMsg) {
                 preMsg = `Download ${fileSFID}.`;
@@ -109,8 +97,8 @@ class Copado {
      * @param {string} [preMsg] optional message to display before uploading synchronously
      * @returns {TYPES.CommitSelection[]} commitSelectionArr
      */
-    getJsonFile(fileSFID, fileName, preMsg) {
-        this._downloadFile(fileSFID, preMsg);
+    static getJsonFile(fileSFID, fileName, preMsg) {
+        Copado._downloadFile(fileSFID, preMsg);
         return JSON.parse(fs.readFileSync(fileName, 'utf8'));
     }
 
@@ -122,7 +110,7 @@ class Copado {
      * @param {boolean} [createBranch=false] creates workingBranch if needed
      * @returns {void}
      */
-    checkoutSrc(workingBranch, createBranch = false) {
+    static checkoutSrc(workingBranch, createBranch = false) {
         Util.execCommand(
             `Switching to ${workingBranch} branch`,
             [`copado-git-get ${createBranch ? '--create ' : ''}"${workingBranch}"`],
@@ -136,7 +124,7 @@ class Copado {
      * @param {string} featureBranch branch that is going to be deleted
      * @returns {void}
      */
-    deleteBranch(featureBranch) {
+    static deleteBranch(featureBranch) {
         // delete feature branch on origin code in here
         Util.execCommand(
             `Deleting branch ${featureBranch} on server`,
@@ -155,14 +143,14 @@ class Copado {
      *
      * @returns {Promise.<void>} promise of uploads
      */
-    async uploadToolLogs() {
+    static async uploadToolLogs() {
         Log.debug('Getting mcdev logs');
 
         try {
             const logsAttached = [];
             for (const file of fs.readdirSync('logs')) {
                 Log.debug('- ' + file);
-                logsAttached.push(this.attachLog('logs/' + file));
+                logsAttached.push(Copado.attachLog('logs/' + file));
             }
             const response = await Promise.all(logsAttached);
             Log.debug('Attached mcdev logs');

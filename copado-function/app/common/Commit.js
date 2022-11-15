@@ -3,25 +3,14 @@ const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 
 const TYPES = require('../types/mcdev-copado.d');
-const _Log = require('./Log');
-const _Util = require('./Util');
-let CONFIG;
-let Log;
-let Util;
+const CONFIG = require('./Config');
+const Log = require('./Log');
+const Util = require('./Util');
 
 /**
  * methods to handle interaction with the copado platform
  */
 class Commit {
-    /**
-     *
-     * @param {object} _CONFIG central configuration
-     */
-    constructor(_CONFIG) {
-        CONFIG = _CONFIG;
-        Log = new _Log(CONFIG);
-        Util = new _Util(CONFIG);
-    }
     /**
      * Retrieve components into a clean retrieve folder.
      * The retrieve folder is deleted before retrieving to make
