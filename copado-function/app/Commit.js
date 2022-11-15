@@ -75,7 +75,7 @@ const CONFIG = {
     target_mid: null,
 };
 
-const Log = require('./common/Log')(CONFIG);
+const Log = new (require('./common/Log'))(CONFIG);
 
 /**
  * main method that combines runs this function
