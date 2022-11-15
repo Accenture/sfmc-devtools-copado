@@ -2,51 +2,50 @@
 
 const resolve = require('node:path').resolve;
 const TYPES = require('./types/mcdev-copado.d');
+const CONFIG = require('./common/Config');
+const Log = require('./common/Log');
+const Util = require('./common/Util');
+const Copado = require('./common/Copado');
+const Commit = require('./common/Commit');
 
-const CONFIG = {
-    mcdevCopadoVersion: '[VI]{{inject}}[/VI]',
-    // credentials
-    credentialNameSource: process.env.credentialNameSource,
-    credentialNameTarget: null,
-    credentials: process.env.credentials,
-    // generic
-    configFilePath: '.mcdevrc.json',
-    debug: process.env.debug === 'true' ? true : false,
-    installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    mainBranch: process.env.main_branch,
-    mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
-    source_mid: process.env.source_mid,
-    tmpDirectory: '../tmp',
-    // retrieve
-    source_sfid: null,
-    // commit
-    commitMessage: process.env.commit_message,
-    featureBranch: process.env.feature_branch,
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes', // do not change - defined by Copado Managed Package!
-    recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
-    // deploy
-    envVariables: {
-        source: null,
-        sourceChildren: null,
-        destination: null,
-        destinationChildren: null,
-    },
-    deltaPackageLog: null,
-    destinationBranch: null, // The target branch of a PR, like master. This commit will be lastly checked out
-    fileUpdatedSelectionSfid: null,
-    git_depth: null, // set a default git depth of 100 commits
-    merge_strategy: null, // set default merge strategy
-    promotionBranch: null, // The promotion branch of a PR
-    promotionName: null, // The promotion name of a PR
-    target_mid: null,
+// ++++ CONFIG ++++
+CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';
+// credentials
+CONFIG.credentialNameSource = process.env.credentialNameSource;
+CONFIG.credentialNameTarget = null;
+CONFIG.credentials = process.env.credentials;
+// generic
+CONFIG.configFilePath = '.mcdevrc.json';
+CONFIG.debug = process.env.debug === 'true' ? true : false;
+CONFIG.installMcdevLocally = process.env.installMcdevLocally === 'true' ? true : false;
+CONFIG.mainBranch = process.env.main_branch;
+CONFIG.mcdevVersion = process.env.mcdev_version;
+CONFIG.metadataFilePath = 'mcmetadata.json'; // do not change - LWC depends on it!
+CONFIG.source_mid = process.env.source_mid;
+CONFIG.tmpDirectory = '../tmp';
+// retrieve
+CONFIG.source_sfid = null;
+// commit
+CONFIG.commitMessage = process.env.commit_message;
+CONFIG.featureBranch = process.env.feature_branch;
+CONFIG.fileSelectionSalesforceId = process.env.metadata_file;
+CONFIG.fileSelectionFileName = 'Copado Commit changes'; // do not change - defined by Copado Managed Package!
+CONFIG.recreateFeatureBranch = process.env.recreateFeatureBranch === 'true' ? true : false;
+// deploy
+CONFIG.envVariables = {
+    source: null,
+    sourceChildren: null,
+    destination: null,
+    destinationChildren: null,
 };
-
-const Log = new (require('./common/Log'))(CONFIG);
-const Util = new (require('./common/Util'))(CONFIG);
-const Copado = new (require('./common/Copado'))(CONFIG);
-const Commit = new (require('./common/Commit'))(CONFIG);
+CONFIG.deltaPackageLog = null;
+CONFIG.destinationBranch = null; // The target branch of a PR, like master. This commit will be lastly checked out
+CONFIG.fileUpdatedSelectionSfid = null;
+CONFIG.git_depth = null; // set a default git depth of 100 commits
+CONFIG.merge_strategy = null; // set default merge strategy
+CONFIG.promotionBranch = null; // The promotion branch of a PR
+CONFIG.promotionName = null; // The promotion name of a PR
+CONFIG.target_mid = null;
 
 /**
  * main method that combines runs this function

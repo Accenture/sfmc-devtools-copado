@@ -9,7 +9,7 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
     let result;
     try {
         result = await esbuild.build({
-            entryPoints: ['Retrieve.js', 'Commit.js', 'Deploy.js'],
+            entryPoints: ['Retrieve.fn.js', 'Commit.fn.js', 'Deploy.fn.js'],
             bundle: true,
             platform: 'node',
             external: ['../tmp/*'],
@@ -21,13 +21,13 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
             target: ['es2020', 'node14.16'],
         });
     } catch (ex) {
-        console.error('Build failed:', ex.message);
+        console.error('Build failed:', ex.message); // eslint-disable-line no-console
         process.exitCode = 1;
     }
     try {
         const analyzeText = await esbuild.analyzeMetafile(result.metafile);
-        console.log(analyzeText);
+        console.log(analyzeText); // eslint-disable-line no-console
     } catch (ex) {
-        console.warn('Analyze failed:', ex.message);
+        console.warn('Analyze failed:', ex.message); // eslint-disable-line no-console
     }
 })();

@@ -4,54 +4,52 @@ const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
 const TYPES = require('./types/mcdev-copado.d');
+const CONFIG = require('./common/Config');
+const Log = require('./common/Log');
+const Util = require('./common/Util');
+const Copado = require('./common/Copado');
+const Commit = require('./common/Commit');
 
-const CONFIG = {
-    mcdevCopadoVersion: '[VI]{{inject}}[/VI]',
-    // credentials
-    credentialNameSource: process.env.credentialNameSource,
-    credentialNameTarget: process.env.credentialNameTarget,
-    credentials: process.env.credentials,
-    // generic
-    configFilePath: '.mcdevrc.json',
-    debug: process.env.debug === 'true' ? true : false,
-    installMcdevLocally: process.env.installMcdevLocally === 'true' ? true : false,
-    mainBranch: process.env.main_branch,
-    mcdevVersion: process.env.mcdev_version,
-    metadataFilePath: 'mcmetadata.json', // do not change - LWC depends on it!
-    source_mid: process.env.source_mid,
-    tmpDirectory: '../tmp',
-    // retrieve
-    source_sfid: null,
-    // commit
-    commitMessage: null,
-    featureBranch: null,
-    recreateFeatureBranch: null,
-
-    // deploy
-    envVariables: {
-        source: process.env.envVariablesSource,
-        sourceChildren: process.env.envVariablesSourceChildren,
-        destination: process.env.envVariablesDestination,
-        destinationChildren: process.env.envVariablesDestinationChildren,
-    },
-    deltaPackageLog: 'docs/deltaPackage/delta_package.md', // !works only after changing the working directory!
-    destinationBranch: process.env.toBranch, // The target branch of a PR, like master. This commit will be lastly checked out
-    fileSelectionFileName: 'Copado Deploy changes', // do not change - defined by Copado Managed Package!
-    fileSelectionSalesforceId: process.env.metadata_file,
-    fileUpdatedSelectionSfid: null,
-    git_depth: 100, // set a default git depth of 100 commits
-    merge_strategy: process.env.merge_strategy, // set default merge strategy
-    promotionBranch: process.env.promotionBranch, // The promotion branch of a PR
-    promotionName: process.env.promotionName, // The promotion name of a PR
-    target_mid: process.env.target_mid,
-    sourceProperties: process.env.sourceProperties,
-    deployNTimes: process.env.deployNTimes === 'true' ? true : false,
+// ++++ CONFIG ++++
+CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';
+// credentials
+CONFIG.credentialNameSource = process.env.credentialNameSource;
+CONFIG.credentialNameTarget = process.env.credentialNameTarget;
+CONFIG.credentials = process.env.credentials;
+// generic
+CONFIG.configFilePath = '.mcdevrc.json';
+CONFIG.debug = process.env.debug === 'true' ? true : false;
+CONFIG.installMcdevLocally = process.env.installMcdevLocally === 'true' ? true : false;
+CONFIG.mainBranch = process.env.main_branch;
+CONFIG.mcdevVersion = process.env.mcdev_version;
+CONFIG.metadataFilePath = 'mcmetadata.json'; // do not change - LWC depends on it!
+CONFIG.source_mid = process.env.source_mid;
+CONFIG.tmpDirectory = '../tmp';
+// retrieve
+CONFIG.source_sfid = null;
+// commit
+CONFIG.commitMessage = null;
+CONFIG.featureBranch = null;
+CONFIG.recreateFeatureBranch = null;
+// deploy
+CONFIG.envVariables = {
+    source: process.env.envVariablesSource,
+    sourceChildren: process.env.envVariablesSourceChildren,
+    destination: process.env.envVariablesDestination,
+    destinationChildren: process.env.envVariablesDestinationChildren,
 };
-
-const Log = new (require('./common/Log'))(CONFIG);
-const Util = new (require('./common/Util'))(CONFIG);
-const Copado = new (require('./common/Copado'))(CONFIG);
-const Commit = new (require('./common/Commit'))(CONFIG);
+CONFIG.deltaPackageLog = 'docs/deltaPackage/delta_package.md'; // !works only after changing the working directory!
+CONFIG.destinationBranch = process.env.toBranch; // The target branch of a PR, like master. This commit will be lastly checked out
+CONFIG.fileSelectionFileName = 'Copado Deploy changes'; // do not change - defined by Copado Managed Package!
+CONFIG.fileSelectionSalesforceId = process.env.metadata_file;
+CONFIG.fileUpdatedSelectionSfid = null;
+CONFIG.git_depth = 100; // set a default git depth of 100 commits
+CONFIG.merge_strategy = process.env.merge_strategy; // set default merge strategy
+CONFIG.promotionBranch = process.env.promotionBranch; // The promotion branch of a PR
+CONFIG.promotionName = process.env.promotionName; // The promotion name of a PR
+CONFIG.target_mid = process.env.target_mid;
+CONFIG.sourceProperties = process.env.sourceProperties;
+CONFIG.deployNTimes = process.env.deployNTimes === 'true' ? true : false;
 
 /**
  * main method that combines runs this function
@@ -540,7 +538,7 @@ class Deploy {
      * @returns {Promise.<boolean>} true: files found, false: not
      */
     static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -619,7 +617,7 @@ class Deploy {
      */
     static async deployBU(bu) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
+        const mcdev = require('../tmp/node_modules/mcdev/lib');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         const deployResult = await mcdev.deploy(bu);
