@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 
-const TYPES = require('../../types/mcdev-copado.d');
+const TYPES = require('../types/mcdev-copado.d');
 const _Log = require('./Log');
 let CONFIG;
 let Log;

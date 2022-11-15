@@ -4,7 +4,7 @@ const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 const exec = require('node:child_process').exec;
 const resolve = require('node:path').resolve;
-const TYPES = require('../types/mcdev-copado.d');
+const TYPES = require('./types/mcdev-copado.d');
 
 const CONFIG = {
     mcdevCopadoVersion: '[VI]{{inject}}[/VI]',
