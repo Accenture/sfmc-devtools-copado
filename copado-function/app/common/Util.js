@@ -28,7 +28,7 @@ class Util {
      * @param {boolean} [beautify] when false, json is a 1-liner; when true, proper formatting is applied
      * @returns {void}
      */
-    static saveJsonFile(localPath, jsObj, beautify) {
+    saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
         fs.writeFileSync(localPath, jsonString, 'utf8');
     }
@@ -38,7 +38,7 @@ class Util {
      * @param {string} destinationBranch name of branch to push to
      * @returns {void}
      */
-    static push(destinationBranch) {
+    push(destinationBranch) {
         Util.execCommand(
             `Pushing updates to ${destinationBranch} branch`,
             ['git push origin "' + destinationBranch + '"'],
@@ -53,7 +53,7 @@ class Util {
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {void}
      */
-    static execCommand(preMsg, command, postMsg) {
+    execCommand(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
@@ -83,7 +83,7 @@ class Util {
      * @param {string} [postMsg] the message displayed to the user in copado after execution
      * @returns {number} exit code
      */
-    static execCommandReturnStatus(preMsg, command, postMsg) {
+    execCommandReturnStatus(preMsg, command, postMsg) {
         if (null != preMsg) {
             Log.progress(preMsg);
         }
@@ -119,7 +119,7 @@ class Util {
      *
      * @returns {void}
      */
-    static provideMCDevTools() {
+    provideMCDevTools() {
         if (fs.existsSync('package.json')) {
             Log.debug('package.json found, assuming npm was already initialized');
         } else {
@@ -159,7 +159,7 @@ class Util {
      * @param {object} credentials contains source and target credentials
      * @returns {void}
      */
-    static provideMCDevCredentials(credentials) {
+    provideMCDevCredentials(credentials) {
         Log.info('Provide authentication');
         Util.saveJsonFile('.mcdev-auth.json', credentials, true);
 
@@ -175,7 +175,7 @@ class Util {
      * @param {object[]} properties directly from config
      * @returns {Object.<string, string>} properties converted into normal json
      */
-    static convertSourceProperties(properties) {
+    convertSourceProperties(properties) {
         const response = {};
         for (const item of properties) {
             response[item.copado__API_Name__c] = item.copado__Value__c;
@@ -188,7 +188,7 @@ class Util {
      * @param {object} envVariables directly from config
      * @returns {void}
      */
-    static convertEnvVariables(envVariables) {
+    convertEnvVariables(envVariables) {
         Object.keys(envVariables).map((key) => {
             if (key.endsWith('Children')) {
                 envVariables[key] = Util._convertEnvChildVars(envVariables[key]);
@@ -203,7 +203,7 @@ class Util {
      * @param {TYPES.EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
-    static _convertEnvVars(envVarArr) {
+    _convertEnvVars(envVarArr) {
         if (!envVarArr) {
             return envVarArr;
         }
@@ -222,7 +222,7 @@ class Util {
      * @param {TYPES.EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
-    static _convertEnvChildVars(envChildVarArr) {
+    _convertEnvChildVars(envChildVarArr) {
         if (!envChildVarArr) {
             return envChildVarArr;
         }
@@ -242,7 +242,7 @@ class Util {
      * @param {string} mid -
      * @returns {string} retrieve folder
      */
-    static getBuName(credName, mid) {
+    getBuName(credName, mid) {
         let credBuName;
         if (!credName) {
             throw new Error('System Property "credentialName" not set');
