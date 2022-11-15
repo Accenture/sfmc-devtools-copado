@@ -7,7 +7,7 @@
 			"group": "build",
 			"problemMatcher": [],
 			"label": "npm: build",
-			"detail": "npx esbuild ./copado-function/app/Retrieve.js ./copado-function/app/Commit.js ./copado-function/app/Deploy.js --bundle --platform=node --external:./copado-function/tmp/* --preserve-symlinks --outdir=./copado-function/dist --analyze "
+			"detail": "node ./copado-function/app/esbuild.js"
 		}
 	]
 }

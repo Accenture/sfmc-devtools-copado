@@ -2,8 +2,8 @@
 const esbuild = require('esbuild');
 const path = require('node:path');
 (async () => {
-    console.log(process.cwd());
-    console.log(path.resolve(__dirname));
+    // console.log(process.cwd());
+    // console.log(path.resolve(__dirname));
     let result;
     try {
         result = await esbuild.build({
