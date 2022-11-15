@@ -55,7 +55,7 @@ const CONFIG = {
     commitMessage: process.env.commit_message,
     featureBranch: process.env.feature_branch,
     fileSelectionSalesforceId: process.env.metadata_file,
-    fileSelectionFileName: 'Copado Commit changes.json', // do not change - defined by Copado Managed Package!
+    fileSelectionFileName: 'Copado Commit changes', // do not change - defined by Copado Managed Package!
     recreateFeatureBranch: process.env.recreateFeatureBranch === 'true' ? true : false,
     // deploy
     envVariables: {
@@ -145,19 +145,6 @@ async function run() {
         Log.error('Checkout to feature and/or master branch failed:' + ex.message);
         throw ex;
     }
-
-    try {
-        Log.info('');
-        Log.info('Preparing');
-        Log.info('===================');
-        Log.info('');
-        Util.provideMCDevTools();
-        Util.provideMCDevCredentials(CONFIG.credentials);
-    } catch (ex) {
-        Log.error('initializing failed: ' + ex.message);
-        throw ex;
-    }
-
     /**
      * @type {CommitSelection[]}
      */
@@ -174,8 +161,25 @@ async function run() {
             CONFIG.fileSelectionFileName,
             'Retrieving list of selected items'
         );
+        if (!Array.isArray(commitSelectionArr) || commitSelectionArr.length === 0) {
+            throw new Error(
+                'Copado has not registered any files selected for commit. Please go back and select at least one item in the Commit page.'
+            );
+        }
     } catch (ex) {
-        Log.info('Getting Commit-selection file failed:' + ex.message);
+        Log.error('Getting Commit-selection file failed:' + ex.message);
+        throw ex;
+    }
+
+    try {
+        Log.info('');
+        Log.info('Preparing');
+        Log.info('===================');
+        Log.info('');
+        Util.provideMCDevTools();
+        Util.provideMCDevCredentials(CONFIG.credentials);
+    } catch (ex) {
+        Log.error('initializing failed: ' + ex.message);
         throw ex;
     }
 
@@ -528,6 +532,7 @@ class Util {
      * @returns {string} retrieve folder
      */
     static getBuName(credName, mid) {
+        let credBuName;
         if (!credName) {
             throw new Error('System Property "credentialName" not set');
         }
@@ -545,11 +550,12 @@ class Util {
             );
             if (myBuNameArr.length === 1) {
                 Log.debug('BU Name is: ' + credName + '/' + myBuNameArr[0]);
-                return credName + '/' + myBuNameArr[0];
+                credBuName = credName + '/' + myBuNameArr[0];
             } else {
                 throw new Error(`MID ${mid} not found for ${credName}`);
             }
         }
+        return credBuName;
     }
 }
 
@@ -812,7 +818,12 @@ class Commit {
                         (item) => !gitDiffArr.includes(item)
                     ),
             };
-            Log.result(result, `Committed ${result.committed.length} items`);
+            Log.result(
+                result,
+                `Committed ${
+                    result.committed.filter((item) => item.endsWith('.json')).length
+                } items with ${result.committed.length} files`
+            );
         } else {
             Log.error(
                 'Nothing to commit as all selected components have the same content as already exists in Git. ' +
