@@ -122,7 +122,6 @@ var require_Util = __commonJS({
         return exitCode;
       }
       static provideMCDevTools() {
-        console.log("Util.CONFIG:", CONFIG2);
         if (fs2.existsSync("package.json")) {
           Log2.debug("package.json found, assuming npm was already initialized");
         } else {
@@ -239,6 +238,15 @@ var require_Copado = __commonJS({
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
+      static mcdevInit(credentials, credentialName, url) {
+        Util2.execCommand(
+          `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${url}", ${credentials[credentialName].account_id}`,
+          [
+            `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "false" --y.gitPush "true"`
+          ],
+          "Mcdev initialized!"
+        );
+      }
       static attachJson(localPath, parentSfid, async = false, preMsg) {
         Copado2._attachFile(localPath, async, parentSfid, preMsg);
       }

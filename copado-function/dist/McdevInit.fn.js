@@ -22,7 +22,7 @@ var require_Config = __commonJS({
 var require_Log = __commonJS({
   "common/Log.js"(exports, module2) {
     "use strict";
-    var execSync = require("child_process").execSync;
+    var execSync2 = require("child_process").execSync;
     var CONFIG2 = require_Config();
     var Log2 = class {
       static debug(msg) {
@@ -40,7 +40,7 @@ var require_Log = __commonJS({
         console.log("\u274C", error);
         error = JSON.stringify(error);
         msg = JSON.stringify(msg);
-        execSync(`copado --error-message ${error} --progress ${msg}`);
+        execSync2(`copado --error-message ${error} --progress ${msg}`);
       }
       static result(json, msg = "Result attached") {
         if (typeof json !== "string") {
@@ -49,11 +49,11 @@ var require_Log = __commonJS({
         console.log("\u2705", json);
         json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
-        execSync(`copado --result-data ${json} --progress ${msg}`);
+        execSync2(`copado --result-data ${json} --progress ${msg}`);
       }
       static progress(msg) {
         msg = JSON.stringify(msg);
-        execSync(`copado --progress ${msg}`);
+        execSync2(`copado --progress ${msg}`);
       }
     };
     module2.exports = Log2;
@@ -64,15 +64,15 @@ var require_Log = __commonJS({
 var require_Util = __commonJS({
   "common/Util.js"(exports, module2) {
     "use strict";
-    var fs = require("fs");
-    var execSync = require("child_process").execSync;
+    var fs2 = require("fs");
+    var execSync2 = require("child_process").execSync;
     var TYPES2 = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
     var Log2 = require_Log();
     var Util2 = class {
       static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
-        fs.writeFileSync(localPath, jsonString, "utf8");
+        fs2.writeFileSync(localPath, jsonString, "utf8");
       }
       static push(destinationBranch) {
         Util2.execCommand(
@@ -90,7 +90,7 @@ var require_Util = __commonJS({
         }
         Log2.debug("\u26A1 " + command);
         try {
-          execSync(command, { stdio: [0, 1, 2], stderr: "inherit" });
+          execSync2(command, { stdio: [0, 1, 2], stderr: "inherit" });
         } catch (ex) {
           Log2.info(ex.status + ": " + ex.message);
           throw new Error(ex);
@@ -109,7 +109,7 @@ var require_Util = __commonJS({
         Log2.debug("\u26A1 " + command);
         let exitCode = null;
         try {
-          execSync(command, { stdio: [0, 1, 2], stderr: "inherit" });
+          execSync2(command, { stdio: [0, 1, 2], stderr: "inherit" });
           exitCode = 0;
         } catch (ex) {
           Log2.warn("\u274C  " + ex.status + ": " + ex.message);
@@ -122,7 +122,7 @@ var require_Util = __commonJS({
         return exitCode;
       }
       static provideMCDevTools() {
-        if (fs.existsSync("package.json")) {
+        if (fs2.existsSync("package.json")) {
           Log2.debug("package.json found, assuming npm was already initialized");
         } else {
           Util2.execCommand("Initializing npm", ["npm init -y"], "Completed initializing NPM");
@@ -206,10 +206,10 @@ var require_Util = __commonJS({
         if (!mid) {
           throw new Error('System Property "mid" not set');
         }
-        if (!fs.existsSync(CONFIG2.configFilePath)) {
+        if (!fs2.existsSync(CONFIG2.configFilePath)) {
           throw new Error("Could not find config file " + CONFIG2.configFilePath);
         }
-        const config = JSON.parse(fs.readFileSync(CONFIG2.configFilePath, "utf8"));
+        const config = JSON.parse(fs2.readFileSync(CONFIG2.configFilePath, "utf8"));
         if (config.credentials[credName] && config.credentials[credName].businessUnits) {
           const myBuNameArr = Object.keys(config.credentials[credName].businessUnits).filter(
             (buName) => config.credentials[credName].businessUnits[buName] == mid
@@ -232,8 +232,8 @@ var require_Util = __commonJS({
 var require_Copado = __commonJS({
   "common/Copado.js"(exports, module2) {
     "use strict";
-    var fs = require("fs");
-    var exec = require("child_process").exec;
+    var fs2 = require("fs");
+    var exec2 = require("child_process").exec;
     var TYPES2 = require_mcdev_copado_d();
     var Log2 = require_Log();
     var Util2 = require_Util();
@@ -258,7 +258,7 @@ var require_Copado = __commonJS({
         if (async) {
           Log2.debug("\u26A1 " + command);
           try {
-            exec(command);
+            exec2(command);
           } catch (ex) {
             Log2.info(ex.status + ": " + ex.message);
             throw new Error(ex);
@@ -285,7 +285,7 @@ var require_Copado = __commonJS({
       }
       static getJsonFile(fileSFID, fileName, preMsg) {
         Copado2._downloadFile(fileSFID, preMsg);
-        return JSON.parse(fs.readFileSync(fileName, "utf8"));
+        return JSON.parse(fs2.readFileSync(fileName, "utf8"));
       }
       static checkoutSrc(workingBranch, createBranch = false) {
         Util2.execCommand(
@@ -310,7 +310,7 @@ var require_Copado = __commonJS({
         Log2.debug("Getting mcdev logs");
         try {
           const logsAttached = [];
-          for (const file of fs.readdirSync("logs")) {
+          for (const file of fs2.readdirSync("logs")) {
             Log2.debug("- " + file);
             logsAttached.push(Copado2.attachLog("logs/" + file));
           }
@@ -326,114 +326,34 @@ var require_Copado = __commonJS({
   }
 });
 
-// common/Commit.js
-var require_Commit = __commonJS({
-  "common/Commit.js"(exports, module2) {
-    "use strict";
-    var fs = require("fs");
-    var execSync = require("child_process").execSync;
-    var TYPES2 = require_mcdev_copado_d();
-    var CONFIG2 = require_Config();
-    var Log2 = require_Log();
-    var Util2 = require_Util();
-    var Commit2 = class {
-      static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
-        const mcdev = require("../tmp/node_modules/mcdev/lib/");
-        mcdev.setSkipInteraction(true);
-        commitSelectionArr = commitSelectionArr.filter((item) => item.a === "add");
-        const typeKeyMap = {};
-        for (const item of commitSelectionArr) {
-          if (!typeKeyMap[item.t]) {
-            typeKeyMap[item.t] = [];
-          }
-          const jObj = JSON.parse(item.j);
-          typeKeyMap[item.t].push(jObj.newKey || jObj.key);
-        }
-        const typeArr = [...new Set(commitSelectionArr.map((item) => item.t))];
-        await mcdev.retrieve(sourceBU, typeKeyMap, null, false);
-        const fileArr = (await Promise.all(
-          typeArr.map((type) => {
-            const keyArr = [
-              ...new Set(
-                commitSelectionArr.filter((item) => item.t === type).map((item) => {
-                  const jObj = JSON.parse(item.j);
-                  return jObj.newKey || jObj.key;
-                })
-              )
-            ];
-            return mcdev.getFilesToCommit(sourceBU, type.split("-")[0], keyArr);
-          })
-        )).flat();
-        return fileArr;
-      }
-      static addSelectedComponents(gitAddArr) {
-        for (const filePath of gitAddArr) {
-          if (fs.existsSync(filePath)) {
-            Util2.execCommand(null, ['git add "' + filePath + '"'], "staged " + filePath);
-          } else {
-            Log2.warn("\u274C  could not find " + filePath);
-          }
-        }
-      }
-      static commit(originalSelection) {
-        const gitDiffArr = execSync("git diff --staged --name-only").toString().split("\n").map((item) => item.trim()).filter((item) => !!item);
-        Log2.debug("Git diff ended with the result:");
-        Log2.debug(gitDiffArr);
-        if (Array.isArray(gitDiffArr) && gitDiffArr.length) {
-          Util2.execCommand(
-            "Committing changes to branch",
-            ['git commit -n -m "' + CONFIG2.commitMessage + '"'],
-            "Completed committing"
-          );
-          const result = {
-            committed: gitDiffArr,
-            noChangesFound: originalSelection.map((item) => item.replace(new RegExp("\\\\", "g"), "/")).filter(
-              (item) => !gitDiffArr.includes(item)
-            )
-          };
-          Log2.result(
-            result,
-            `Committed ${result.committed.filter((item) => item.endsWith(".json")).length} items with ${result.committed.length} files`
-          );
-        } else {
-          Log2.error(
-            "Nothing to commit as all selected components have the same content as already exists in Git. " + JSON.stringify(originalSelection),
-            "Nothing to commit"
-          );
-          throw new Error("Nothing to commit");
-        }
-      }
-    };
-    module2.exports = Commit2;
-  }
-});
-
-// Commit.fn.js
+// McdevInit.fn.js
+var fs = require("fs");
+var execSync = require("child_process").execSync;
+var exec = require("child_process").exec;
 var resolve = require("path").resolve;
 var TYPES = require_mcdev_copado_d();
 var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
-var Commit = require_Commit();
-CONFIG.mcdevCopadoVersion = "1.1.2";
 CONFIG.credentialNameSource = process.env.credentialNameSource;
 CONFIG.credentialNameTarget = null;
 CONFIG.credentials = process.env.credentials;
-CONFIG.configFilePath = ".mcdevrc.json";
+CONFIG.configFilePath = null;
+CONFIG.repoUrl = process.env.repoUrl;
 CONFIG.debug = process.env.debug === "true" ? true : false;
 CONFIG.installMcdevLocally = process.env.installMcdevLocally === "true" ? true : false;
-CONFIG.mainBranch = process.env.main_branch;
-CONFIG.mcdevVersion = process.env.mcdev_version;
-CONFIG.metadataFilePath = "mcmetadata.json";
-CONFIG.source_mid = process.env.source_mid;
+CONFIG.mainBranch = null;
+CONFIG.mcdevVersion = null;
+CONFIG.metadataFilePath = null;
+CONFIG.source_mid = null;
 CONFIG.tmpDirectory = "../tmp";
 CONFIG.source_sfid = null;
-CONFIG.commitMessage = process.env.commit_message;
-CONFIG.featureBranch = process.env.feature_branch;
-CONFIG.fileSelectionSalesforceId = process.env.metadata_file;
-CONFIG.fileSelectionFileName = "Copado Commit changes";
-CONFIG.recreateFeatureBranch = process.env.recreateFeatureBranch === "true" ? true : false;
+CONFIG.commitMessage = null;
+CONFIG.featureBranch = null;
+CONFIG.fileSelectionSalesforceId = null;
+CONFIG.fileSelectionFileName = null;
+CONFIG.recreateFeatureBranch = null;
 CONFIG.envVariables = {
   source: null,
   sourceChildren: null,
@@ -449,7 +369,7 @@ CONFIG.promotionBranch = null;
 CONFIG.promotionName = null;
 CONFIG.target_mid = null;
 async function run() {
-  Log.info("Commit.js started");
+  Log.info("McdevInit.js started");
   Log.debug("");
   Log.debug("Parameters");
   Log.debug("===================");
@@ -459,12 +379,12 @@ async function run() {
     Log.error("Could not parse credentials");
     throw ex;
   }
-  Util.convertEnvVariables(CONFIG.envVariables);
   Log.debug(CONFIG);
   if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
     Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
-    throw new Error(`No source credentials`);
+    throw new Error(`No credentials`);
   }
+  Log.debug("Credentials found for source BU");
   Log.debug("Environment");
   Log.debug("===================");
   if (CONFIG.debug) {
@@ -486,109 +406,21 @@ async function run() {
   }
   process.chdir(CONFIG.tmpDirectory);
   Log.debug(process.cwd());
-  Log.info("");
-  Log.info("Clone repository");
-  Log.info("===================");
-  Log.info("");
-  try {
-    Copado.checkoutSrc(CONFIG.mainBranch);
-    try {
-      if (CONFIG.recreateFeatureBranch) {
-        Copado.deleteBranch(CONFIG.featureBranch);
-      }
-    } catch (ex) {
-      Log.warn("Delete feature branch failed:" + ex.message);
-    }
-    Copado.checkoutSrc(CONFIG.featureBranch, true);
-  } catch (ex) {
-    Log.error("Checkout to feature and/or master branch failed:" + ex.message);
-    throw ex;
-  }
-  let commitSelectionArr;
-  try {
-    Log.info("");
-    Log.info(
-      `Add selected components defined in ${CONFIG.fileSelectionSalesforceId} to metadata JSON`
-    );
-    Log.info("===================");
-    Log.info("");
-    commitSelectionArr = Copado.getJsonFile(
-      CONFIG.fileSelectionSalesforceId,
-      CONFIG.fileSelectionFileName,
-      "Retrieving list of selected items"
-    );
-    if (!Array.isArray(commitSelectionArr) || commitSelectionArr.length === 0) {
-      throw new Error(
-        "Copado has not registered any files selected for commit. Please go back and select at least one item in the Commit page."
-      );
-    }
-  } catch (ex) {
-    Log.error("Getting Commit-selection file failed:" + ex.message);
-    throw ex;
-  }
   try {
     Log.info("");
     Log.info("Preparing");
     Log.info("===================");
     Log.info("");
     Util.provideMCDevTools();
-    Util.provideMCDevCredentials(CONFIG.credentials);
+    Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
   } catch (ex) {
     Log.error("initializing failed: " + ex.message);
-    throw ex;
-  }
-  let sourceBU;
-  let gitAddArr;
-  try {
-    Log.info("");
-    Log.info("Get source BU");
-    Log.info("===================");
-    Log.info("");
-    sourceBU = Util.getBuName(CONFIG.credentialNameSource, CONFIG.source_mid);
-  } catch (ex) {
-    Log.error("Getting Source BU failed: " + ex.message);
-    throw ex;
-  }
-  try {
-    Log.info("");
-    Log.info("Retrieve components");
-    Log.info("===================");
-    Log.info("");
-    gitAddArr = await Commit.retrieveCommitSelection(sourceBU, commitSelectionArr);
-  } catch (ex) {
-    Log.error("Retrieving failed: " + ex.message);
-    Copado.uploadToolLogs();
-    throw ex;
-  }
-  try {
-    Log.info("");
-    Log.info("Add components in metadata JSON to Git history");
-    Log.info("===================");
-    Log.info("");
-    Commit.addSelectedComponents(gitAddArr);
-  } catch (ex) {
-    Log.error("git add failed:" + ex.message);
-    Copado.uploadToolLogs();
-    throw ex;
-  }
-  try {
-    Log.info("");
-    Log.info("Commit");
-    Log.info("===================");
-    Log.info("");
-    Commit.commit(gitAddArr);
-    Log.info("Push");
-    Log.info("===================");
-    Util.push(CONFIG.featureBranch);
-  } catch (ex) {
-    Log.error("git commit / push failed:" + ex.message);
-    Copado.uploadToolLogs();
     throw ex;
   }
   Log.info("");
   Log.info("===================");
   Log.info("");
-  Log.info("Commit.js done");
+  Log.info("McdevInit.js done");
   Copado.uploadToolLogs();
 }
 run();
