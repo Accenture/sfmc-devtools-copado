@@ -9,7 +9,7 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
     let result;
     try {
         result = await esbuild.build({
-            entryPoints: ['Retrieve.fn.js', 'Commit.fn.js', 'Deploy.fn.js'],
+            entryPoints: ['Retrieve.fn.js', 'Commit.fn.js', 'Deploy.fn.js', 'McdevInit.fn.js'],
             bundle: true,
             platform: 'node',
             external: ['../tmp/*'],

@@ -6,7 +6,7 @@
 			"script": "build",
 			"group": "build",
 			"problemMatcher": [],
-			"label": "npm: build",
+			"label": "esbuild",
 			"detail": "node ./copado-function/app/esbuild.js"
 		}
 	]
