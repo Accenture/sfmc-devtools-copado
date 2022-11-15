@@ -13,7 +13,7 @@
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
       "command": "node Retrieve.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Retrieve.env",
     },
     {
@@ -22,7 +22,7 @@
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
       "command": "node Commit.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Commit.env",
     },
     {
@@ -31,7 +31,7 @@
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
       "command": "node Deploy.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Deploy.env",
     },
     {
@@ -40,7 +40,7 @@
       "request": "launch",
       "runtimeArgs": ["--preserve-symlinks"],
       "command": "node Upgrade.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Upgrade.env",
     }
   ]
