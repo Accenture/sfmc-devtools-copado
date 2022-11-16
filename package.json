@@ -42,10 +42,7 @@
         "postinstall": "husky install",
         "precommit": "lint-staged",
         "lint-cf": "eslint copado-function/app/**/*.js",
-        "build": "node ./copado-function/app/esbuild.js",
-        "build:watch": "npx esbuild ./copado-function/app/Retrieve.js ./copado-function/app/Commit.js ./copado-function/app/Deploy.js --bundle --platform=node --external:./copado-function/tmp/* --preserve-symlinks --outdir=./copado-function/dist --watch ",
-        "build:commit": "npx esbuild ./copado-function/app/Commit.js --bundle --platform=node --external:./copado-function/tmp/* --preserve-symlinks --outfile=./copado-function/dist/Commit.bundle.js --analyze ",
-        "build:commit:watch": "npx esbuild ./copado-function/app/Commit.js --bundle --platform=node --external:./copado-function/tmp/* --preserve-symlinks --outfile=./copado-function/dist/Commit.bundle.js --watch "
+        "build": "node ./copado-function/app/esbuild.js"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^1.5.0",
