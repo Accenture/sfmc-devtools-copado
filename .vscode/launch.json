@@ -9,45 +9,45 @@
     },
     {
       "type": "node-terminal",
-      "name": "debug: mcdev.init",
+      "name": "debug: dist/init",
       "request": "launch",
-      "command": "node --preserve-symlinks Init.fn.js",
+      "command": "node Init.fn.js --preserve-symlinks",
       "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Init.env",
       "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_retrieve",
+      "name": "debug: dist/retrieve",
       "request": "launch",
-      "command": "node --preserve-symlinks Retrieve.fn.js",
+      "command": "node Retrieve.fn.js --preserve-symlinks",
       "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Retrieve.env",
       "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_commit",
+      "name": "debug: dist/commit",
       "request": "launch",
-      "command": "node --preserve-symlinks Commit.fn.js",
+      "command": "node Commit.fn.js --preserve-symlinks",
       "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Commit.env",
       "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_deploy",
+      "name": "debug: dist/deploy",
       "request": "launch",
-      "command": "node --preserve-symlinks Deploy.fn.js",
+      "command": "node Deploy.fn.js --preserve-symlinks",
       "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Deploy.env",
       "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_upgrade",
+      "name": "debug: dist/upgrade",
       "request": "launch",
-      "command": "node --preserve-symlinks Upgrade.fn.js",
+      "command": "node Upgrade.fn.js --preserve-symlinks",
       "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Upgrade.env",
       "preLaunchTask": "esbuild"
