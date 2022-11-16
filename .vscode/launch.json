@@ -11,9 +11,9 @@
       "type": "node-terminal",
       "name": "debug: mcdev.init",
       "request": "launch",
-      "command": "node --preserve-symlinks McdevInit.fn.js",
+      "command": "node --preserve-symlinks Init.fn.js",
       "cwd": "${workspaceFolder}/copado-function/dist",
-      "envFile": "${workspaceFolder}/copado-function/app/environments/McdevInit.env",
+      "envFile": "${workspaceFolder}/copado-function/app/environments/Init.env",
       "preLaunchTask": "esbuild"
     },
     {
