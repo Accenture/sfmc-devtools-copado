@@ -2,12 +2,15 @@
 	"version": "2.0.0",
 	"tasks": [
 		{
-			"type": "npm",
-			"script": "build",
-			"group": "build",
-			"problemMatcher": [],
 			"label": "esbuild",
-			"detail": "node ./copado-function/app/esbuild.js"
+			"type": "npm",
+			"script": "build:docs",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "run-p build docs"
 		}
 	]
 }

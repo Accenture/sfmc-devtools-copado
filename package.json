@@ -42,7 +42,9 @@
         "postinstall": "husky install",
         "precommit": "lint-staged",
         "lint-cf": "eslint copado-function/app/**/*.js",
-        "build": "node ./copado-function/app/esbuild.js"
+        "docs": "jsdoc2md --files copado-function/app/*.fn.js copado-function/app/common/**/*.js copado-function/app/types/**/*.js > copado-function/docs/documentation.md",
+        "build": "node ./copado-function/app/esbuild.js",
+        "build:docs": "run-p build docs"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^1.5.0",
@@ -61,7 +63,9 @@
         "eslint-plugin-prettier": "4.2.1",
         "eslint-plugin-unicorn": "44.0.2",
         "husky": "^8.0.1",
+        "jsdoc-to-markdown": "7.1.1",
         "lint-staged": "^13.0.3",
+        "npm-run-all": "4.1.5",
         "prettier": "2.7.1",
         "prettier-eslint": "15.0.1",
         "prettier-plugin-apex": "^1.11.0"
