@@ -10,6 +10,7 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
     // console.log(path.resolve(__dirname));
     let result;
     const ecmaVersion = 'es' + eslintrc.parserOptions.ecmaVersion;
+    const nodeVersion = 'node' + packageJson.engines.node.replace('>=', '');
     const peerDependencies = Object.keys(packageJson.peerDependencies).map(
         (name) => name + '@' + packageJson.peerDependencies[name]
     );
@@ -43,7 +44,7 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
                 absWorkingDir: absWorkingDir,
                 metafile: true,
                 plugins: [esbuildPluginVersionInjector()],
-                target: [ecmaVersion, 'node14.16'],
+                target: [ecmaVersion, nodeVersion],
             });
         } catch (ex) {
             console.error('Build failed:', ex.message); // eslint-disable-line no-console
