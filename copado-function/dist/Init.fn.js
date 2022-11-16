@@ -1,4 +1,16 @@
 #!/usr/bin/env node
+
+/*
+ * mcdev-copado v1.1.2 (built 2022-11-16T10:43:40.818Z)
+ * Function: Init.fn.js
+ * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
+ * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
+ * Support: https://github.com/Accenture/sfmc-devtools-copado/issues
+ * Git-Repository: https://github.com/Accenture/sfmc-devtools-copado.git
+ * Copyright (c) 2022 Accenture. MIT licensed
+*/
+
+
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
@@ -326,7 +338,7 @@ var require_Copado = __commonJS({
   }
 });
 
-// McdevInit.fn.js
+// Init.fn.js
 var fs = require("fs");
 var execSync = require("child_process").execSync;
 var exec = require("child_process").exec;

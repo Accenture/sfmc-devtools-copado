@@ -1,4 +1,16 @@
 #!/usr/bin/env node
+
+/*
+ * mcdev-copado v1.1.2 (built 2022-11-16T10:43:39.840Z)
+ * Function: Retrieve.fn.js
+ * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
+ * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
+ * Support: https://github.com/Accenture/sfmc-devtools-copado/issues
+ * Git-Repository: https://github.com/Accenture/sfmc-devtools-copado.git
+ * Copyright (c) 2022 Accenture. MIT licensed
+*/
+
+
 "use strict";
 var __getOwnPropNames = Object.getOwnPropertyNames;
 var __commonJS = (cb, mod) => function __require() {

@@ -25,7 +25,9 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
                 bundle: true,
                 banner: {
                     js:
-                        `\n/*\n * ${packageJson.name} v${packageJson.version}\n` +
+                        `\n/*\n * ${packageJson.name} v${
+                            packageJson.version
+                        } (built ${new Date().toISOString()})\n` +
                         ` * Function: ${entryPoint}\n` +
                         ` * Dependenies: ${peerDependencies.join(', ')}\n` +
                         ` * Homepage: ${packageJson.homepage}\n` +
