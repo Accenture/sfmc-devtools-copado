@@ -12,7 +12,7 @@
         "mcdev": ">=4.1.12"
     },
     "copadoDependencies": {
-        "Copado Deployer": ">=20.1"
+        "Copado Deployer": "20.1"
     },
     "engines": {
         "node": ">=14.16"
