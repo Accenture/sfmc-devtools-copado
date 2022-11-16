@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-16T10:43:40.818Z)
+ * mcdev-copado v1.1.2 (built 2022-11-16T15:41:41.002Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -16,13 +16,6 @@ var __commonJS = (cb, mod) => function __require() {
   return mod || (0, cb[__getOwnPropNames(cb)[0]])((mod = { exports: {} }).exports, mod), mod.exports;
 };
 
-// types/mcdev-copado.d.js
-var require_mcdev_copado_d = __commonJS({
-  "types/mcdev-copado.d.js"(exports, module2) {
-    module2.exports = {};
-  }
-});
-
 // common/Config.js
 var require_Config = __commonJS({
   "common/Config.js"(exports, module2) {
@@ -34,7 +27,7 @@ var require_Config = __commonJS({
 var require_Log = __commonJS({
   "common/Log.js"(exports, module2) {
     "use strict";
-    var execSync2 = require("child_process").execSync;
+    var execSync = require("child_process").execSync;
     var CONFIG2 = require_Config();
     var Log2 = class {
       static debug(msg) {
@@ -52,7 +45,7 @@ var require_Log = __commonJS({
         console.log("\u274C", error);
         error = JSON.stringify(error);
         msg = JSON.stringify(msg);
-        execSync2(`copado --error-message ${error} --progress ${msg}`);
+        execSync(`copado --error-message ${error} --progress ${msg}`);
       }
       static result(json, msg = "Result attached") {
         if (typeof json !== "string") {
@@ -61,14 +54,21 @@ var require_Log = __commonJS({
         console.log("\u2705", json);
         json = JSON.stringify(`${msg}: ${json}`);
         msg = JSON.stringify(msg);
-        execSync2(`copado --result-data ${json} --progress ${msg}`);
+        execSync(`copado --result-data ${json} --progress ${msg}`);
       }
       static progress(msg) {
         msg = JSON.stringify(msg);
-        execSync2(`copado --progress ${msg}`);
+        execSync(`copado --progress ${msg}`);
       }
     };
     module2.exports = Log2;
+  }
+});
+
+// types/mcdev-copado.d.js
+var require_mcdev_copado_d = __commonJS({
+  "types/mcdev-copado.d.js"(exports, module2) {
+    module2.exports = {};
   }
 });
 
@@ -76,15 +76,15 @@ var require_Log = __commonJS({
 var require_Util = __commonJS({
   "common/Util.js"(exports, module2) {
     "use strict";
-    var fs2 = require("fs");
-    var execSync2 = require("child_process").execSync;
-    var TYPES2 = require_mcdev_copado_d();
+    var fs = require("fs");
+    var execSync = require("child_process").execSync;
+    var TYPES = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
     var Log2 = require_Log();
     var Util2 = class {
       static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
-        fs2.writeFileSync(localPath, jsonString, "utf8");
+        fs.writeFileSync(localPath, jsonString, "utf8");
       }
       static push(destinationBranch) {
         Util2.execCommand(
@@ -102,7 +102,7 @@ var require_Util = __commonJS({
         }
         Log2.debug("\u26A1 " + command);
         try {
-          execSync2(command, { stdio: [0, 1, 2], stderr: "inherit" });
+          execSync(command, { stdio: [0, 1, 2], stderr: "inherit" });
         } catch (ex) {
           Log2.info(ex.status + ": " + ex.message);
           throw new Error(ex);
@@ -121,7 +121,7 @@ var require_Util = __commonJS({
         Log2.debug("\u26A1 " + command);
         let exitCode = null;
         try {
-          execSync2(command, { stdio: [0, 1, 2], stderr: "inherit" });
+          execSync(command, { stdio: [0, 1, 2], stderr: "inherit" });
           exitCode = 0;
         } catch (ex) {
           Log2.warn("\u274C  " + ex.status + ": " + ex.message);
@@ -134,7 +134,7 @@ var require_Util = __commonJS({
         return exitCode;
       }
       static provideMCDevTools() {
-        if (fs2.existsSync("package.json")) {
+        if (fs.existsSync("package.json")) {
           Log2.debug("package.json found, assuming npm was already initialized");
         } else {
           Util2.execCommand("Initializing npm", ["npm init -y"], "Completed initializing NPM");
@@ -218,10 +218,10 @@ var require_Util = __commonJS({
         if (!mid) {
           throw new Error('System Property "mid" not set');
         }
-        if (!fs2.existsSync(CONFIG2.configFilePath)) {
+        if (!fs.existsSync(CONFIG2.configFilePath)) {
           throw new Error("Could not find config file " + CONFIG2.configFilePath);
         }
-        const config = JSON.parse(fs2.readFileSync(CONFIG2.configFilePath, "utf8"));
+        const config = JSON.parse(fs.readFileSync(CONFIG2.configFilePath, "utf8"));
         if (config.credentials[credName] && config.credentials[credName].businessUnits) {
           const myBuNameArr = Object.keys(config.credentials[credName].businessUnits).filter(
             (buName) => config.credentials[credName].businessUnits[buName] == mid
@@ -244,9 +244,9 @@ var require_Util = __commonJS({
 var require_Copado = __commonJS({
   "common/Copado.js"(exports, module2) {
     "use strict";
-    var fs2 = require("fs");
-    var exec2 = require("child_process").exec;
-    var TYPES2 = require_mcdev_copado_d();
+    var fs = require("fs");
+    var exec = require("child_process").exec;
+    var TYPES = require_mcdev_copado_d();
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
@@ -270,7 +270,7 @@ var require_Copado = __commonJS({
         if (async) {
           Log2.debug("\u26A1 " + command);
           try {
-            exec2(command);
+            exec(command);
           } catch (ex) {
             Log2.info(ex.status + ": " + ex.message);
             throw new Error(ex);
@@ -297,7 +297,7 @@ var require_Copado = __commonJS({
       }
       static getJsonFile(fileSFID, fileName, preMsg) {
         Copado2._downloadFile(fileSFID, preMsg);
-        return JSON.parse(fs2.readFileSync(fileName, "utf8"));
+        return JSON.parse(fs.readFileSync(fileName, "utf8"));
       }
       static checkoutSrc(workingBranch, createBranch = false) {
         Util2.execCommand(
@@ -322,7 +322,7 @@ var require_Copado = __commonJS({
         Log2.debug("Getting mcdev logs");
         try {
           const logsAttached = [];
-          for (const file of fs2.readdirSync("logs")) {
+          for (const file of fs.readdirSync("logs")) {
             Log2.debug("- " + file);
             logsAttached.push(Copado2.attachLog("logs/" + file));
           }
@@ -339,11 +339,7 @@ var require_Copado = __commonJS({
 });
 
 // Init.fn.js
-var fs = require("fs");
-var execSync = require("child_process").execSync;
-var exec = require("child_process").exec;
 var resolve = require("path").resolve;
-var TYPES = require_mcdev_copado_d();
 var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
