@@ -4,6 +4,8 @@ const packageJson = require('../../package.json');
 const eslintrc = require('./.eslintrc.json');
 const path = require('node:path');
 const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injector');
+const args = process.argv.slice(2);
+const isWatch = args.includes('--watch');
 
 (async () => {
     // console.log(process.cwd());
@@ -45,6 +47,7 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
                 metafile: true,
                 plugins: [esbuildPluginVersionInjector()],
                 target: [ecmaVersion, nodeVersion],
+                watch: isWatch ? { onRebuild } : false,
             });
         } catch (ex) {
             console.error('Build failed:', ex.message); // eslint-disable-line no-console
@@ -58,3 +61,22 @@ const { esbuildPluginVersionInjector } = require('esbuild-plugin-version-injecto
         }
     }
 })();
+
+/**
+ *
+ * @param {object} error ?
+ * @param {object} result ?
+ */
+function onRebuild(error, result) {
+    if (error) {
+        console.error('watch build failed:', error); // eslint-disable-line no-console
+    } else {
+        try {
+            esbuild.analyzeMetafile(result.metafile).then((analyzeText) => {
+                console.log(analyzeText); // eslint-disable-line no-console
+            });
+        } catch (ex) {
+            console.warn('Analyze failed:', ex.message); // eslint-disable-line no-console
+        }
+    }
+}

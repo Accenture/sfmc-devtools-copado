@@ -44,6 +44,7 @@
         "lint-cf": "eslint copado-function/app/**/*.js",
         "docs": "jsdoc2md --files copado-function/app/*.fn.js copado-function/app/common/**/*.js copado-function/app/types/**/*.js > copado-function/docs/documentation.md",
         "build": "node ./copado-function/app/esbuild.js",
+        "build:watch": "node ./copado-function/app/esbuild.js --watch",
         "build:docs": "run-p build docs"
     },
     "devDependencies": {
