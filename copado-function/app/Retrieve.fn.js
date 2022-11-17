@@ -3,7 +3,7 @@
 
 const fs = require('node:fs');
 const resolve = require('node:path').resolve;
-const TYPES = require('./types/mcdev-copado.d');
+const TYPE = require('./types/mcdev-copado.d');
 const CONFIG = require('./common/Config');
 const Log = require('./common/Log');
 const Util = require('./common/Util');
@@ -339,7 +339,7 @@ class Retrieve {
      * helps get the value of complex and simple field references alike
      *
      * @private
-     * @param {TYPES.MetadataItem} obj one item
+     * @param {TYPE.MetadataItem} obj one item
      * @param {string} key field key
      * @returns {string} value of attribute
      */

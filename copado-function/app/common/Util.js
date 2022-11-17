@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 
-const TYPES = require('../types/mcdev-copado.d');
+const TYPE = require('../types/mcdev-copado.d');
 const CONFIG = require('./Config');
 const Log = require('./Log');
 /**
@@ -191,7 +191,7 @@ class Util {
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
      *
-     * @param {TYPES.EnvVar[]} envVarArr -
+     * @param {TYPE.EnvVar[]} envVarArr -
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvVars(envVarArr) {
@@ -210,7 +210,7 @@ class Util {
     /**
      * helper that converts the copado-internal format for "environment variables" into an object
      *
-     * @param {TYPES.EnvChildVar[]} envChildVarArr -
+     * @param {TYPE.EnvChildVar[]} envChildVarArr -
      * @returns {Object.<string,string>} proper object
      */
     static _convertEnvChildVars(envChildVarArr) {

@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const exec = require('node:child_process').exec;
 
-const TYPES = require('../types/mcdev-copado.d');
+const TYPE = require('../types/mcdev-copado.d');
 const Log = require('./Log');
 const Util = require('./Util');
 
@@ -111,7 +111,7 @@ class Copado {
      * @param {string} fileSFID salesforce ID of the file to download
      * @param {string} fileName name of the file the download will be saved as
      * @param {string} [preMsg] optional message to display before uploading synchronously
-     * @returns {TYPES.CommitSelection[]} commitSelectionArr
+     * @returns {TYPE.CommitSelection[]} commitSelectionArr
      */
     static getJsonFile(fileSFID, fileName, preMsg) {
         Copado._downloadFile(fileSFID, preMsg);

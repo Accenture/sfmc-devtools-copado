@@ -3,7 +3,7 @@
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 const resolve = require('node:path').resolve;
-const TYPES = require('./types/mcdev-copado.d');
+const TYPE = require('./types/mcdev-copado.d');
 const CONFIG = require('./common/Config');
 const Log = require('./common/Log');
 const Util = require('./common/Util');
@@ -142,7 +142,7 @@ async function run() {
     }
 
     /**
-     * @type {TYPES.CommitSelection[]}
+     * @type {TYPE.CommitSelection[]}
      */
     let commitSelectionArr;
     try {
@@ -290,7 +290,7 @@ class Deploy {
      * retrieve the new values into the targets folder so it can be commited later.
      *
      * @param {string} targetBU buname of source BU
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @returns {string[]} gitDiffArr
      */
     static async retrieveAndCommit(targetBU, commitSelectionArr) {
@@ -401,7 +401,7 @@ class Deploy {
      * helper for Deploy.retrieveAndCommit that creates a multi-line commit msg
      *
      * @param {string} targetBU name of BU we deployed to incl. credential name
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @returns {string[]} commitMsgLines
      */
     static getCommitMessage(targetBU, commitSelectionArr) {
@@ -418,14 +418,14 @@ class Deploy {
     /**
      * convert CommitSelection[] to DeltaPkgItem[]
      *
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @param {string} sourceBU buname of source BU
-     * @returns {TYPES.DeltaPkgItem[]} format required by mcdev.createDeltaPkg
+     * @returns {TYPE.DeltaPkgItem[]} format required by mcdev.createDeltaPkg
      */
     static _convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) {
         return commitSelectionArr.map(
             (item) =>
-                /** @type {TYPES.DeltaPkgItem} */ ({
+                /** @type {TYPE.DeltaPkgItem} */ ({
                     type: item.t.split('-')[0],
                     name: item.n,
                     externalKey: JSON.parse(item.j).newKey || JSON.parse(item.j).key,
@@ -513,12 +513,12 @@ class Deploy {
             config.marketList[deployTargetList][targetBU] = 'target';
         }
 
-        console.log(
-            'config.options.deployment.sourceTargetMapping',
-            config.options.deployment.sourceTargetMapping
-        );
-        console.log('config.markets', config.markets);
-        console.log('config.marketList', JSON.stringify(config.marketList));
+        Log.debug('config.options.deployment.sourceTargetMapping');
+        Log.debug(config.options.deployment.sourceTargetMapping);
+        Log.debug('config.markets');
+        Log.debug(config.markets);
+        Log.debug('config.marketList');
+        Log.debug(JSON.stringify(config.marketList));
         // * override config in git repo
         try {
             fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + '.BAK');
@@ -533,7 +533,7 @@ class Deploy {
      * return whether the delta package is empty or not
      *
      * @param {string} deployFolder path
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @param {string} sourceBU buname of source BU
      * @returns {Promise.<boolean>} true: files found, false: not
      */
@@ -634,7 +634,7 @@ class Deploy {
     /**
      *
      * @param {string} bu name of BU
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of committed components based on user selection
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of committed components based on user selection
      * @param {object} deployResult result of deployment
      * @returns {void}
      */
@@ -687,7 +687,7 @@ class Deploy {
     /**
      * applies market values of target onto name and key of commitSelectionArr
      *
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of items to be added
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of items to be added
      * @returns {void}
      */
     static replaceMarketValues(commitSelectionArr) {

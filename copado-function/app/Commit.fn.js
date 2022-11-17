@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 const resolve = require('node:path').resolve;
-const TYPES = require('./types/mcdev-copado.d');
+const TYPE = require('./types/mcdev-copado.d');
 const CONFIG = require('./common/Config');
 const Log = require('./common/Log');
 const Util = require('./common/Util');
@@ -119,7 +119,7 @@ async function run() {
         throw ex;
     }
     /**
-     * @type {TYPES.CommitSelection[]}
+     * @type {TYPE.CommitSelection[]}
      */
     let commitSelectionArr;
     try {

@@ -2,7 +2,7 @@
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
 
-const TYPES = require('../types/mcdev-copado.d');
+const TYPE = require('../types/mcdev-copado.d');
 const CONFIG = require('./Config');
 const Log = require('./Log');
 const Util = require('./Util');
@@ -17,7 +17,7 @@ class Commit {
      * sure we have only components that really exist in the BU.
      *
      * @param {string} sourceBU specific subfolder for downloads
-     * @param {TYPES.CommitSelection[]} commitSelectionArr list of items to be added
+     * @param {TYPE.CommitSelection[]} commitSelectionArr list of items to be added
      * @returns {Promise.<string[]>} list of files to git add & commit
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {

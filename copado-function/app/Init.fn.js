@@ -1,34 +1,5 @@
 #!/usr/bin/env node
 
-/**
- * @typedef {object} MetadataItem
- * @property {string} n Name
- * @property {string} k Key (Customer Key / External Key)
- * @property {string} t metadata type
- * @property {string} [cd] created date
- * @property {string} [cb] created by name
- * @property {string} [ld] last modified date
- * @property {string} [lb] last modified by name
- */
-/**
- * @typedef {object} EnvVar
- * @property {string} value variable value
- * @property {string} scope ?
- * @property {string} name variable name
- * @typedef {object} EnvChildVar
- * @property {EnvVar[]} environmentVariables list of environment variables
- * @property {string} environmentName name of environment in Copado
- */
-/**
- * @typedef {object} CommitSelection
- * @property {string} t type
- * @property {string} n name
- * @property {string} m ???
- * @property {string} j json string with exta info
- * @property {'sfmc'} c system
- * @property {'add'} a action
- */
-
 const resolve = require('node:path').resolve;
 const CONFIG = require('./common/Config');
 const Log = require('./common/Log');
