@@ -9,48 +9,48 @@
     },
     {
       "type": "node-terminal",
-      "name": "debug: mcdev.init",
+      "name": "debug: dist/init",
       "request": "launch",
-      "runtimeArgs": ["--preserve-symlinks"],
-      "command": "node McdevInit.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
-      "envFile": "${workspaceFolder}/copado-function/app/environments/McdevInit.env",
+      "command": "node Init.fn.js --preserve-symlinks",
+      "cwd": "${workspaceFolder}/copado-function/dist",
+      "envFile": "${workspaceFolder}/copado-function/app/environments/Init.env",
+      "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_retrieve",
+      "name": "debug: dist/retrieve",
       "request": "launch",
-      "runtimeArgs": ["--preserve-symlinks"],
-      "command": "node Retrieve.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "command": "node Retrieve.fn.js --preserve-symlinks",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Retrieve.env",
+      "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_commit",
+      "name": "debug: dist/commit",
       "request": "launch",
-      "runtimeArgs": ["--preserve-symlinks"],
-      "command": "node Commit.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "command": "node Commit.fn.js --preserve-symlinks",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Commit.env",
+      "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_deploy",
+      "name": "debug: dist/deploy",
       "request": "launch",
-      "runtimeArgs": ["--preserve-symlinks"],
-      "command": "node Deploy.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "command": "node Deploy.fn.js --preserve-symlinks",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Deploy.env",
+      "preLaunchTask": "esbuild"
     },
     {
       "type": "node-terminal",
-      "name": "debug: cop_upgrade",
+      "name": "debug: dist/upgrade",
       "request": "launch",
-      "runtimeArgs": ["--preserve-symlinks"],
-      "command": "node Upgrade.js",
-      "cwd": "${workspaceFolder}/copado-function/app",
+      "command": "node Upgrade.fn.js --preserve-symlinks",
+      "cwd": "${workspaceFolder}/copado-function/dist",
       "envFile": "${workspaceFolder}/copado-function/app/environments/Upgrade.env",
+      "preLaunchTask": "esbuild"
     }
   ]
 }

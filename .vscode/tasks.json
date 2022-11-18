@@ -1,0 +1,16 @@
+{
+	"version": "2.0.0",
+	"tasks": [
+		{
+			"label": "esbuild",
+			"type": "npm",
+			"script": "build:docs",
+			"group": {
+				"kind": "build",
+				"isDefault": true
+			},
+			"problemMatcher": [],
+			"detail": "run-p build docs"
+		}
+	]
+}
