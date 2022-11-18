@@ -58,6 +58,7 @@ handles downloading metadata
 **Kind**: global class  
 
 * [Deploy](#Deploy)
+    * [.stashChanges()](#Deploy.stashChanges)
     * [.retrieveAndCommit(targetBU, commitSelectionArr)](#Deploy.retrieveAndCommit) ⇒ <code>Array.&lt;string&gt;</code>
     * [.commit([commitMsgLines])](#Deploy.commit) ⇒ <code>Array.&lt;string&gt;</code>
     * [.getCommitMessage(targetBU, commitSelectionArr)](#Deploy.getCommitMessage) ⇒ <code>Array.&lt;string&gt;</code>
@@ -71,6 +72,12 @@ handles downloading metadata
     * [.merge(promotionBranch, currentBranch)](#Deploy.merge) ⇒ <code>void</code>
     * [.replaceMarketValues(commitSelectionArr)](#Deploy.replaceMarketValues) ⇒ <code>void</code>
 
+<a name="Deploy.stashChanges"></a>
+
+### Deploy.stashChanges()
+used to ensure our working directory is clean before checking out branches
+
+**Kind**: static method of [<code>Deploy</code>](#Deploy)  
 <a name="Deploy.retrieveAndCommit"></a>
 
 ### Deploy.retrieveAndCommit(targetBU, commitSelectionArr) ⇒ <code>Array.&lt;string&gt;</code>

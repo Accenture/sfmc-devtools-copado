@@ -212,4 +212,16 @@ public with sharing class mcdo_TestDataFactory {
         );
         return assignments;
     }
+    
+     /**
+     * This method assigns the necessary licenses to a user in order to let the user update promotions and so on
+     */
+    public static void assignLicense(Id userId) {
+        copado.GlobalAPI copadoGlobalAPI = new copado.GlobalAPI();
+        copado.GlobalAPI.UserLicense userLicense = new copado.GlobalAPI.UserLicense();
+        userLicense.isCCMEnabled = true;
+        userLicense.isCopadoEnabled = true;
+        userLicense.userId = userId;
+        copadoGlobalAPI.upsertCopadoLicense(userLicense);
+    }
 }

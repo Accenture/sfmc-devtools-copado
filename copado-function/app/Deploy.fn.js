@@ -287,6 +287,12 @@ async function run() {
  */
 class Deploy {
     /**
+     * used to ensure our working directory is clean before checking out branches
+     */
+    static stashChanges() {
+        Util.execCommand(null, [`git stash`], null);
+    }
+    /**
      * retrieve the new values into the targets folder so it can be commited later.
      *
      * @param {string} targetBU buname of source BU
@@ -297,6 +303,10 @@ class Deploy {
         let gitAddArr;
         let gitDiffArr = [];
         try {
+            Log.info(
+                `Stashing changes made by mcdev.deploy() to avoid issues during branch checkout`
+            );
+            Deploy.stashChanges();
             Log.info('Switch to source branch to add updates for target');
             Copado.checkoutSrc(CONFIG.promotionBranch);
         } catch (ex) {
