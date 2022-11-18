@@ -14,7 +14,6 @@ CONFIG.client_secret = process.env.client_secret;
 CONFIG.auth_url = process.env.auth_url;
 CONFIG.account_id = process.env.account_id;
 CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.client_id}","client_secret":"${CONFIG.client_secret}","auth_url":"${CONFIG.auth_url}","account_id":"${CONFIG.account_id}"}}`;
-CONFIG.gitEmail = process.env.gitEmail;
 
 // generic
 CONFIG.configFilePath = null;
