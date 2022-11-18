@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-16T10:43:40.773Z)
+ * mcdev-copado v1.1.2 (built 2022-11-18T10:11:13.522Z)
  * Function: Deploy.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -78,7 +78,7 @@ var require_Util = __commonJS({
     "use strict";
     var fs2 = require("fs");
     var execSync2 = require("child_process").execSync;
-    var TYPES2 = require_mcdev_copado_d();
+    var TYPE2 = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
     var Log2 = require_Log();
     var Util2 = class {
@@ -150,11 +150,11 @@ var require_Util = __commonJS({
             "Completed installing Accenture SFMC DevTools"
           );
           return;
-        } else if (CONFIG2.mcdevVersion.charAt(0) === "#") {
-          installer = `accenture/sfmc-devtools${CONFIG2.mcdevVersion}`;
         } else if (!CONFIG2.mcdevVersion) {
           Log2.error("Please specify mcdev_version in pipeline & environment settings");
           throw new Error("Please specify mcdev_version in pipeline & environment settings");
+        } else if (CONFIG2.mcdevVersion.charAt(0) === "#") {
+          installer = `accenture/sfmc-devtools${CONFIG2.mcdevVersion}`;
         } else {
           installer = `mcdev@${CONFIG2.mcdevVersion}`;
         }
@@ -246,7 +246,7 @@ var require_Copado = __commonJS({
     "use strict";
     var fs2 = require("fs");
     var exec = require("child_process").exec;
-    var TYPES2 = require_mcdev_copado_d();
+    var TYPE2 = require_mcdev_copado_d();
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
@@ -344,7 +344,7 @@ var require_Commit = __commonJS({
     "use strict";
     var fs2 = require("fs");
     var execSync2 = require("child_process").execSync;
-    var TYPES2 = require_mcdev_copado_d();
+    var TYPE2 = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
     var Log2 = require_Log();
     var Util2 = require_Util();
@@ -424,7 +424,7 @@ var require_Commit = __commonJS({
 var fs = require("fs");
 var execSync = require("child_process").execSync;
 var resolve = require("path").resolve;
-var TYPES = require_mcdev_copado_d();
+var TYPE = require_mcdev_copado_d();
 var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
@@ -811,12 +811,12 @@ var Deploy = class {
       config.marketList[deploySourceList][sourceBU] = "source";
       config.marketList[deployTargetList][targetBU] = "target";
     }
-    console.log(
-      "config.options.deployment.sourceTargetMapping",
-      config.options.deployment.sourceTargetMapping
-    );
-    console.log("config.markets", config.markets);
-    console.log("config.marketList", JSON.stringify(config.marketList));
+    Log.debug("config.options.deployment.sourceTargetMapping");
+    Log.debug(config.options.deployment.sourceTargetMapping);
+    Log.debug("config.markets");
+    Log.debug(config.markets);
+    Log.debug("config.marketList");
+    Log.debug(JSON.stringify(config.marketList));
     try {
       fs.renameSync(CONFIG.configFilePath, CONFIG.configFilePath + ".BAK");
       Util.saveJsonFile(CONFIG.configFilePath, config, "utf8");

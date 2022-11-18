@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-16T15:41:41.002Z)
+ * mcdev-copado v1.1.2 (built 2022-11-18T10:11:13.569Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -78,7 +78,7 @@ var require_Util = __commonJS({
     "use strict";
     var fs = require("fs");
     var execSync = require("child_process").execSync;
-    var TYPES = require_mcdev_copado_d();
+    var TYPE = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
     var Log2 = require_Log();
     var Util2 = class {
@@ -150,11 +150,11 @@ var require_Util = __commonJS({
             "Completed installing Accenture SFMC DevTools"
           );
           return;
-        } else if (CONFIG2.mcdevVersion.charAt(0) === "#") {
-          installer = `accenture/sfmc-devtools${CONFIG2.mcdevVersion}`;
         } else if (!CONFIG2.mcdevVersion) {
           Log2.error("Please specify mcdev_version in pipeline & environment settings");
           throw new Error("Please specify mcdev_version in pipeline & environment settings");
+        } else if (CONFIG2.mcdevVersion.charAt(0) === "#") {
+          installer = `accenture/sfmc-devtools${CONFIG2.mcdevVersion}`;
         } else {
           installer = `mcdev@${CONFIG2.mcdevVersion}`;
         }
@@ -246,7 +246,7 @@ var require_Copado = __commonJS({
     "use strict";
     var fs = require("fs");
     var exec = require("child_process").exec;
-    var TYPES = require_mcdev_copado_d();
+    var TYPE = require_mcdev_copado_d();
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
@@ -344,15 +344,20 @@ var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
-CONFIG.credentialNameSource = process.env.credentialNameSource;
+CONFIG.credentialNameSource = process.env.credentialName;
 CONFIG.credentialNameTarget = null;
-CONFIG.credentials = process.env.credentials;
+CONFIG.client_id = process.env.client_id;
+CONFIG.client_secret = process.env.client_secret;
+CONFIG.auth_url = process.env.auth_url;
+CONFIG.account_id = process.env.account_id;
+CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.client_id}","client_secret":"${CONFIG.client_secret}","auth_url":"${CONFIG.auth_url}","account_id":"${CONFIG.account_id}"}}`;
+CONFIG.gitEmail = process.env.gitEmail;
 CONFIG.configFilePath = null;
 CONFIG.repoUrl = process.env.repoUrl;
 CONFIG.debug = process.env.debug === "true" ? true : false;
 CONFIG.installMcdevLocally = process.env.installMcdevLocally === "true" ? true : false;
 CONFIG.mainBranch = null;
-CONFIG.mcdevVersion = null;
+CONFIG.mcdevVersion = process.env.mcdev_version;
 CONFIG.metadataFilePath = null;
 CONFIG.source_mid = null;
 CONFIG.tmpDirectory = "../tmp";
@@ -381,10 +386,18 @@ async function run() {
   Log.debug("");
   Log.debug("Parameters");
   Log.debug("===================");
+  if ([CONFIG.client_id, CONFIG.client_secret, CONFIG.auth_url, CONFIG.account_id].includes()) {
+    Log.error(
+      `Could not find credentials: ${CONFIG.client_id}, ${CONFIG.client_secret}, ${CONFIG.auth_url}, ${CONFIG.account_id}`
+    );
+    throw new Error(
+      `Could not find credentials: ${CONFIG.client_id}, ${CONFIG.client_secret}, ${CONFIG.auth_url}, ${CONFIG.account_id}`
+    );
+  }
   try {
     CONFIG.credentials = JSON.parse(CONFIG.credentials);
   } catch (ex) {
-    Log.error("Could not parse credentials");
+    Log.error(`Could not parse credentials: ${CONFIG.credentials}`);
     throw ex;
   }
   Log.debug(CONFIG);
@@ -402,18 +415,24 @@ async function run() {
   }
   Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
   try {
-    Util.execCommand(null, ["git config --global --add safe.directory /tmp"]);
+    Util.execCommand(null, [
+      "git config --global --add safe.directory " + resolve(CONFIG.tmpDirectory)
+    ]);
   } catch {
-    try {
-      Util.execCommand(null, [
-        "git config --global --add safe.directory " + resolve(CONFIG.tmpDirectory)
-      ]);
-    } catch {
-      Log.error("Could not set tmp directoy as safe directory");
-    }
+    Log.error("Could not set tmp directoy as safe directory");
   }
   process.chdir(CONFIG.tmpDirectory);
   Log.debug(process.cwd());
+  try {
+    Log.info("");
+    Log.info("Adding git email");
+    Log.info("===================");
+    Util.execCommand(null, [`git config --global user.email "${CONFIG.gitEmail}"`]);
+    Log.info("");
+  } catch (ex) {
+    Log.error("adding git email failed: " + ex.message);
+    throw ex;
+  }
   try {
     Log.info("");
     Log.info("Preparing");

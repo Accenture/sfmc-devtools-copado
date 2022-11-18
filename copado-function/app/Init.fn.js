@@ -7,16 +7,22 @@ const Util = require('./common/Util');
 const Copado = require('./common/Copado');
 
 // credentials
-CONFIG.credentialNameSource = process.env.credentialNameSource;
+CONFIG.credentialNameSource = process.env.credentialName;
 CONFIG.credentialNameTarget = null;
-CONFIG.credentials = process.env.credentials;
+CONFIG.client_id = process.env.client_id;
+CONFIG.client_secret = process.env.client_secret;
+CONFIG.auth_url = process.env.auth_url;
+CONFIG.account_id = process.env.account_id;
+CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.client_id}","client_secret":"${CONFIG.client_secret}","auth_url":"${CONFIG.auth_url}","account_id":"${CONFIG.account_id}"}}`;
+CONFIG.gitEmail = process.env.gitEmail;
+
 // generic
 CONFIG.configFilePath = null;
 CONFIG.repoUrl = process.env.repoUrl;
 CONFIG.debug = process.env.debug === 'true' ? true : false;
 CONFIG.installMcdevLocally = process.env.installMcdevLocally === 'true' ? true : false;
 CONFIG.mainBranch = null;
-CONFIG.mcdevVersion = null;
+CONFIG.mcdevVersion = process.env.mcdev_version; // this will only be needed if installMcdevLocally=true
 CONFIG.metadataFilePath = null; // do not change - LWC depends on it! // not needed in this case, previous value: 'mcmetadata.json'
 CONFIG.source_mid = null;
 CONFIG.tmpDirectory = '../tmp';
@@ -54,10 +60,19 @@ async function run() {
     Log.debug('');
     Log.debug('Parameters');
     Log.debug('===================');
+    // if one of the elements present in the array are undefined, this error will be triggered
+    if ([CONFIG.client_id, CONFIG.client_secret, CONFIG.auth_url, CONFIG.account_id].includes()) {
+        Log.error(
+            `Could not find credentials: ${CONFIG.client_id}, ${CONFIG.client_secret}, ${CONFIG.auth_url}, ${CONFIG.account_id}`
+        );
+        throw new Error(
+            `Could not find credentials: ${CONFIG.client_id}, ${CONFIG.client_secret}, ${CONFIG.auth_url}, ${CONFIG.account_id}`
+        );
+    }
     try {
         CONFIG.credentials = JSON.parse(CONFIG.credentials);
     } catch (ex) {
-        Log.error('Could not parse credentials');
+        Log.error(`Could not parse credentials: ${CONFIG.credentials}`);
         throw ex;
     }
     Log.debug(CONFIG);
@@ -80,19 +95,27 @@ async function run() {
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
     // prevent git errors down the road
     try {
-        Util.execCommand(null, ['git config --global --add safe.directory /tmp']);
+        Util.execCommand(null, [
+            'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
+        ]);
     } catch {
-        try {
-            Util.execCommand(null, [
-                'git config --global --add safe.directory ' + resolve(CONFIG.tmpDirectory),
-            ]);
-        } catch {
-            Log.error('Could not set tmp directoy as safe directory');
-        }
+        Log.error('Could not set tmp directoy as safe directory');
     }
+
     // actually change working directory
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
+
+    try {
+        Log.info('');
+        Log.info('Adding git email');
+        Log.info('===================');
+        Util.execCommand(null, [`git config --global user.email "${CONFIG.gitEmail}"`]);
+        Log.info('');
+    } catch (ex) {
+        Log.error('adding git email failed: ' + ex.message);
+        throw ex;
+    }
 
     try {
         Log.info('');

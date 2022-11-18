@@ -41,12 +41,6 @@
 ## Typedefs
 
 <dl>
-<dt><a href="#MetadataItem">MetadataItem</a> : <code>object</code></dt>
-<dd></dd>
-<dt><a href="#EnvChildVar">EnvChildVar</a> : <code>object</code></dt>
-<dd></dd>
-<dt><a href="#CommitSelection">CommitSelection</a> : <code>object</code></dt>
-<dd></dd>
 <dt><a href="#EnvChildVar">EnvChildVar</a> : <code>object</code></dt>
 <dd></dd>
 <dt><a href="#CommitSelection">CommitSelection</a> : <code>object</code></dt>
@@ -67,7 +61,7 @@ handles downloading metadata
     * [.retrieveAndCommit(targetBU, commitSelectionArr)](#Deploy.retrieveAndCommit) ⇒ <code>Array.&lt;string&gt;</code>
     * [.commit([commitMsgLines])](#Deploy.commit) ⇒ <code>Array.&lt;string&gt;</code>
     * [.getCommitMessage(targetBU, commitSelectionArr)](#Deploy.getCommitMessage) ⇒ <code>Array.&lt;string&gt;</code>
-    * [._convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU)](#Deploy._convertCommitToDeltaPkgItems) ⇒ <code>Array.&lt;TYPES.DeltaPkgItem&gt;</code>
+    * [._convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU)](#Deploy._convertCommitToDeltaPkgItems) ⇒ <code>Array.&lt;TYPE.DeltaPkgItem&gt;</code>
     * [.getDeployFolder()](#Deploy.getDeployFolder) ⇒ <code>string</code>
     * [.updateMarketLists(sourceBU, targetBU, marketVariables)](#Deploy.updateMarketLists) ⇒ <code>void</code>
     * [.createDeltaPackage(deployFolder, commitSelectionArr, sourceBU)](#Deploy.createDeltaPackage) ⇒ <code>Promise.&lt;boolean&gt;</code>
@@ -88,7 +82,7 @@ retrieve the new values into the targets folder so it can be commited later.
 | Param | Type | Description |
 | --- | --- | --- |
 | targetBU | <code>string</code> | buname of source BU |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of committed components based on user selection |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of committed components based on user selection |
 
 <a name="Deploy.commit"></a>
 
@@ -113,19 +107,19 @@ helper for Deploy.retrieveAndCommit that creates a multi-line commit msg
 | Param | Type | Description |
 | --- | --- | --- |
 | targetBU | <code>string</code> | name of BU we deployed to incl. credential name |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of committed components based on user selection |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of committed components based on user selection |
 
 <a name="Deploy._convertCommitToDeltaPkgItems"></a>
 
-### Deploy.\_convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) ⇒ <code>Array.&lt;TYPES.DeltaPkgItem&gt;</code>
+### Deploy.\_convertCommitToDeltaPkgItems(commitSelectionArr, sourceBU) ⇒ <code>Array.&lt;TYPE.DeltaPkgItem&gt;</code>
 convert CommitSelection[] to DeltaPkgItem[]
 
 **Kind**: static method of [<code>Deploy</code>](#Deploy)  
-**Returns**: <code>Array.&lt;TYPES.DeltaPkgItem&gt;</code> - format required by mcdev.createDeltaPkg  
+**Returns**: <code>Array.&lt;TYPE.DeltaPkgItem&gt;</code> - format required by mcdev.createDeltaPkg  
 
 | Param | Type | Description |
 | --- | --- | --- |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of committed components based on user selection |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of committed components based on user selection |
 | sourceBU | <code>string</code> | buname of source BU |
 
 <a name="Deploy.getDeployFolder"></a>
@@ -158,7 +152,7 @@ return whether the delta package is empty or not
 | Param | Type | Description |
 | --- | --- | --- |
 | deployFolder | <code>string</code> | path |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of committed components based on user selection |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of committed components based on user selection |
 | sourceBU | <code>string</code> | buname of source BU |
 
 <a name="Deploy._getConfigForToBranch"></a>
@@ -197,7 +191,7 @@ In case of errors, the deployment is not stopped.
 | Param | Type | Description |
 | --- | --- | --- |
 | bu | <code>string</code> | name of BU |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of committed components based on user selection |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of committed components based on user selection |
 | deployResult | <code>object</code> | result of deployment |
 
 <a name="Deploy.merge"></a>
@@ -221,7 +215,7 @@ applies market values of target onto name and key of commitSelectionArr
 
 | Param | Type | Description |
 | --- | --- | --- |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of items to be added |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of items to be added |
 
 <a name="Retrieve"></a>
 
@@ -281,7 +275,7 @@ sure we have only components that really exist in the BU.
 | Param | Type | Description |
 | --- | --- | --- |
 | sourceBU | <code>string</code> | specific subfolder for downloads |
-| commitSelectionArr | <code>Array.&lt;TYPES.CommitSelection&gt;</code> | list of items to be added |
+| commitSelectionArr | <code>Array.&lt;TYPE.CommitSelection&gt;</code> | list of items to be added |
 
 <a name="Commit.addSelectedComponents"></a>
 
@@ -318,7 +312,7 @@ methods to handle interaction with the copado platform
     * [.attachJson(localPath, [parentSfid], [async], [preMsg])](#Copado.attachJson) ⇒ <code>void</code>
     * [.attachLog(localPath)](#Copado.attachLog) ⇒ <code>Promise.&lt;void&gt;</code>
     * [._downloadFile(fileSFID, [preMsg])](#Copado._downloadFile) ⇒ <code>void</code>
-    * [.getJsonFile(fileSFID, fileName, [preMsg])](#Copado.getJsonFile) ⇒ <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+    * [.getJsonFile(fileSFID, fileName, [preMsg])](#Copado.getJsonFile) ⇒ <code>Array.&lt;TYPE.CommitSelection&gt;</code>
     * [.checkoutSrc(workingBranch, [createBranch])](#Copado.checkoutSrc) ⇒ <code>void</code>
     * [.deleteBranch(featureBranch)](#Copado.deleteBranch) ⇒ <code>void</code>
     * [.uploadToolLogs()](#Copado.uploadToolLogs) ⇒ <code>Promise.&lt;void&gt;</code>
@@ -374,11 +368,11 @@ download file to CWD with the name that was stored in Salesforce
 
 <a name="Copado.getJsonFile"></a>
 
-### Copado.getJsonFile(fileSFID, fileName, [preMsg]) ⇒ <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### Copado.getJsonFile(fileSFID, fileName, [preMsg]) ⇒ <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 downloads & parses JSON file from Salesforce
 
 **Kind**: static method of [<code>Copado</code>](#Copado)  
-**Returns**: <code>Array.&lt;TYPES.CommitSelection&gt;</code> - commitSelectionArr  
+**Returns**: <code>Array.&lt;TYPE.CommitSelection&gt;</code> - commitSelectionArr  
 
 | Param | Type | Description |
 | --- | --- | --- |
@@ -616,7 +610,7 @@ helper that converts the copado-internal format for "environment variables" into
 
 | Param | Type | Description |
 | --- | --- | --- |
-| envVarArr | <code>Array.&lt;TYPES.EnvVar&gt;</code> | - |
+| envVarArr | <code>Array.&lt;TYPE.EnvVar&gt;</code> | - |
 
 <a name="Util._convertEnvChildVars"></a>
 
@@ -628,7 +622,7 @@ helper that converts the copado-internal format for "environment variables" into
 
 | Param | Type | Description |
 | --- | --- | --- |
-| envChildVarArr | <code>Array.&lt;TYPES.EnvChildVar&gt;</code> | - |
+| envChildVarArr | <code>Array.&lt;TYPE.EnvChildVar&gt;</code> | - |
 
 <a name="Util.getBuName"></a>
 
@@ -651,35 +645,16 @@ main method that combines runs this function
 **Kind**: global function  
 
 * [run()](#run) ⇒ <code>void</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-**Kind**: inner property of [<code>run</code>](#run)  
-<a name="run"></a>
-
-## run() ⇒ <code>void</code>
-main method that combines runs this function
-
-**Kind**: global function  
-
-* [run()](#run) ⇒ <code>void</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-
-<a name="run..commitSelectionArr"></a>
-
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-**Kind**: inner property of [<code>run</code>](#run)  
-<a name="run..commitSelectionArr"></a>
-
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
 <a name="run"></a>
 
@@ -689,16 +664,16 @@ main method that combines runs this function
 **Kind**: global function  
 
 * [run()](#run) ⇒ <code>void</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
 <a name="run"></a>
 
@@ -708,62 +683,36 @@ main method that combines runs this function
 **Kind**: global function  
 
 * [run()](#run) ⇒ <code>void</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
-    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
 <a name="run..commitSelectionArr"></a>
 
-### run~commitSelectionArr : <code>Array.&lt;TYPES.CommitSelection&gt;</code>
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 **Kind**: inner property of [<code>run</code>](#run)  
-<a name="MetadataItem"></a>
+<a name="run"></a>
 
-## MetadataItem : <code>object</code>
-**Kind**: global typedef  
-**Properties**
+## run() ⇒ <code>void</code>
+main method that combines runs this function
 
-| Name | Type | Description |
-| --- | --- | --- |
-| n | <code>string</code> | Name |
-| k | <code>string</code> | Key (Customer Key / External Key) |
-| t | <code>string</code> | metadata type |
-| [cd] | <code>string</code> | created date |
-| [cb] | <code>string</code> | created by name |
-| [ld] | <code>string</code> | last modified date |
-| [lb] | <code>string</code> | last modified by name |
+**Kind**: global function  
 
-<a name="EnvChildVar"></a>
+* [run()](#run) ⇒ <code>void</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+    * [~commitSelectionArr](#run..commitSelectionArr) : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
 
-## EnvChildVar : <code>object</code>
-**Kind**: global typedef  
-**Properties**
+<a name="run..commitSelectionArr"></a>
 
-| Name | Type | Description |
-| --- | --- | --- |
-| value | <code>string</code> | variable value |
-| scope | <code>string</code> | ? |
-| name | <code>string</code> | variable name |
-| environmentVariables | <code>Array.&lt;EnvVar&gt;</code> | list of environment variables |
-| environmentName | <code>string</code> | name of environment in Copado |
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+**Kind**: inner property of [<code>run</code>](#run)  
+<a name="run..commitSelectionArr"></a>
 
-<a name="CommitSelection"></a>
-
-## CommitSelection : <code>object</code>
-**Kind**: global typedef  
-**Properties**
-
-| Name | Type | Description |
-| --- | --- | --- |
-| t | <code>string</code> | type |
-| n | <code>string</code> | name |
-| m | <code>string</code> | ??? |
-| j | <code>string</code> | json string with exta info |
-| c | <code>&#x27;sfmc&#x27;</code> | system |
-| a | <code>&#x27;add&#x27;</code> | action |
-
+### run~commitSelectionArr : <code>Array.&lt;TYPE.CommitSelection&gt;</code>
+**Kind**: inner property of [<code>run</code>](#run)  
 <a name="EnvChildVar"></a>
 
 ## EnvChildVar : <code>object</code>
