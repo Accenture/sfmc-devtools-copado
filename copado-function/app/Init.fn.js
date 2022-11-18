@@ -26,6 +26,9 @@ CONFIG.mcdevVersion = process.env.mcdev_version; // this will only be needed if 
 CONFIG.metadataFilePath = null; // do not change - LWC depends on it! // not needed in this case, previous value: 'mcmetadata.json'
 CONFIG.source_mid = null;
 CONFIG.tmpDirectory = '../tmp';
+CONFIG.userEmail = process.env.git_email;
+CONFIG.userName = process.env.git_name;
+
 // retrieve
 CONFIG.source_sfid = null;
 // commit
@@ -108,15 +111,17 @@ async function run() {
 
     try {
         Log.info('');
-        Log.info('Adding git email');
+        Log.info('Adding git email and name');
         Log.info('===================');
-        Util.execCommand(null, [`git config --global user.email "${CONFIG.gitEmail}"`]);
         Log.info('');
+        Util.execCommand(null, [
+            `git config --global user.email "${CONFIG.userEmail}"`,
+            `git config --global user.name "${CONFIG.userName}"`,
+        ]);
     } catch (ex) {
-        Log.error('adding git email failed: ' + ex.message);
+        Log.error('adding git email and name failed: ' + ex.message);
         throw ex;
     }
-
     try {
         Log.info('');
         Log.info('Preparing');
