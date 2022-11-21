@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-18T15:41:44.283Z)
+ * mcdev-copado v1.1.2 (built 2022-11-21T16:06:40.873Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -250,11 +250,11 @@ var require_Copado = __commonJS({
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
-      static mcdevInit(credentials, credentialName, url) {
+      static mcdevInit(credentials, credentialName, options) {
         Util2.execCommand(
-          `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${url}", ${credentials[credentialName].account_id}`,
+          `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
           [
-            `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "false" --y.gitPush "true"`
+            `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBus}" --y.gitPush "${options.gitPush}"`
           ],
           "Mcdev initialized!"
         );
@@ -351,9 +351,10 @@ CONFIG.client_secret = process.env.client_secret;
 CONFIG.auth_url = process.env.auth_url;
 CONFIG.account_id = process.env.account_id;
 CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.client_id}","client_secret":"${CONFIG.client_secret}","auth_url":"${CONFIG.auth_url}","account_id":"${CONFIG.account_id}"}}`;
-CONFIG.gitCredentials = process.env.gitCredentials;
 CONFIG.configFilePath = null;
 CONFIG.repoUrl = process.env.repoUrl;
+CONFIG.downloadBUs = process.env.downloadBUs === "true" ? true : false;
+CONFIG.gitPush = process.env.gitPush === "true" ? true : false;
 CONFIG.debug = process.env.debug === "true" ? true : false;
 CONFIG.installMcdevLocally = process.env.installMcdevLocally === "true" ? true : false;
 CONFIG.mainBranch = null;
@@ -444,9 +445,22 @@ async function run() {
     Log.info("===================");
     Log.info("");
     Util.provideMCDevTools();
-    Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
   } catch (ex) {
-    Log.error("initializing failed: " + ex.message);
+    Log.error("Preparing failed: " + ex.message);
+    throw ex;
+  }
+  try {
+    Log.info("");
+    Log.info("Initializing mcdev tools");
+    Log.info("===================");
+    Log.info("");
+    Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
+      url: CONFIG.repoUrl,
+      downloadBUs: CONFIG.downloadBUs,
+      gitPush: CONFIG.gitPush
+    });
+  } catch (ex) {
+    Log.error("Initializing failed: " + ex.message);
     throw ex;
   }
   Log.info("");
