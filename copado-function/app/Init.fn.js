@@ -18,6 +18,8 @@ CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.c
 // generic
 CONFIG.configFilePath = null;
 CONFIG.repoUrl = process.env.repoUrl;
+CONFIG.downloadBUs = process.env.downloadBUs === 'true' ? true : false;
+CONFIG.gitPush = process.env.gitPush === 'true' ? true : false;
 CONFIG.debug = process.env.debug === 'true' ? true : false;
 CONFIG.installMcdevLocally = process.env.installMcdevLocally === 'true' ? true : false;
 CONFIG.mainBranch = null;
@@ -136,7 +138,11 @@ async function run() {
         Log.info('Initializing mcdev tools');
         Log.info('===================');
         Log.info('');
-        Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
+        Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
+            url: CONFIG.repoUrl,
+            downloadBUs: CONFIG.downloadBUs,
+            gitPush: CONFIG.gitPush,
+        });
     } catch (ex) {
         Log.error('Initializing failed: ' + ex.message);
         throw ex;
