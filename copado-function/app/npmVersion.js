@@ -1,20 +1,14 @@
 /* eslint-disable unicorn/prefer-top-level-await */
+
+/**
+ * helper class that wraps typical version release tasks into one script
+ */
+
 const execSync = require('node:child_process').execSync;
 
 const args = process.argv.slice(2);
 const versionIncreaseType = args[0];
 
-/**
- *
- * @param command
- */
-function exec(command) {
-    console.log('⚡ ' + command);
-    execSync(command, {
-        stdio: [0, 1, 2],
-        stderr: 'inherit',
-    });
-}
 (async () => {
     if (!['major', 'minor', 'patch'].includes(versionIncreaseType)) {
         throw new Error(
@@ -43,3 +37,16 @@ function exec(command) {
 
     exec('git tag -a v' + newVersion + ' -m "Release v' + newVersion + '"');
 })();
+
+/**
+ * helper class that wraps showing the executed command and its output
+ *
+ * @param {string} command the cli command to execute synchronously
+ */
+function exec(command) {
+    console.log('⚡ ' + command); // eslint-disable-line no-console
+    execSync(command, {
+        stdio: [0, 1, 2],
+        stderr: 'inherit',
+    });
+}
