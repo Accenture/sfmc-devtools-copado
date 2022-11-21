@@ -45,7 +45,10 @@
         "docs": "jsdoc2md --files copado-function/app/*.fn.js copado-function/app/common/**/*.js copado-function/app/types/**/*.js > copado-function/docs/documentation.md",
         "build": "node ./copado-function/app/esbuild.js",
         "build:watch": "node ./copado-function/app/esbuild.js --watch",
-        "build:docs": "run-p build docs"
+        "build:docs": "run-p build docs",
+        "version:major": "npm version --no-commit-hooks major && npm run build:docs",
+        "version:minor": "npm version --no-commit-hooks minor && npm run build:docs",
+        "version:patch": "npm version --no-commit-hooks patch && npm run build:docs"
     },
     "devDependencies": {
         "@lwc/eslint-plugin-lwc": "^1.5.0",
