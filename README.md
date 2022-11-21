@@ -37,6 +37,44 @@ We currently expect mcdev@4.1.12. Please ensure you use this version or higher i
 
 The code is maintained by Accenture with support from Copado. If you want to contribute, simply clone the repo and create pull requests back to our repo's main branch. We will review your suggestion and once everything is OK, merge it into the main code base.
 
+### Set up your local version of the code
+
+#### Pre-requisites
+
+<a id="markdown-pre-requisites" name="pre-requisites"></a>
+
+##### Install Node.js with npm
+
+<a id="markdown-install-node.js-with-npm" name="install-node.js-with-npm"></a>
+
+1. To check if it is already installed, at the OS command prompt, type: `node --version`
+   - If this command reports Node version 14.16.x or later, you’re done—proceed to the next installation. If the reported version is earlier than 14.16.x, continue to step 2.
+   - If you get a “command not found” error message, continue to step 2.
+2. In a web browser, go to [nodejs.org](https://nodejs.org)
+3. Download and run the latest **LTS** installer for your operating system.
+4. When the installer finishes, try step 1 again. If it fails, please restart your terminal. If it still does not work, reboot your computer and try the version check then.
+
+##### Install the Git Command Line
+
+<a id="markdown-install-the-git-command-line" name="install-the-git-command-line"></a>
+
+1. To check if git is already installed, at the OS command prompt, type: `git version`
+   - If this command reports a git version such as “git version 2.31.0” (or "git version 2.31.0.windows.1" on Windows), you’re done. Proceed to native Android or iOS environment setup.
+   - If you get a “command not found” error message, continue to step 2.
+2. Go to [git-scm.com/downloads](https://git-scm.com/downloads).
+3. Under Downloads, click the icon for your operating system.
+4. Run the installer.
+5. When the installer finishes, try step 1 again. If it fails, please restart your terminal. If it still does not work, reboot your computer and try the version check then.
+
+#### Next Steps
+
+1. clone the repo
+2. set up the connection to your SFDC test environment
+3. set up an installed package in Marketing Cloud (see [mcdev readme.md](https://github.com/Accenture/sfmc-devtools/blob/main/README.md#2-getting-started))
+4. Ensure to set up your environment files in `copado-function/app/environment`
+5. Ensure you installed [copado-mock](https://www.npmjs.com/package/copado-mock) and [copado-git-get-mock](https://www.npmjs.com/package/copado-git-get-mock)
+6. create the empty folder `/copado-function/tmp`
+
 ### Copado Functions
 
 The bridge between [Accenture SFMC DevTools](https://github.com/Accenture/sfmc-devtools) and [Copado DevOps Platform](https://www.copado.com/) is written in [Node.js](https://nodejs.org/en/).
@@ -47,7 +85,7 @@ Its source code is located in **[/copado-function/app](https://github.com/Accent
 
 The **[/copado-function/config](https://github.com/Accenture/sfmc-devtools-copado/tree/master/copado-function/config)** holds definitions on how Copado functions and also `System Properties` of various Salesforce objects should be set up in Copado to work properly.
 
-#### Running functions
+#### Publish function updates
 
 The files that shall be used on your server are auto-generated into **[/copado-function/dist](https://github.com/Accenture/sfmc-devtools-copado/tree/master/copado-function/dist)**. Do not edit files in here. Instead, run `npm run build` for a 1-time build or `npm run build:watch` to have a continuously running script in the background that updates the dist folder whenever you make changes to one of the source files in the app directory.
 
