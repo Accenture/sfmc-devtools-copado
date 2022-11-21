@@ -1,4 +1,6 @@
 /* eslint-disable unicorn/prefer-top-level-await */
+'use strict';
+
 const esbuild = require('esbuild');
 const packageJson = require('../../package.json');
 const eslintrc = require('./.eslintrc.json');

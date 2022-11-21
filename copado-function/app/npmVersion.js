@@ -1,4 +1,5 @@
 /* eslint-disable unicorn/prefer-top-level-await */
+'use strict';
 
 /**
  * helper class that wraps typical version release tasks into one script

@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 const fs = require('node:fs');
 const execSync = require('node:child_process').execSync;
