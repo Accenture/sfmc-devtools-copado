@@ -127,9 +127,18 @@ async function run() {
         Log.info('===================');
         Log.info('');
         Util.provideMCDevTools();
+    } catch (ex) {
+        Log.error('Preparing failed: ' + ex.message);
+        throw ex;
+    }
+    try {
+        Log.info('');
+        Log.info('Initializing mcdev tools');
+        Log.info('===================');
+        Log.info('');
         Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, CONFIG.repoUrl);
     } catch (ex) {
-        Log.error('initializing failed: ' + ex.message);
+        Log.error('Initializing failed: ' + ex.message);
         throw ex;
     }
 
