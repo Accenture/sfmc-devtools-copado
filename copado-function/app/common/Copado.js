@@ -14,13 +14,13 @@ class Copado {
      *
      * @param {object} credentials the credentials for the salesforce marketing cloud
      * @param {string }credentialName the credential name
-     * @param {string} url the git remote URL
+     * @param {object} options contains the url, the downloadBUs and the gitPush values
      */
-    static mcdevInit(credentials, credentialName, url) {
+    static mcdevInit(credentials, credentialName, options) {
         Util.execCommand(
-            `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${url}", ${credentials[credentialName].account_id}`,
+            `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
             [
-                `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "false" --y.gitPush "true"`,
+                `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBUs}" --y.gitPush "${options.gitPush}"`,
             ],
             'Mcdev initialized!'
         );
