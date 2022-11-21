@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-17T12:49:28.085Z)
+ * mcdev-copado v1.2.0 (built 2022-11-21T11:25:57.041Z)
  * Function: Retrieve.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -347,7 +347,7 @@ var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
-CONFIG.mcdevCopadoVersion = "1.1.2";
+CONFIG.mcdevCopadoVersion = "1.2.0";
 CONFIG.credentialNameSource = process.env.credentialNameSource;
 CONFIG.credentialNameTarget = null;
 CONFIG.credentials = process.env.credentials;

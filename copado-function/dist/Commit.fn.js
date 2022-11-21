@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-17T12:49:31.548Z)
+ * mcdev-copado v1.2.0 (built 2022-11-21T11:25:59.729Z)
  * Function: Commit.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -428,7 +428,7 @@ var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
 var Commit = require_Commit();
-CONFIG.mcdevCopadoVersion = "1.1.2";
+CONFIG.mcdevCopadoVersion = "1.2.0";
 CONFIG.credentialNameSource = process.env.credentialNameSource;
 CONFIG.credentialNameTarget = null;
 CONFIG.credentials = process.env.credentials;
