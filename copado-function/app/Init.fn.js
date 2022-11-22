@@ -53,8 +53,8 @@ CONFIG.promotionName = null; // The promotion name of a PR
 CONFIG.target_mid = null;
 // init
 CONFIG.repoUrl = process.env.repoUrl;
-CONFIG.downloadBUs = process.env.downloadBUs === 'true' ? true : false;
-CONFIG.gitPush = process.env.gitPush === 'true' ? true : false;
+CONFIG.downloadBUs = process.env.downloadBUs === 'false' ? false : true;
+CONFIG.gitPush = process.env.gitPush === 'false' ? false : true;
 
 /**
  * main method that combines runs this function
