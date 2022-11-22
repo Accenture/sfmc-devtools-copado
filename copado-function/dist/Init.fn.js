@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.2.0 (built 2022-11-22T10:27:33.326Z)
+ * mcdev-copado v1.2.0 (built 2022-11-22T11:00:11.237Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -77,7 +77,7 @@ var require_mcdev_copado_d = __commonJS({
 var require_Util = __commonJS({
   "common/Util.js"(exports, module2) {
     "use strict";
-    var fs = require("fs");
+    var fs2 = require("fs");
     var execSync = require("child_process").execSync;
     var TYPE = require_mcdev_copado_d();
     var CONFIG2 = require_Config();
@@ -85,7 +85,7 @@ var require_Util = __commonJS({
     var Util2 = class {
       static saveJsonFile(localPath, jsObj, beautify) {
         const jsonString = beautify ? JSON.stringify(jsObj, null, 4) : JSON.stringify(jsObj);
-        fs.writeFileSync(localPath, jsonString, "utf8");
+        fs2.writeFileSync(localPath, jsonString, "utf8");
       }
       static push(destinationBranch) {
         Util2.execCommand(
@@ -135,7 +135,7 @@ var require_Util = __commonJS({
         return exitCode;
       }
       static provideMCDevTools() {
-        if (fs.existsSync("package.json")) {
+        if (fs2.existsSync("package.json")) {
           Log2.debug("package.json found, assuming npm was already initialized");
         } else {
           Util2.execCommand("Initializing npm", ["npm init -y"], "Completed initializing NPM");
@@ -219,10 +219,10 @@ var require_Util = __commonJS({
         if (!mid) {
           throw new Error('System Property "mid" not set');
         }
-        if (!fs.existsSync(CONFIG2.configFilePath)) {
+        if (!fs2.existsSync(CONFIG2.configFilePath)) {
           throw new Error("Could not find config file " + CONFIG2.configFilePath);
         }
-        const config = JSON.parse(fs.readFileSync(CONFIG2.configFilePath, "utf8"));
+        const config = JSON.parse(fs2.readFileSync(CONFIG2.configFilePath, "utf8"));
         if (config.credentials[credName] && config.credentials[credName].businessUnits) {
           const myBuNameArr = Object.keys(config.credentials[credName].businessUnits).filter(
             (buName) => config.credentials[credName].businessUnits[buName] == mid
@@ -245,7 +245,7 @@ var require_Util = __commonJS({
 var require_Copado = __commonJS({
   "common/Copado.js"(exports, module2) {
     "use strict";
-    var fs = require("fs");
+    var fs2 = require("fs");
     var exec = require("child_process").exec;
     var TYPE = require_mcdev_copado_d();
     var Log2 = require_Log();
@@ -289,7 +289,7 @@ var require_Copado = __commonJS({
       }
       static getJsonFile(fileSFID, fileName, preMsg) {
         Copado2._downloadFile(fileSFID, preMsg);
-        return JSON.parse(fs.readFileSync(fileName, "utf8"));
+        return JSON.parse(fs2.readFileSync(fileName, "utf8"));
       }
       static checkoutSrc(workingBranch, createBranch = false) {
         Util2.execCommand(
@@ -314,7 +314,7 @@ var require_Copado = __commonJS({
         Log2.debug("Getting mcdev logs");
         try {
           const logsAttached = [];
-          for (const file of fs.readdirSync("logs")) {
+          for (const file of fs2.readdirSync("logs")) {
             Log2.debug("- " + file);
             logsAttached.push(Copado2.attachLog("logs/" + file));
           }
@@ -332,6 +332,7 @@ var require_Copado = __commonJS({
 
 // Init.fn.js
 var resolve = require("path").resolve;
+var fs = require("fs");
 var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
@@ -374,8 +375,8 @@ CONFIG.promotionBranch = null;
 CONFIG.promotionName = null;
 CONFIG.target_mid = null;
 CONFIG.repoUrl = process.env.repoUrl;
-CONFIG.downloadBUs = process.env.downloadBUs === "true" ? true : false;
-CONFIG.gitPush = process.env.gitPush === "true" ? true : false;
+CONFIG.downloadBUs = process.env.downloadBUs === "false" ? false : true;
+CONFIG.gitPush = process.env.gitPush === "false" ? false : true;
 async function run() {
   Log.info("McdevInit.js started");
   Log.debug("");
@@ -415,6 +416,9 @@ async function run() {
     ]);
   } catch {
     Log.error("Could not set tmp directoy as safe directory");
+  }
+  if (!fs.existsSync(CONFIG.tmpDirectory)) {
+    fs.mkdirSync(CONFIG.tmpDirectory);
   }
   process.chdir(CONFIG.tmpDirectory);
   Log.debug(process.cwd());

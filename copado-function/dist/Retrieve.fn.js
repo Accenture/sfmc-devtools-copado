@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.2.0 (built 2022-11-22T10:27:32.381Z)
+ * mcdev-copado v1.2.0 (built 2022-11-22T11:00:08.542Z)
  * Function: Retrieve.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme

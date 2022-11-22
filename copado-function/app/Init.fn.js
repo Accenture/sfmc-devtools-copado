@@ -2,6 +2,7 @@
 'use strict';
 
 const resolve = require('node:path').resolve;
+const fs = require('node:fs');
 const CONFIG = require('./common/Config');
 const Log = require('./common/Log');
 const Util = require('./common/Util');
@@ -96,6 +97,7 @@ async function run() {
         Util.execCommand(null, 'npm --version', null);
         Util.execCommand(null, 'node --version', null);
         Util.execCommand(null, 'git version', null);
+        Util.execCommand(null, 'mcdev --version', null);
     }
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
@@ -109,6 +111,9 @@ async function run() {
     }
 
     // actually change working directory
+    if (!fs.existsSync(CONFIG.tmpDirectory)) {
+        fs.mkdirSync(CONFIG.tmpDirectory);
+    }
     process.chdir(CONFIG.tmpDirectory);
     Log.debug(process.cwd());
 
@@ -156,7 +161,7 @@ class Init {
     /**
      *
      * @param {object} credentials the credentials for the salesforce marketing cloud
-     * @param {string }credentialName the credential name
+     * @param {string} credentialName the credential name
      * @param {object} options contains the url, the downloadBUs and the gitPush values
      */
     static mcdevInit(credentials, credentialName, options) {
