@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.1.2 (built 2022-11-21T16:06:40.873Z)
+ * mcdev-copado v1.1.2 (built 2022-11-22T09:51:50.911Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -250,15 +250,6 @@ var require_Copado = __commonJS({
     var Log2 = require_Log();
     var Util2 = require_Util();
     var Copado2 = class {
-      static mcdevInit(credentials, credentialName, options) {
-        Util2.execCommand(
-          `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
-          [
-            `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBUs}" --y.gitPush "${options.gitPush}"`
-          ],
-          "Mcdev initialized!"
-        );
-      }
       static attachJson(localPath, parentSfid, async = false, preMsg) {
         Copado2._attachFile(localPath, async, parentSfid, preMsg);
       }
@@ -349,14 +340,11 @@ CONFIG.credentialNameTarget = null;
 CONFIG.client_id = process.env.client_id;
 CONFIG.client_secret = process.env.client_secret;
 CONFIG.auth_url = process.env.auth_url;
-CONFIG.account_id = process.env.account_id;
+CONFIG.account_id = process.env.enterprise_id;
 CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.client_id}","client_secret":"${CONFIG.client_secret}","auth_url":"${CONFIG.auth_url}","account_id":"${CONFIG.account_id}"}}`;
 CONFIG.configFilePath = null;
-CONFIG.repoUrl = process.env.repoUrl;
-CONFIG.downloadBUs = process.env.downloadBUs === "true" ? true : false;
-CONFIG.gitPush = process.env.gitPush === "true" ? true : false;
 CONFIG.debug = process.env.debug === "true" ? true : false;
-CONFIG.installMcdevLocally = process.env.installMcdevLocally === "true" ? true : false;
+CONFIG.installMcdevLocally = null;
 CONFIG.mainBranch = null;
 CONFIG.mcdevVersion = process.env.mcdev_version;
 CONFIG.metadataFilePath = null;
@@ -384,6 +372,9 @@ CONFIG.merge_strategy = null;
 CONFIG.promotionBranch = null;
 CONFIG.promotionName = null;
 CONFIG.target_mid = null;
+CONFIG.repoUrl = process.env.repoUrl;
+CONFIG.downloadBUs = process.env.downloadBUs === "true" ? true : false;
+CONFIG.gitPush = process.env.gitPush === "true" ? true : false;
 async function run() {
   Log.info("McdevInit.js started");
   Log.debug("");
@@ -441,20 +432,10 @@ async function run() {
   }
   try {
     Log.info("");
-    Log.info("Preparing");
-    Log.info("===================");
-    Log.info("");
-    Util.provideMCDevTools();
-  } catch (ex) {
-    Log.error("Preparing failed: " + ex.message);
-    throw ex;
-  }
-  try {
-    Log.info("");
     Log.info("Initializing mcdev tools");
     Log.info("===================");
     Log.info("");
-    Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
+    Init.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
       url: CONFIG.repoUrl,
       downloadBUs: CONFIG.downloadBUs,
       gitPush: CONFIG.gitPush
@@ -469,4 +450,15 @@ async function run() {
   Log.info("McdevInit.js done");
   Copado.uploadToolLogs();
 }
+var Init = class {
+  static mcdevInit(credentials, credentialName, options) {
+    Util.execCommand(
+      `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
+      [
+        `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBUs}" --y.gitPush "${options.gitPush}"`
+      ],
+      "Mcdev initialized!"
+    );
+  }
+};
 run();

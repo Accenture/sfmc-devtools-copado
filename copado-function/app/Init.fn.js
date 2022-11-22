@@ -17,11 +17,8 @@ CONFIG.credentials = `{"${CONFIG.credentialNameSource}":{"client_id":"${CONFIG.c
 
 // generic
 CONFIG.configFilePath = null;
-CONFIG.repoUrl = process.env.repoUrl;
-CONFIG.downloadBUs = process.env.downloadBUs === 'true' ? true : false;
-CONFIG.gitPush = process.env.gitPush === 'true' ? true : false;
 CONFIG.debug = process.env.debug === 'true' ? true : false;
-CONFIG.installMcdevLocally = process.env.installMcdevLocally === 'true' ? true : false;
+CONFIG.installMcdevLocally = null;
 CONFIG.mainBranch = null;
 CONFIG.mcdevVersion = process.env.mcdev_version; // this will only be needed if installMcdevLocally=true
 CONFIG.metadataFilePath = null; // do not change - LWC depends on it! // not needed in this case, previous value: 'mcmetadata.json'
@@ -53,6 +50,10 @@ CONFIG.merge_strategy = null; // set default merge strategy
 CONFIG.promotionBranch = null; // The promotion branch of a PR
 CONFIG.promotionName = null; // The promotion name of a PR
 CONFIG.target_mid = null;
+// init
+CONFIG.repoUrl = process.env.repoUrl;
+CONFIG.downloadBUs = process.env.downloadBUs === 'true' ? true : false;
+CONFIG.gitPush = process.env.gitPush === 'true' ? true : false;
 
 /**
  * main method that combines runs this function
@@ -123,22 +124,13 @@ async function run() {
         Log.error('adding git email and name failed: ' + ex.message);
         throw ex;
     }
-    try {
-        Log.info('');
-        Log.info('Preparing');
-        Log.info('===================');
-        Log.info('');
-        Util.provideMCDevTools();
-    } catch (ex) {
-        Log.error('Preparing failed: ' + ex.message);
-        throw ex;
-    }
+
     try {
         Log.info('');
         Log.info('Initializing mcdev tools');
         Log.info('===================');
         Log.info('');
-        Copado.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
+        Init.mcdevInit(CONFIG.credentials, CONFIG.credentialNameSource, {
             url: CONFIG.repoUrl,
             downloadBUs: CONFIG.downloadBUs,
             gitPush: CONFIG.gitPush,
@@ -154,6 +146,27 @@ async function run() {
     Log.info('McdevInit.js done');
 
     Copado.uploadToolLogs();
+}
+
+/**
+ * Class for Init function
+ */
+class Init {
+    /**
+     *
+     * @param {object} credentials the credentials for the salesforce marketing cloud
+     * @param {string }credentialName the credential name
+     * @param {object} options contains the url, the downloadBUs and the gitPush values
+     */
+    static mcdevInit(credentials, credentialName, options) {
+        Util.execCommand(
+            `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
+            [
+                `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBUs}" --y.gitPush "${options.gitPush}"`,
+            ],
+            'Mcdev initialized!'
+        );
+    }
 }
 
 run(); // eslint-disable-line unicorn/prefer-top-level-await
