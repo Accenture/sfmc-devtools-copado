@@ -1,4 +1,5 @@
 #!/usr/bin/env node
+'use strict';
 
 const resolve = require('node:path').resolve;
 const TYPE = require('./types/mcdev-copado.d');
