@@ -23,7 +23,7 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
-import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
+import executeRetrieve from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
 
 // Apex functions to retrieve Recorddata from LWC
@@ -307,9 +307,18 @@ export default class mcdo_RetrieveTable extends LightningElement {
         this.loadingState(true, "Starting Retrieve");
 
         try {
-            const jobExecutionId = await ExecuteRetrieveFromCopado({
+            const jobExecutionId = await executeRetrieve({
                 userStoryId: this.userStoryId
             });
+
+            console.log(`jobExecutionId: ${jobExecutionId} - daniel`);
+
+            // this.resultId = details.resultId;
+            // this.status = details.status;
+            // this.progress = details.progress;
+            // this.stepName = details.stepName;
+            // this.lastModified = details.lastModified;
+            // this.jobIsRunning = !details.isCompleted;
             // TODO get result ID from Job step related to job execution
             //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
@@ -325,6 +334,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 this.selectedRows = this.selectedRows.map(({ id }) => id);
             }
         }
+        console.log("ended - daniel");
     }
 
     /**
@@ -349,6 +359,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
+                    console.log("its not completed yet - daniel");
+                    console.log(`stepStatus: ${JSON.stringify(stepStatus)} - daniel`);
                 } catch {
                     // ignore
                 }
