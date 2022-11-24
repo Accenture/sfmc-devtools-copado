@@ -349,7 +349,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         try {
             let details = await getJobProgress({ jobExecutionId: this.jobExecutionId });
             this.resultId = details.resultId;
-            this.status = details.status;
+            this.progressStatus = details.status;
             this.progress = details.progress;
             this.stepName = details.stepName;
             this.lastModified = details.lastModified;
