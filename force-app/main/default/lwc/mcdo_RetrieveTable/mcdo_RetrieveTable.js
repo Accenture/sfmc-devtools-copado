@@ -23,8 +23,7 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
-import executeRetrieve from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
-import getJobProgress from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getJobProgress";
+import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
 
 // Apex functions to retrieve Recorddata from LWC
@@ -306,26 +305,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
      */
     async retrieve() {
         this.loadingState(true, "Starting Retrieve");
-        // update the UI immediately, clearing any previous values
-        this.jobExecutionId = null;
-        this.progressStatus = "Requesting";
-        this.lastModified = new Date();
-        this.progress = "";
-        this.jobIsRunning = true;
-        this.showProgress = true;
 
         try {
-            const jobExecutionId = await executeRetrieve({
+            const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
-
-            console.log(`jobExecutionId: ${jobExecutionId} - daniel`);
-
-            // Start the polling process to track the job via UI
-            this.jobExecutionId = jobExecutionId;
-            this.jobExecutionIdUrl = "/" + jobExecutionId;
-            this.poll(() => this.refreshJobProgress());
-
             // TODO get result ID from Job step related to job execution
             //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
@@ -340,62 +324,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
             if (this.selectedRows.length > 0) {
                 this.selectedRows = this.selectedRows.map(({ id }) => id);
             }
-        }
-        console.log("ended - daniel");
-    }
-
-    // read the job progress and assign the UI properties
-    async refreshJobProgress() {
-        try {
-            let details = await getJobProgress({ jobExecutionId: this.jobExecutionId });
-            this.resultId = details.resultId;
-            this.progressStatus = details.status;
-            this.progress = details.progress;
-            this.stepName = details.stepName;
-            this.lastModified = details.lastModified;
-            this.jobIsRunning = !details.isCompleted;
-        } catch (error) {
-            console.error(
-                "There was an error trying to read the progress of the job. Will retry.",
-                error
-            );
-        }
-    }
-
-    // LWC METHODS
-    disconnectedCallback() {
-        this.stopPoll(); // ensure we disconnect the polling.
-    }
-
-    // call functionCall and if it returns true, call again every 5s for the first 5m, 10s after 5m, 30s after 30m, 60s after 1h
-    poll(functionCall, pollStartTime) {
-        if (!pollStartTime) {
-            this.pollStop = false;
-            pollStartTime = new Date().getTime();
-        }
-        if (!functionCall.apply() || this.pollStop) {
-            return this.stopPoll();
-        }
-        let elapsedMs = new Date().getTime() - pollStartTime;
-        let intervalMs =
-            elapsedMs > 3600000
-                ? 60000
-                : elapsedMs > 1800000
-                ? 30000
-                : elapsedMs > 300000
-                ? 10000
-                : 5000;
-        this.pollProcessId = window.setTimeout(
-            () => this.poll(functionCall, pollStartTime),
-            intervalMs
-        );
-    }
-    // use this method to stop the polling, e.g. from the UI or when disconnectedCallback occurs
-    stopPoll() {
-        this.pollStop = true;
-        if (this.pollProcessId) {
-            window.clearTimeout(this.pollProcessId);
-            this.pollProcessId = null;
         }
     }
 
@@ -421,8 +349,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
                     const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                    console.log("its not completed yet - daniel");
-                    console.log(`stepStatus: ${JSON.stringify(stepStatus)} - daniel`);
                 } catch {
                     // ignore
                 }
