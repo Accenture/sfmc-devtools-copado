@@ -8,6 +8,26 @@ Copyright (c) 2022 Accenture
 
 ## Getting Started
 
+## Required Permission Sets
+
+### Users
+
+**Default Copado PS:**
+
+- Copado User
+- Copado Functions
+- Copado Job Engine
+- Quality Gates (Read Only)
+- Execute Automations
+
+**MCDO PS:**
+
+- Copado Marketing Cloud (_custom_)
+
+### Admins
+
+Please make sure to assign the System Administrator profile and additionally assign the permission sets listed for users.
+
 ### Recommended MCDEV config
 
 Please ensure you limit retrievable types to only supported ones to reduce loading times and avoid errors during deployments:
