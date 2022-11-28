@@ -148,6 +148,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
     sortDirection = "desc";
     sortedBy = "ld";
 
+    // Stages
+    // stages = ["Retrieve.js started", ""];
+
     // Search Functionality related variables
     keyword;
     allSelectedRows = [];
@@ -164,7 +167,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     _subscribeToMessageService() {
         subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => {
-            console.log(`message: ${message}`);
             this._handleCommitPageCommunicationMessage(message);
         });
     }
@@ -335,13 +337,13 @@ export default class mcdo_RetrieveTable extends LightningElement {
      */
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
-            console.log(
-                `response.data.payload.copado__Topic_Uri__c: ${response.data.payload.copado__Topic_Uri__c}`
-            );
-            console.log(
-                `response.data.payload.copado__Payload__c: ${response.data.payload.copado__Payload__c}`
-            );
-            console.log(`response.data.payload: ${response.data.payload}`);
+            // console.log(
+            //     `response.data.payload.copado__Topic_Uri__c: ${response.data.payload.copado__Topic_Uri__c}`
+            // );
+            // console.log(
+            //     `response.data.payload.copado__Payload__c: ${response.data.payload.copado__Payload__c}`
+            // );
+            console.log(`response.data.payload: ${JSON.stringify(response.data.payload)}`);
             if (
                 response.data.payload.copado__Topic_Uri__c ===
                 `/execution-completed/${jobExecutionId}`
@@ -366,9 +368,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         };
 
         try {
-            console.log(`this.channelName: ${this.channelName}`);
             this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
-            console.log(`this.empSubscription: ${JSON.stringify(this.empSubscription)}`);
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
