@@ -163,9 +163,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
     channelName = "/event/copado__Event__e";
 
     _subscribeToMessageService() {
-        subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) =>
-            this._handleCommitPageCommunicationMessage(message)
-        );
+        subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => {
+            console.log(`message: ${message}`);
+            this._handleCommitPageCommunicationMessage(message);
+        });
     }
 
     /**
@@ -334,12 +335,20 @@ export default class mcdo_RetrieveTable extends LightningElement {
      */
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
+            console.log(
+                `response.data.payload.copado__Topic_Uri__c: ${response.data.payload.copado__Topic_Uri__c}`
+            );
+            console.log(
+                `response.data.payload.copado__Payload__c: ${response.data.payload.copado__Payload__c}`
+            );
+            console.log(`response.data.payload: ${response.data.payload}`);
             if (
                 response.data.payload.copado__Topic_Uri__c ===
                 `/execution-completed/${jobExecutionId}`
             ) {
                 // retrieve is done: refresh table with new data
                 this.updateMetadataGrid(response, jobExecutionId);
+                console.log("its completed");
             } else if (
                 response.data.payload.copado__Topic_Uri__c.startsWith(
                     "/events/copado/v1/step-monitor/" // + resultId
@@ -351,12 +360,15 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
                 } catch {
                     // ignore
+                    console.log("its not yet completed");
                 }
             }
         };
 
         try {
+            console.log(`this.channelName: ${this.channelName}`);
             this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
+            console.log(`this.empSubscription: ${JSON.stringify(this.empSubscription)}`);
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
