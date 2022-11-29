@@ -129,4 +129,40 @@ public with sharing class mcdo_RunCopadoFunctionFromLWC {
             throw new AuraHandledException(e.getMessage());
         }
     }
+
+    public static jobProgressWrapper getJobProgress(String jobExecutionId)
+    {
+        // get the newest result associated with this job execution
+        copado__Result__c[] results = [SELECT Id, LastModifiedDate,
+            copado__JobStep__r.copado__JobExecution__r.copado__Status__c,
+            copado__JobStep__r.copado__JobExecution__r.copado__ErrorMessage__c,
+            copado__Progress_Status__c,
+            copado__JobStep__r.Name
+            FROM copado__Result__c
+            WHERE copado__JobStep__r.copado__JobExecution__c = :jobExecutionId
+            WITH SECURITY_ENFORCED ORDER BY CreatedDate DESC LIMIT 1];
+        JobProgressWrapper response = new JobProgressWrapper();
+        if(!results.isEmpty()) {
+            response.resultId = results[0].Id;
+            response.status = results[0].copado__JobStep__r.copado__JobExecution__r.copado__Status__c;
+            response.lastModified = results[0].LastModifiedDate;
+            response.stepName = results[0].copado__JobStep__r.Name;
+            // calculate progress with the Job Execution error message, or the last progress status
+            response.progress =
+                String.isNotEmpty(results[0].copado__JobStep__r.copado__JobExecution__r.copado__ErrorMessage__c)
+                ?results[0].copado__JobStep__r.copado__JobExecution__r.copado__ErrorMessage__c
+                :results[0].copado__Progress_Status__c;
+            response.isCompleted = (response.status == 'Successful' || response.status == 'Error' || response.status == 'Canceled');
+        }
+        return response;
+    }
+    
+    public class JobProgressWrapper {
+        @AuraEnabled public String resultId = '';
+        @AuraEnabled public String status = '';
+        @AuraEnabled public String progress = '';
+        @AuraEnabled public Datetime lastModified = null;
+        @AuraEnabled public String stepName = '';
+        @AuraEnabled public Boolean isCompleted = false;
+    }
 }
