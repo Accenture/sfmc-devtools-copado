@@ -23,10 +23,10 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
+// Apex functions to retrieve Recorddata from LWC
 import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
-
-// Apex functions to retrieve Recorddata from LWC
+import getJobProgress from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getJobProgress";
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from "@salesforce/messageChannel/copado__CommitPageCommunication__c";
@@ -337,13 +337,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
      */
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
-            // console.log(
-            //     `response.data.payload.copado__Topic_Uri__c: ${response.data.payload.copado__Topic_Uri__c}`
-            // );
-            // console.log(
-            //     `response.data.payload.copado__Payload__c: ${response.data.payload.copado__Payload__c}`
-            // );
-            console.log(`response.data.payload: ${JSON.stringify(response.data.payload)}`);
             if (
                 response.data.payload.copado__Topic_Uri__c ===
                 `/execution-completed/${jobExecutionId}`
@@ -362,13 +355,22 @@ export default class mcdo_RetrieveTable extends LightningElement {
                     this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
                 } catch {
                     // ignore
-                    console.log("its not yet completed");
                 }
+                // call an apex function that got the result status
+                getJobProgress({ jobExecutionId: jobExecutionId })
+                    .then((result) => {
+                        console.log(JSON.stringify(result));
+                        this.progressStatus = result.progress || result.status;
+                    })
+                    .catch((error) => {
+                        console.error(error);
+                    });
             }
         };
 
         try {
-            this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
+            console.log(`this.channelName: ${this.channelName}`);
+            this.empSubscription = await subscribeEmp(this.channelName, -2, messageCallback);
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
