@@ -148,9 +148,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
     sortDirection = "desc";
     sortedBy = "ld";
 
-    // Stages
-    // stages = ["Retrieve.js started", ""];
-
     // Search Functionality related variables
     keyword;
     allSelectedRows = [];
@@ -163,7 +160,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     // Subscription related variables
     empSubscription = {};
-    channelName = "/event/copado__Event__e";
+    channelName = "/event/copado__MC_Result__e";
 
     _subscribeToMessageService() {
         subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => {
@@ -337,29 +334,13 @@ export default class mcdo_RetrieveTable extends LightningElement {
      */
     async subscribeToCompletionEvent(jobExecutionId) {
         const messageCallback = async (response) => {
-            if (
-                response.data.payload.copado__Topic_Uri__c ===
-                `/execution-completed/${jobExecutionId}`
-            ) {
+            if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
                 // retrieve is done: refresh table with new data
                 this.updateMetadataGrid(response, jobExecutionId);
-                console.log("its completed");
-            } else if (
-                response.data.payload.copado__Topic_Uri__c.startsWith(
-                    "/events/copado/v1/step-monitor/" // + resultId
-                )
-            ) {
-                try {
-                    // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
-                    const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                } catch {
-                    // ignore
-                }
+            } else {
                 // call an apex function that got the result status
                 getJobProgress({ jobExecutionId: jobExecutionId })
                     .then((result) => {
-                        console.log(JSON.stringify(result));
                         this.progressStatus = result.progress || result.status;
                     })
                     .catch((error) => {
@@ -369,8 +350,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
         };
 
         try {
-            console.log(`this.channelName: ${this.channelName}`);
-            this.empSubscription = await subscribeEmp(this.channelName, -2, messageCallback);
+            this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
@@ -394,8 +374,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
                 err.message
             );
         }
-        const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
-        if (jobExecution.copado__Status__c === "Successful") {
+        const jobExecution = response.data.payload;
+        if (jobExecution.copado__Progress_Status__c === "Refresh done") {
             try {
                 const result = JSON.parse(
                     await getMetadataFromEnvironment({ userStoryId: this.userStoryId })
