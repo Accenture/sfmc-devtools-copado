@@ -159,8 +159,10 @@ export default class mcdo_RetrieveTable extends LightningElement {
     progressStatus = "Loading data";
 
     // Subscription related variables
-    empSubscription = {};
-    channelName = "/event/copado__MC_Result__e";
+    getProgressSubscription = {};
+    reloadTableSubscription = {};
+    resultChannelName = "/event/copado__MC_Result__e";
+    eventChannelName = "/event/copado__Event__e";
 
     _subscribeToMessageService() {
         subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => {
@@ -333,14 +335,14 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async subscribeToCompletionEvent(jobExecutionId) {
-        const messageCallback = async (response) => {
+        const progressMessageCallback = async (response) => {
             if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
-                // retrieve is done: refresh table with new data
-                this.updateMetadataGrid(response, jobExecutionId);
+                this.unsubscribeThisSubscription(this.getProgressSubscription);
             } else {
                 // call an apex function that got the result status
                 getJobProgress({ jobExecutionId: jobExecutionId })
                     .then((result) => {
+                        console.log(JSON.stringify(result));
                         this.progressStatus = result.progress || result.status;
                     })
                     .catch((error) => {
@@ -349,11 +351,49 @@ export default class mcdo_RetrieveTable extends LightningElement {
             }
         };
 
+        const reloadTableCallBack = async (response) => {
+            if (
+                response.data.payload.copado__Topic_Uri__c ===
+                `/execution-completed/${jobExecutionId}`
+            ) {
+                // retrieve is done: refresh table with new data
+                this.updateMetadataGrid(response, jobExecutionId);
+            }
+        };
+
         try {
-            this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
+            this.getProgressSubscription = await subscribeEmp(
+                this.resultChannelName,
+                -1,
+                progressMessageCallback
+            );
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
+                err.message
+            );
+        }
+
+        try {
+            this.reloadTableSubscription = await subscribeEmp(
+                this.eventChannelName,
+                -1,
+                reloadTableCallBack
+            );
+        } catch (err) {
+            this.showError(
+                `${err.name}: An error occurred while subscribing to Emp API`,
+                err.message
+            );
+        }
+    }
+
+    async unsubscribeThisSubscription(subscription) {
+        try {
+            unsubscribeEmp(subscription);
+        } catch (err) {
+            this.showError(
+                `${err.name}: An error occurred while unsubscribing from Emp API`,
                 err.message
             );
         }
@@ -366,16 +406,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async updateMetadataGrid(response, jobExecutionId) {
-        try {
-            unsubscribeEmp(this.empSubscription);
-        } catch (err) {
-            this.showError(
-                `${err.name}: An error occurred while unsubscribing from Emp API`,
-                err.message
-            );
-        }
-        const jobExecution = response.data.payload;
-        if (jobExecution.copado__Progress_Status__c === "Refresh done") {
+        this.unsubscribeThisSubscription(this.reloadTableSubscription);
+        const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
+        if (jobExecution.copado__Status__c === "Successful") {
             try {
                 const result = JSON.parse(
                     await getMetadataFromEnvironment({ userStoryId: this.userStoryId })
