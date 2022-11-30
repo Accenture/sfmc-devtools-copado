@@ -338,11 +338,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
         const progressMessageCallback = async (response) => {
             if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
                 this.unsubscribeThisSubscription(this.getProgressSubscription);
+                this.progressStatus = "Completed!";
             } else {
                 // call an apex function that got the result status
                 getJobProgress({ jobExecutionId: jobExecutionId })
                     .then((result) => {
-                        console.log(JSON.stringify(result));
                         this.progressStatus = result.progress || result.status;
                     })
                     .catch((error) => {
@@ -390,7 +390,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
 
     async unsubscribeThisSubscription(subscription) {
         try {
-            unsubscribeEmp(subscription);
+            unsubscribeEmp(subscription, () => {});
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while unsubscribing from Emp API`,
