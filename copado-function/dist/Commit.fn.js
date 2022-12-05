@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.2.0 (built 2022-11-22T11:00:11.013Z)
+ * mcdev-copado v1.3.0 (built 2022-12-05T16:05:54.175Z)
  * Function: Commit.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -420,7 +420,7 @@ var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
 var Commit = require_Commit();
-CONFIG.mcdevCopadoVersion = "1.2.0";
+CONFIG.mcdevCopadoVersion = "1.3.0";
 CONFIG.credentialNameSource = process.env.credentialNameSource;
 CONFIG.credentialNameTarget = null;
 CONFIG.credentials = process.env.credentials;
@@ -475,6 +475,7 @@ async function run() {
     Util.execCommand(null, "npm --version", null);
     Util.execCommand(null, "node --version", null);
     Util.execCommand(null, "git version", null);
+    Util.execCommand(null, "mcdev --version", null);
   }
   Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
   try {

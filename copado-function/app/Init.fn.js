@@ -8,6 +8,8 @@ const Log = require('./common/Log');
 const Util = require('./common/Util');
 const Copado = require('./common/Copado');
 
+// ++++ CONFIG ++++
+CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';
 // credentials
 CONFIG.credentialNameSource = process.env.credentialName;
 CONFIG.credentialNameTarget = null;

@@ -80,6 +80,7 @@ async function run() {
         Util.execCommand(null, 'npm --version', null);
         Util.execCommand(null, 'node --version', null);
         Util.execCommand(null, 'git version', null);
+        Util.execCommand(null, 'mcdev --version', null);
     }
 
     Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
@@ -155,7 +156,6 @@ async function run() {
         Log.error('Saving metadata JSON failed:' + ex.message);
         throw ex;
     }
-    Log.result(`Found ${metadataJson.length} items on server`, 'Refresh done');
     try {
         Log.info('');
         Log.info('Attach JSON');
@@ -171,6 +171,7 @@ async function run() {
         Log.error('Attaching JSON file failed:' + ex.message);
         throw ex;
     }
+    Log.result(`Found ${metadataJson.length} items on server`, 'Refresh done');
     Log.info('');
     Log.info('===================');
     Log.info('');

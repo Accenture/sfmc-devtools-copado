@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.2.0 (built 2022-11-22T11:00:08.542Z)
+ * mcdev-copado v1.3.0 (built 2022-12-05T16:05:53.171Z)
  * Function: Retrieve.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -338,7 +338,7 @@ var CONFIG = require_Config();
 var Log = require_Log();
 var Util = require_Util();
 var Copado = require_Copado();
-CONFIG.mcdevCopadoVersion = "1.2.0";
+CONFIG.mcdevCopadoVersion = "1.3.0";
 CONFIG.credentialNameSource = process.env.credentialNameSource;
 CONFIG.credentialNameTarget = null;
 CONFIG.credentials = process.env.credentials;
@@ -394,6 +394,7 @@ async function run() {
     Util.execCommand(null, "npm --version", null);
     Util.execCommand(null, "node --version", null);
     Util.execCommand(null, "git version", null);
+    Util.execCommand(null, "mcdev --version", null);
   }
   Log.debug(`Change Working directory to: ${CONFIG.tmpDirectory}`);
   try {
@@ -463,7 +464,6 @@ async function run() {
     Log.error("Saving metadata JSON failed:" + ex.message);
     throw ex;
   }
-  Log.result(`Found ${metadataJson.length} items on server`, "Refresh done");
   try {
     Log.info("");
     Log.info("Attach JSON");
@@ -479,6 +479,7 @@ async function run() {
     Log.error("Attaching JSON file failed:" + ex.message);
     throw ex;
   }
+  Log.result(`Found ${metadataJson.length} items on server`, "Refresh done");
   Log.info("");
   Log.info("===================");
   Log.info("");
