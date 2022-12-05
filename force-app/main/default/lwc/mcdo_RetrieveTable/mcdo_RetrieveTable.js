@@ -23,10 +23,10 @@ import {
 } from "lightning/empApi";
 
 // Apex Methods for retrieving and committing metadata (And Communication with the Copado Package)
+// Apex functions to retrieve Recorddata from LWC
 import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
-
-// Apex functions to retrieve Recorddata from LWC
+import getResultIds from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultIds";
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from "@salesforce/messageChannel/copado__CommitPageCommunication__c";
@@ -157,15 +157,18 @@ export default class mcdo_RetrieveTable extends LightningElement {
     showTable = false;
     refreshButtonDisabled = true;
     progressStatus = "Loading data";
+    currentResultIds = undefined;
 
     // Subscription related variables
-    empSubscription = {};
-    channelName = "/event/copado__Event__e";
+    getProgressSubscription = {};
+    reloadTableSubscription = {};
+    resultChannelName = "/event/copado__MC_Result__e";
+    eventChannelName = "/event/copado__Event__e";
 
     _subscribeToMessageService() {
-        subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) =>
-            this._handleCommitPageCommunicationMessage(message)
-        );
+        subscribeMessageService(this._context, COMMIT_PAGE_COMMUNICATION_CHANNEL, (message) => {
+            this._handleCommitPageCommunicationMessage(message);
+        });
     }
 
     /**
@@ -310,8 +313,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
             const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
-            // TODO get result ID from Job step related to job execution
-            //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
         } catch (error) {
             this.loadingState(false);
@@ -333,33 +334,66 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async subscribeToCompletionEvent(jobExecutionId) {
-        const messageCallback = async (response) => {
+        // get result ID from Job step related to job execution
+        try {
+            this.currentResultIds = await getResultIds({ jobExecutionId: jobExecutionId });
+        } catch (error) {
+            console.error(`ERROR STATUS: ${error.status} ${error.statusText}`);
+        }
+
+        const progressMessageCallback = async (response) => {
+            if (
+                this.currentResultIds.includes(response?.data?.payload?.copado__ResultId__c) &&
+                response?.data?.payload?.copado__Progress_Status__c
+            ) {
+                // show progress update to user
+                this.progressStatus = response?.data?.payload?.copado__Progress_Status__c;
+            }
+        };
+
+        const reloadTableCallBack = async (response) => {
             if (
                 response.data.payload.copado__Topic_Uri__c ===
                 `/execution-completed/${jobExecutionId}`
             ) {
                 // retrieve is done: refresh table with new data
                 this.updateMetadataGrid(response, jobExecutionId);
-            } else if (
-                response.data.payload.copado__Topic_Uri__c.startsWith(
-                    "/events/copado/v1/step-monitor/" // + resultId
-                )
-            ) {
-                try {
-                    // show progress on screen; try-catch is needed because copado__Payload__c sometimes contains bad JSON
-                    const stepStatus = JSON.parse(response.data.payload.copado__Payload__c);
-                    this.progressStatus = stepStatus.data.progressStatus || this.progressStatus;
-                } catch {
-                    // ignore
-                }
             }
         };
 
         try {
-            this.empSubscription = await subscribeEmp(this.channelName, -1, messageCallback);
+            this.getProgressSubscription = await subscribeEmp(
+                this.resultChannelName,
+                -1,
+                progressMessageCallback
+            );
         } catch (err) {
             this.showError(
                 `${err.name}: An error occurred while subscribing to Emp API`,
+                err.message
+            );
+        }
+
+        try {
+            this.reloadTableSubscription = await subscribeEmp(
+                this.eventChannelName,
+                -1,
+                reloadTableCallBack
+            );
+        } catch (err) {
+            this.showError(
+                `${err.name}: An error occurred while subscribing to Emp API`,
+                err.message
+            );
+        }
+    }
+
+    async unsubscribeThisSubscription(subscription) {
+        try {
+            unsubscribeEmp(subscription, () => {});
+        } catch (err) {
+            this.showError(
+                `${err.name}: An error occurred while unsubscribing from Emp API`,
                 err.message
             );
         }
@@ -372,14 +406,8 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async updateMetadataGrid(response, jobExecutionId) {
-        try {
-            unsubscribeEmp(this.empSubscription);
-        } catch (err) {
-            this.showError(
-                `${err.name}: An error occurred while unsubscribing from Emp API`,
-                err.message
-            );
-        }
+        this.unsubscribeThisSubscription(this.getProgressSubscription);
+        this.unsubscribeThisSubscription(this.reloadTableSubscription);
         const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
         if (jobExecution.copado__Status__c === "Successful") {
             try {
