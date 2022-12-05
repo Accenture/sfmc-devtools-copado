@@ -26,7 +26,7 @@ import {
 // Apex functions to retrieve Recorddata from LWC
 import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
-import getResultId from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultId";
+import getResultIds from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultIds";
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from "@salesforce/messageChannel/copado__CommitPageCommunication__c";
@@ -157,7 +157,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
     showTable = false;
     refreshButtonDisabled = true;
     progressStatus = "Loading data";
-    progressResultId = undefined;
+    currentResultIds = undefined;
 
     // Subscription related variables
     getProgressSubscription = {};
@@ -334,9 +334,9 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async subscribeToCompletionEvent(jobExecutionId) {
-        // getting the last result id with this jobExecution
+        // get result ID from Job step related to job execution
         try {
-            this.progressResultId = await getResultId({ jobExecutionId: jobExecutionId });
+            this.currentResultIds = await getResultIds({ jobExecutionId: jobExecutionId });
         } catch (error) {
             console.error(`ERROR STATUS: ${error.status} ${error.statusText}`);
         }
@@ -345,8 +345,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
             if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
                 this.unsubscribeThisSubscription(this.getProgressSubscription);
                 this.progressStatus = "Completed!";
-            } else if (response.data.payload.copado__ResultId__c === this.progressResultId) {
-                this.progressStatus = response.data.payload.copado__Progress_Status__c;
+            } else if (
+                this.currentResultIds.includes(response?.data?.payload?.copado__ResultId__c) &&
+                response?.data?.payload?.copado__Progress_Status__c
+            ) {
+                this.progressStatus = response?.data?.payload?.copado__Progress_Status__c;
             }
         };
 

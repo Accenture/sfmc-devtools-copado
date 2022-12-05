@@ -133,19 +133,24 @@ public with sharing class mcdo_RunCopadoFunctionFromLWC {
     /**
      * This function calls returns the last resultId from the received jobExecution
      * @param jobExecutionId			JobExecution Id from the jobExecution that we want to find the latest result id
-     * @return 			                Returs the ID of the latest result created on the respective jobExecution
+     * @return 			                Returs the list of IDs form the results created on the respective jobExecution
      */
     @AuraEnabled
-    public static Id getResultId(String jobExecutionId) {
+    public static List<Id> getResultIds(String jobExecutionId) {
         // get the newest result associated with this job execution
-        copado__Result__c result = [
+        copado__Result__c[] results = [
             SELECT Id
             FROM copado__Result__c
             WHERE copado__JobStep__r.copado__JobExecution__c = :jobExecutionId
             WITH SECURITY_ENFORCED
             ORDER BY CreatedDate DESC
-            LIMIT 1
         ];
-        return result.Id;
+        List<Id> ids = new List<Id>();
+
+        for (copado__Result__c item : results) {
+            ids.add(item.Id);
+        }
+
+        return ids;
     }
 }
