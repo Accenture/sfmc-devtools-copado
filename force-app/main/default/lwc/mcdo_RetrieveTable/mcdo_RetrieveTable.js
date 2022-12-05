@@ -342,13 +342,11 @@ export default class mcdo_RetrieveTable extends LightningElement {
         }
 
         const progressMessageCallback = async (response) => {
-            if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
-                this.unsubscribeThisSubscription(this.getProgressSubscription);
-                this.progressStatus = "Completed!";
-            } else if (
+            if (
                 this.currentResultIds.includes(response?.data?.payload?.copado__ResultId__c) &&
                 response?.data?.payload?.copado__Progress_Status__c
             ) {
+                // show progress update to user
                 this.progressStatus = response?.data?.payload?.copado__Progress_Status__c;
             }
         };
@@ -408,6 +406,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async updateMetadataGrid(response, jobExecutionId) {
+        this.unsubscribeThisSubscription(this.getProgressSubscription);
         this.unsubscribeThisSubscription(this.reloadTableSubscription);
         const jobExecution = JSON.parse(response.data.payload.copado__Payload__c);
         if (jobExecution.copado__Status__c === "Successful") {
