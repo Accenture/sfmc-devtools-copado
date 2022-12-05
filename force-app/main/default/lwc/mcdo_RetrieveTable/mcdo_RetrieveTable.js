@@ -26,7 +26,7 @@ import {
 // Apex functions to retrieve Recorddata from LWC
 import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
-import getJobProgress from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getJobProgress";
+import getResultIds from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultIds";
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from "@salesforce/messageChannel/copado__CommitPageCommunication__c";
@@ -312,7 +312,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
             const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
-            // TODO get result ID from Job step related to job execution
             //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
         } catch (error) {
@@ -335,19 +334,21 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async subscribeToCompletionEvent(jobExecutionId) {
+        // get result ID from Job step related to job execution
+        this.currentResultIds = await getResultIds(jobExecutionId);
+        console.log("currentResultIds", this.currentResultIds);
+
         const progressMessageCallback = async (response) => {
             if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
                 this.unsubscribeThisSubscription(this.getProgressSubscription);
                 this.progressStatus = "Completed!";
             } else {
-                // call an apex function that got the result status
-                getJobProgress({ jobExecutionId: jobExecutionId })
-                    .then((result) => {
-                        this.progressStatus = result.progress || result.status;
-                    })
-                    .catch((error) => {
-                        console.error(error);
-                    });
+                if (
+                    this.currentResultIds.includes(response?.data?.payload?.copado__ResultId__c) &&
+                    response?.data?.payload?.copado__Progress_Status__c
+                ) {
+                    this.progressStatus = response?.data?.payload?.copado__Progress_Status__c;
+                }
             }
         };
 
