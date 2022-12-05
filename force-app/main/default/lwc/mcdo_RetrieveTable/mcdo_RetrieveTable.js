@@ -26,7 +26,7 @@ import {
 // Apex functions to retrieve Recorddata from LWC
 import ExecuteRetrieveFromCopado from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.executeRetrieve";
 import getMetadataFromEnvironment from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getMetadataFromEnvironment";
-import getResultIds from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultIds";
+import getResultId from "@salesforce/apex/mcdo_RunCopadoFunctionFromLWC.getResultId";
 
 // "Commit Changes" Page Tab related
 import COMMIT_PAGE_COMMUNICATION_CHANNEL from "@salesforce/messageChannel/copado__CommitPageCommunication__c";
@@ -157,6 +157,7 @@ export default class mcdo_RetrieveTable extends LightningElement {
     showTable = false;
     refreshButtonDisabled = true;
     progressStatus = "Loading data";
+    progressResultId = undefined;
 
     // Subscription related variables
     getProgressSubscription = {};
@@ -312,7 +313,6 @@ export default class mcdo_RetrieveTable extends LightningElement {
             const jobExecutionId = await ExecuteRetrieveFromCopado({
                 userStoryId: this.userStoryId
             });
-            //! has to be last result created for that job step if there are multiple
             this.subscribeToCompletionEvent(jobExecutionId);
         } catch (error) {
             this.loadingState(false);
@@ -334,21 +334,19 @@ export default class mcdo_RetrieveTable extends LightningElement {
      * @returns {Promise<void>} resolves when the job is done
      */
     async subscribeToCompletionEvent(jobExecutionId) {
-        // get result ID from Job step related to job execution
-        this.currentResultIds = await getResultIds(jobExecutionId);
-        console.log("currentResultIds", this.currentResultIds);
+        // getting the last result id with this jobExecution
+        try {
+            this.progressResultId = await getResultId({ jobExecutionId: jobExecutionId });
+        } catch (error) {
+            console.error(`ERROR STATUS: ${error.status} ${error.statusText}`);
+        }
 
         const progressMessageCallback = async (response) => {
             if (response.data.payload.copado__Progress_Status__c === "Refresh done") {
                 this.unsubscribeThisSubscription(this.getProgressSubscription);
                 this.progressStatus = "Completed!";
-            } else {
-                if (
-                    this.currentResultIds.includes(response?.data?.payload?.copado__ResultId__c) &&
-                    response?.data?.payload?.copado__Progress_Status__c
-                ) {
-                    this.progressStatus = response?.data?.payload?.copado__Progress_Status__c;
-                }
+            } else if (response.data.payload.copado__ResultId__c === this.progressResultId) {
+                this.progressStatus = response.data.payload.copado__Progress_Status__c;
             }
         };
 
