@@ -141,7 +141,9 @@ public with sharing class mcdo_RunCopadoFunctionFromLWC {
         copado__Result__c[] results = [
             SELECT Id
             FROM copado__Result__c
-            WHERE copado__JobStep__r.copado__JobExecution__c = :jobExecutionId
+            WHERE
+                copado__JobStep__r.copado__JobExecution__c = :jobExecutionId
+                AND copado__Status__c NOT IN ('Failed', 'Cancelled', 'Success')
             WITH SECURITY_ENFORCED
             ORDER BY CreatedDate DESC
         ];
