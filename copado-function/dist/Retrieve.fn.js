@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.2.0 (built 2022-11-21T11:25:57.041Z)
+ * mcdev-copado v1.2.0 (built 2022-12-05T14:16:30.690Z)
  * Function: Retrieve.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -472,7 +472,6 @@ async function run() {
     Log.error("Saving metadata JSON failed:" + ex.message);
     throw ex;
   }
-  Log.result(`Found ${metadataJson.length} items on server`, "Refresh done");
   try {
     Log.info("");
     Log.info("Attach JSON");
@@ -488,6 +487,7 @@ async function run() {
     Log.error("Attaching JSON file failed:" + ex.message);
     throw ex;
   }
+  Log.result(`Found ${metadataJson.length} items on server`, "Refresh done");
   Log.info("");
   Log.info("===================");
   Log.info("");
