@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.3.0 (built 2022-12-05T16:05:54.809Z)
+ * mcdev-copado v1.3.0 (built 2022-12-06T13:20:00.630Z)
  * Function: Init.fn.js
  * Dependenies: mcdev@>=4.1.12, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
@@ -349,7 +349,7 @@ CONFIG.configFilePath = null;
 CONFIG.debug = process.env.debug === "true" ? true : false;
 CONFIG.installMcdevLocally = null;
 CONFIG.mainBranch = null;
-CONFIG.mcdevVersion = process.env.mcdev_version;
+CONFIG.mcdevVersion = null;
 CONFIG.metadataFilePath = null;
 CONFIG.source_mid = null;
 CONFIG.tmpDirectory = "../tmp";
@@ -460,7 +460,7 @@ async function run() {
 var Init = class {
   static mcdevInit(credentials, credentialName, options) {
     Util.execCommand(
-      `Initializing mcdev: ${credentialName}, ${credentials[credentialName].client_id}", "${credentials[credentialName].client_secret}", "${credentials[credentialName].auth_url}", "${options.url}", "${options.downloadBUs}", "${options.gitPush}", ${credentials[credentialName].account_id}`,
+      `Initializing mcdev`,
       [
         `mcdev init --y.credentialName "${credentialName}" --y.client_id "${credentials[credentialName].client_id}" --y.client_secret "${credentials[credentialName].client_secret}" --y.auth_url "${credentials[credentialName].auth_url}" --y.gitRemoteUrl "${options.url}" --y.account_id ${credentials[credentialName].account_id} --y.downloadBUs "${options.downloadBUs}" --y.gitPush "${options.gitPush}"`
       ],
