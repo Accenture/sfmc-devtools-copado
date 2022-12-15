@@ -60,7 +60,7 @@ CONFIG.downloadBUs = process.env.downloadBUs === 'false' ? false : true;
 CONFIG.gitPush = process.env.gitPush === 'false' ? false : true;
 CONFIG.copadoEnvironmentVariables =
     process.env.copadoEnvironmentVariables === undefined
-        ? '{}'
+        ? '[]'
         : process.env.copadoEnvironmentVariables;
 
 /**
