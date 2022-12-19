@@ -1,7 +1,7 @@
 copado.CreateExecution.Request request = new copado.CreateExecution.Request();
-request.parentId = 'functionId'; 
-request.templateName = 'jobTemplateApiName';
-request.callback = 'mcdo_CreateEnvironments';
+request.parentId = '[functionId]'; 
+request.templateName = '[jobTemplateApiName]';
+request.callback = '[callBackClassName]';
 request.preSteps = new List<copado__JobStep__c>();
 request.postSteps = new List<copado__JobStep__c>(); 
 request.runAfterInstantiation = true;  copado.CreateExecution.execute(new List<copado.CreateExecution.Request>{ request });
