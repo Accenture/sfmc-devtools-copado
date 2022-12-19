@@ -1,16 +1,20 @@
 /**
- * This class is used by the MC Init function, 
+ * This class is used by the MC Init function, g
  * responsible for creating all environments 
  */
-Global class mcdo_CreateEnvironments implements copado.MCCallback {
-    Global void execute(copado__Function__c function, copado__Result__c result, String status) {
-        if(status == 'Failed') {
+global class mcdo_CreateEnvironments implements copado.JobExecutionCallback  {
+    global void execute(copado__JobExecution__c job, String status) {
+        if(status == 'Error') {
             // handle Error
-        } else if(status == 'Success') {
+            System.debug('Error: ' + job.copado__ErrorMessage__c);
+        } else if(status == 'Successful') {
             // handle Success
-            System.debug('Entered the createEnvironments callback function with the status equals to "Success"');
+            System.debug('Job: ' + job);
+            // TODO: create all the needed environments
+            
         } else {
             // handle In progress if necessary
+            System.debug('still in progress...');
         }
     }
 }
