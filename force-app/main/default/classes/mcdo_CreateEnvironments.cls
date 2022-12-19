@@ -10,7 +10,15 @@ global class mcdo_CreateEnvironments implements copado.JobExecutionCallback  {
         } else if(status == 'Successful') {
             // handle Success
             System.debug('Job: ' + job);
+            System.debug('Job.copado__DataJson__c: ' + job.copado__DataJson__c);            
             // TODO: create all the needed environments
+            List<Object> dataJson = (List<Object>)JSON.deserializeUntyped(job.copado__DataJson__c);
+            System.debug(dataJson);
+            for(Object dt : dataJson){
+                System.debug('Entered the for loop');
+                Map<String,Object> data = (Map<String,Object>)dt;
+                System.debug(data.get('Name'));
+            }
             
         } else {
             // handle In progress if necessary
