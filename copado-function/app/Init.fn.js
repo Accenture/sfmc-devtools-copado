@@ -58,10 +58,6 @@ CONFIG.target_mid = null;
 CONFIG.repoUrl = process.env.repoUrl;
 CONFIG.downloadBUs = process.env.downloadBUs === 'false' ? false : true;
 CONFIG.gitPush = process.env.gitPush === 'false' ? false : true;
-CONFIG.copadoEnvironmentVariables =
-    process.env.copadoEnvironmentVariables === undefined
-        ? '[]'
-        : process.env.copadoEnvironmentVariables;
 
 /**
  * main method that combines runs this function
@@ -89,10 +85,7 @@ async function run() {
         throw ex;
     }
 
-    CONFIG.copadoEnvironmentVariables = JSON.parse(CONFIG.copadoEnvironmentVariables);
-
     Log.debug(CONFIG);
-
     // ensure we got SFMC credentials for our source BU
     if (!CONFIG.credentials[CONFIG.credentialNameSource]) {
         Log.error(`No credentials found for source (${CONFIG.credentialNameSource})`);
