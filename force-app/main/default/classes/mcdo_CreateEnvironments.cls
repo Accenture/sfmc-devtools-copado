@@ -20,7 +20,7 @@ global class mcdo_CreateEnvironments implements copado.JobExecutionCallback  {
                 Map<String,Object> environment = (Map<String,Object>)env;
                 String envName = environment.get('Name').toString();
 				
-                // TODO: CREATE ENVIRONMENT IN HERE
+                // create the environment
                 copado__Environment__c environmentCopado = new copado__Environment__c(
                     copado__Platform__c='Marketing Cloud', 
                     Name=envName
