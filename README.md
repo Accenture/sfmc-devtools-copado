@@ -26,4 +26,4 @@ The people that lead this project:
 
 ## Copyright
 
-Copyright (c) 2022-2023 Accenture. [MIT licensed](https://github.com/Accenture/sfmc-devtools-copado/blob/master/LICENSE).
+Copyright (c) 2022-2023 Accenture. [MIT licensed](https://github.com/Accenture/sfmc-devtools-copado/blob/main/LICENSE).
