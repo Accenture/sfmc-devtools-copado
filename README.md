@@ -4,8 +4,6 @@ Next-level GUI for next-level professional Marketing Cloud DevOps!
 
 Based on the free & open-sourced [mcdev](https://github.com/Accenture/sfmc-devtools) and [Copado](https://www.copado.com/)!
 
-Copyright (c) 2022 Accenture
-
 ## Getting Started
 
 Please refer to the [Getting Started section](https://github.com/Accenture/sfmc-devtools-copado/wiki/Getting-Started) in our Wiki.
