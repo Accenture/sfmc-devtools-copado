@@ -28,7 +28,9 @@ export default class mcdo_ChildEnvironmentVariables extends NavigationMixin(Ligh
 
     async _getVariables() {
         try {
-            const result = await getmcdo_ChildEnvironmentVariables({ environmentId: this.recordId });
+            const result = await getmcdo_ChildEnvironmentVariables({
+                environmentId: this.recordId
+            });
             if (result) {
                 this._processItems(JSON.parse(result));
                 this.header = this.header + " (" + this.items.length + ")";
@@ -55,7 +57,8 @@ export default class mcdo_ChildEnvironmentVariables extends NavigationMixin(Ligh
             eachItem.items = environmentVariables;
             return eachItem;
         });
-        this.items = result;
+        this.items.length = 0;
+        this.items.push(...result);
     }
 
     _prepareItem(label, name, metatext) {
