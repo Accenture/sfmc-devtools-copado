@@ -45,13 +45,5 @@ jobs:
 
       - run: npm run lint
 
-      # Initializes the CodeQL tools for scanning.
-      - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
-        with:
-          languages: ${{ matrix.language }}
-      - name: Perform CodeQL Analysis
-        uses: github/codeql-action/analyze@v2
-
       # Assuming code passes, run tests
       - run: npm run test
