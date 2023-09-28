@@ -1,7 +1,7 @@
 'use strict';
 
-const execSync = require('node:child_process').execSync;
-const CONFIG = require('./Config');
+import { execSync } from 'node:child_process';
+import CONFIG from './Config.js';
 
 /**
  * logger class
@@ -74,4 +74,4 @@ class Log {
     }
 }
 
-module.exports = Log;
+export default Log;

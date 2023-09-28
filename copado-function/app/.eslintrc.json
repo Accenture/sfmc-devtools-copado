@@ -1,8 +1,7 @@
 {
     "env": {
         "es6": true,
-        "node": true,
-        "mocha": true
+        "node": true
     },
     "extends": [
         "eslint:recommended",
@@ -10,13 +9,13 @@
         "plugin:prettier/recommended",
         "plugin:unicorn/recommended"
     ],
-    "plugins": [],
+    "plugins": ["prettier"],
     "globals": {
         "Atomics": "readonly",
         "SharedArrayBuffer": "readonly"
     },
     "parserOptions": {
-        "ecmaVersion": 2020,
+        "ecmaVersion": 2022,
         "sourceType": "module"
     },
     "root": true,
@@ -41,6 +40,7 @@
         }
     },
     "rules": {
+        "logical-assignment-operators": ["error", "always"],
         "unicorn/better-regex": "off",
         "unicorn/catch-error-name": [
             "error",
@@ -81,6 +81,8 @@
                 }
             }
         ],
+        "jsdoc/require-param-type": "error",
+        "jsdoc/tag-lines": ["warn", "any", { "startLines": 1 }],
         "spaced-comment": ["warn", "always", { "block": { "exceptions": ["*"], "balanced": true } }]
     },
     "overrides": [
@@ -99,7 +101,8 @@
             "extends": ["plugin:mocha/recommended"],
             "plugins": ["mocha"],
             "rules": {
-                "mocha/no-mocha-arrows": "off"
+                "mocha/no-mocha-arrows": "off",
+                "mocha/no-pending-tests": "off"
             }
         }
     ]

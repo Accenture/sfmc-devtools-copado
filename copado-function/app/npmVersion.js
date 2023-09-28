@@ -5,7 +5,7 @@
  * helper class that wraps typical version release tasks into one script
  */
 
-const execSync = require('node:child_process').execSync;
+import { execSync } from 'node:child_process';
 
 const args = process.argv.slice(2);
 const versionIncreaseType = args[0];

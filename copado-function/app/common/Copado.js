@@ -1,10 +1,10 @@
 'use strict';
-const fs = require('node:fs');
-const exec = require('node:child_process').exec;
+import fs from 'node:fs';
+import { exec } from 'node:child_process';
 
-const TYPE = require('../types/mcdev-copado.d');
-const Log = require('./Log');
-const Util = require('./Util');
+import TYPE from '../types/mcdev-copado.d.js';
+import Log from './Log.js';
+import Util from './Util.js';
 
 /**
  * methods to handle interaction with the copado platform
@@ -177,4 +177,4 @@ class Copado {
     }
 }
 
-module.exports = Copado;
+export default Copado;

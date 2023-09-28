@@ -1,13 +1,17 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('node:fs');
-const resolve = require('node:path').resolve;
-const TYPE = require('./types/mcdev-copado.d');
-const CONFIG = require('./common/Config');
-const Log = require('./common/Log');
-const Util = require('./common/Util');
-const Copado = require('./common/Copado');
+import fs from 'node:fs';
+import { resolve } from 'node:path';
+import TYPE from './types/mcdev-copado.d.js';
+import CONFIG from './common/Config.js';
+import Log from './common/Log.js';
+import Util from './common/Util.js';
+import Copado from './common/Copado.js';
+
+import mcdev from 'mcdev';
+import Definition from 'mcdev/lib/MetadataTypeDefinitions.js';
+import MetadataType from 'mcdev/lib/MetadataTypeInfo.js';
 
 // ++++ CONFIG ++++
 CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';
@@ -217,9 +221,6 @@ class Retrieve {
      */
     static async retrieveChangelog(sourceBU) {
         // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib');
-        const Definition = require('../tmp/node_modules/mcdev/lib/MetadataTypeDefinitions');
-        const MetadataType = require('../tmp/node_modules/mcdev/lib/MetadataTypeInfo');
         if (!CONFIG.debug) {
             // disable any non-errors originating in mcdev from being printed into the main copado logfile
             mcdev.setLoggingLevel({ silent: true });
@@ -238,11 +239,11 @@ class Retrieve {
             },
         };
         // get userid>name mapping
-        const retrieve = await mcdev.retrieve(sourceBU, ['accountUser'], null, true);
+        const retrieve = await mcdev.retrieve(sourceBU, ['user'], null, true);
         if (!retrieve) {
             throw new Error('Could not retrieve User List');
         }
-        const userList = retrieve.accountUser;
+        const userList = retrieve.user;
         // reduce userList to simple id-name map
         for (const key of Object.keys(userList)) {
             userList[userList[key].ID] = userList[key].Name;
