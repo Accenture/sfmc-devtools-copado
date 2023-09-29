@@ -1,10 +1,12 @@
 'use strict';
-const fs = require('node:fs');
-const execSync = require('node:child_process').execSync;
+import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
-const TYPE = require('../types/mcdev-copado.d');
-const CONFIG = require('./Config');
-const Log = require('./Log');
+import TYPE from '../types/mcdev-copado.d.js';
+import CONFIG from './Config.js';
+import Log from './Log.js';
+import mcdev from 'mcdev';
+
 /**
  * helper class
  */
@@ -111,38 +113,38 @@ class Util {
      * @returns {void}
      */
     static provideMCDevTools() {
-        if (fs.existsSync('package.json')) {
-            Log.debug('package.json found, assuming npm was already initialized');
-        } else {
-            Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
-        }
-        let installer;
-        if (!CONFIG.installMcdevLocally) {
-            Util.execCommand(
-                `Initializing Accenture SFMC DevTools (packaged version)`,
-                [
-                    `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
-                    'mcdev --version',
-                ],
-                'Completed installing Accenture SFMC DevTools'
-            );
-            return; // we're done here
-        } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
-            // assume branch of mcdev's git repo shall be loaded
-
-            installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
-        } else if (!CONFIG.mcdevVersion) {
-            Log.error('Please specify mcdev_version in pipeline & environment settings');
-            throw new Error('Please specify mcdev_version in pipeline & environment settings');
-        } else {
-            // default, install via npm at specified version
-            installer = `mcdev@${CONFIG.mcdevVersion}`;
-        }
-        Util.execCommand(
-            `Initializing Accenture SFMC DevTools (${installer})`,
-            [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
-            'Completed installing Accenture SFMC DevTools'
-        );
+        mcdev.version();
+        // if (fs.existsSync('package.json')) {
+        //     Log.debug('package.json found, assuming npm was already initialized');
+        // } else {
+        //     Util.execCommand('Initializing npm', ['npm init -y'], 'Completed initializing NPM');
+        // }
+        // let installer;
+        // if (!CONFIG.installMcdevLocally) {
+        //     Util.execCommand(
+        //         `Initializing Accenture SFMC DevTools (packaged version)`,
+        //         [
+        //             `npm link mcdev --no-audit --no-fund --ignore-scripts --omit=dev --omit=peer --omit=optional`,
+        //             'mcdev --version',
+        //         ],
+        //         'Completed installing Accenture SFMC DevTools'
+        //     );
+        //     return; // we're done here
+        // } else if (CONFIG.mcdevVersion.charAt(0) === '#') {
+        //     // assume branch of mcdev's git repo shall be loaded
+        //     installer = `accenture/sfmc-devtools${CONFIG.mcdevVersion}`;
+        // } else if (!CONFIG.mcdevVersion) {
+        //     Log.error('Please specify mcdev_version in pipeline & environment settings');
+        //     throw new Error('Please specify mcdev_version in pipeline & environment settings');
+        // } else {
+        //     // default, install via npm at specified version
+        //     installer = `mcdev@${CONFIG.mcdevVersion}`;
+        // }
+        // Util.execCommand(
+        //     `Initializing Accenture SFMC DevTools (${installer})`,
+        //     [`npm install ${installer}`, 'node ./node_modules/mcdev/lib/cli.js --version'],
+        //     'Completed installing Accenture SFMC DevTools'
+        // );
     }
     /**
      * creates credentials file .mcdev-auth.json based on provided credentials
@@ -261,4 +263,4 @@ class Util {
     }
 }
 
-module.exports = Util;
+export default Util;

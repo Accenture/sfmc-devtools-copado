@@ -1,11 +1,12 @@
 'use strict';
-const fs = require('node:fs');
-const execSync = require('node:child_process').execSync;
+import fs from 'node:fs';
+import { execSync } from 'node:child_process';
 
-const TYPE = require('../types/mcdev-copado.d');
-const CONFIG = require('./Config');
-const Log = require('./Log');
-const Util = require('./Util');
+import TYPE from '../types/mcdev-copado.d.js';
+import CONFIG from './Config.js';
+import Log from './Log.js';
+import Util from './Util.js';
+import mcdev from 'mcdev';
 
 /**
  * methods to handle interaction with the copado platform
@@ -21,8 +22,6 @@ class Commit {
      * @returns {Promise.<string[]>} list of files to git add & commit
      */
     static async retrieveCommitSelection(sourceBU, commitSelectionArr) {
-        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib/');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -131,4 +130,4 @@ class Commit {
         }
     }
 }
-module.exports = Commit;
+export default Commit;

@@ -1,11 +1,11 @@
 #!/usr/bin/env node
 'use strict';
 
-const resolve = require('node:path').resolve;
-const CONFIG = require('./common/Config');
-const Log = require('./common/Log');
-const Util = require('./common/Util');
-const Copado = require('./common/Copado');
+import { resolve } from 'node:path';
+import CONFIG from './common/Config.js';
+import Log from './common/Log.js';
+import Util from './common/Util.js';
+import Copado from './common/Copado.js';
 
 // credentials
 CONFIG.credentialNameSource = process.env.credentialNameSource;

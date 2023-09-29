@@ -12,6 +12,18 @@
             "options": { "parser": "html" }
         },
         {
+            "files": "package.json",
+            "options": {
+                "printWidth": 40
+            }
+        },
+        {
+            "files": "package-lock.json",
+            "options": {
+                "printWidth": 40
+            }
+        },
+        {
             "files": "*.json",
             "options": {
                 "parser": "json"

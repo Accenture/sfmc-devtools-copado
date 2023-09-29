@@ -1,13 +1,13 @@
 #!/usr/bin/env node
 'use strict';
 
-const resolve = require('node:path').resolve;
-const TYPE = require('./types/mcdev-copado.d');
-const CONFIG = require('./common/Config');
-const Log = require('./common/Log');
-const Util = require('./common/Util');
-const Copado = require('./common/Copado');
-const Commit = require('./common/Commit');
+import { resolve } from 'node:path';
+import TYPE from './types/mcdev-copado.d.js';
+import CONFIG from './common/Config.js';
+import Log from './common/Log.js';
+import Util from './common/Util.js';
+import Copado from './common/Copado.js';
+import Commit from './common/Commit.js';
 
 // ++++ CONFIG ++++
 CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';

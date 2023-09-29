@@ -1,15 +1,16 @@
 #!/usr/bin/env node
 'use strict';
 
-const fs = require('node:fs');
-const execSync = require('node:child_process').execSync;
-const resolve = require('node:path').resolve;
-const TYPE = require('./types/mcdev-copado.d');
-const CONFIG = require('./common/Config');
-const Log = require('./common/Log');
-const Util = require('./common/Util');
-const Copado = require('./common/Copado');
-const Commit = require('./common/Commit');
+import fs from 'node:fs';
+import { execSync } from 'node:child_process';
+import { resolve } from 'node:path';
+import TYPE from './types/mcdev-copado.d.js';
+import CONFIG from './common/Config.js';
+import Log from './common/Log.js';
+import Util from './common/Util.js';
+import Copado from './common/Copado.js';
+import Commit from './common/Commit.js';
+import mcdev from 'mcdev';
 
 // ++++ CONFIG ++++
 CONFIG.mcdevCopadoVersion = '[VI]{{inject}}[/VI]';
@@ -549,7 +550,6 @@ class Deploy {
      * @returns {Promise.<boolean>} true: files found, false: not
      */
     static async createDeltaPackage(deployFolder, commitSelectionArr, sourceBU) {
-        const mcdev = require('../tmp/node_modules/mcdev/lib');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
 
@@ -627,8 +627,6 @@ class Deploy {
      * @returns {object} deployResult
      */
     static async deployBU(bu) {
-        // * dont use CONFIG.tempDir here to allow proper resolution of required package in VSCode
-        const mcdev = require('../tmp/node_modules/mcdev/lib');
         // ensure wizard is not started
         mcdev.setSkipInteraction(true);
         const deployResult = await mcdev.deploy(bu);
