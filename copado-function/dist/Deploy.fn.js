@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 
 /*
- * mcdev-copado v1.3.0 (built 2023-09-28T15:27:05.908Z)
+ * mcdev-copado v2.0.0 (built 2023-09-29T12:01:34.006Z)
  * Function: Deploy.fn.js
- * Dependenies: mcdev@file:../sfmc-devtools, Copado Deployer@20.1
+ * Dependenies: mcdev@>=6.0.0, Copado Deployer@20.1
  * Homepage: https://github.com/Accenture/sfmc-devtools-copado#readme
  * Support: https://github.com/Accenture/sfmc-devtools-copado/issues
  * Git-Repository: https://github.com/Accenture/sfmc-devtools-copado.git
@@ -547,7 +547,7 @@ var Commit_default = Commit;
 
 // Deploy.fn.js
 import mcdev3 from "mcdev";
-Config_default.mcdevCopadoVersion = "1.3.0";
+Config_default.mcdevCopadoVersion = "2.0.0";
 Config_default.credentialNameSource = process.env.credentialNameSource;
 Config_default.credentialNameTarget = process.env.credentialNameTarget;
 Config_default.credentials = process.env.credentials;

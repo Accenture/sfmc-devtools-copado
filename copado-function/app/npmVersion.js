@@ -6,6 +6,11 @@
  */
 
 import { execSync } from 'node:child_process';
+import path from 'node:path';
+// import just to resolve cyclical - TO DO consider if could move to file or context
+import { readJsonSync } from 'fs-extra/esm';
+import { fileURLToPath } from 'node:url';
+const __dirname = path.dirname(fileURLToPath(import.meta.url));
 
 const args = process.argv.slice(2);
 const versionIncreaseType = args[0];
@@ -30,7 +35,7 @@ const versionIncreaseType = args[0];
     exec('git add package-lock.json');
 
     // get the new version number
-    const packageJson = require('../../package.json');
+    const packageJson = readJsonSync(path.join(__dirname, '../../package.json'));
     const newVersion = packageJson.version;
 
     // commit changes without commit-hooks
