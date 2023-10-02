@@ -51,7 +51,7 @@
         "version:patch": "node ./copado-function/app/npmVersion.js patch"
     },
     "devDependencies": {
-        "@lwc/eslint-plugin-lwc": "^1.5.0",
+        "@lwc/eslint-plugin-lwc": "^1.6.3",
         "@prettier/plugin-xml": "^2.2.0",
         "@salesforce/eslint-config-lwc": "^3.3.3",
         "@salesforce/eslint-plugin-aura": "^2.1.0",
